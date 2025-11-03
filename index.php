@@ -28,10 +28,13 @@
             $row = $stmt->fetch();
 
             if ($login == $row['username'] && password_verify($password, $row['password'])) {
+                session_regenerate_id(true);
                 $sql = "INSERT INTO login_attempts (ip_user, success) VALUES (:user_ip, :success)";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute(['user_ip' => $user_ip, 'success' => 1]);
-                echo 'Brawo zalogowałeś się';
+                $_SESSION['user_session'] = $row['username'];
+                header('Location: system/');
+                exit();
             } else {
                 $sql = "INSERT INTO login_attempts (ip_user, success) VALUES (:user_ip, :success)";
                 $stmt = $pdo->prepare($sql);
