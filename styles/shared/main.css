@@ -77,6 +77,34 @@ body {
     font-weight: 700;
 }
 
+.nav-links li:last-child {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+    border-left: 3px solid transparent;
+}
+
+.nav-links li:last-child i {
+    margin-right: 15px;
+    width: 20px;
+    text-align: center;
+}
+
+.nav-links li:last-child form{
+    width: 100%;
+}
+
+.nav-links li:last-child form button {
+    border: none;
+    text-decoration: none;
+    color: var(--text-color);
+    background: none;
+    cursor: pointer;
+}
+
 @media (max-width: 968px) {
     .sidebar {
         width: 200px;

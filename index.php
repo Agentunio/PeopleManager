@@ -1,8 +1,6 @@
 <?php
     require_once 'config.php';
-    if (!isset($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
+
     $pdo = new PDO("mysql:host=" . DB_SERVER . ";dbname=" . DB_NAME, DB_USERNAME, DB_PASSWORD);
     $error = '';
     $user_ip = $_SERVER['REMOTE_ADDR'];
@@ -14,7 +12,7 @@
     if($row < 5) {
         if (isset($_POST['submit'])) {
 
-            if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
                 $error = "Sesja wygasła. Odśwież stronę i spróbuj ponownie.";
                 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             }

@@ -84,7 +84,7 @@
                 <div class="card-content">
                     <p>Zarządzaj ustawieniami konta, powiadomieniami i integracjami systemu.</p>
                 </div>
-                <a href="#" class="card-link">Przejdź do ustawień &rarr;</a>
+                <a href="../system/settings.php" class="card-link">Przejdź do ustawień &rarr;</a>
             </div>
         </div>
     </main>
