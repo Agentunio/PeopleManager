@@ -49,7 +49,7 @@
     color: var(--secondary-color);
     font-size: 1.4rem;
     font-weight: 400;
-    margin-bottom: 20px;
+    margin-bottom: 0;
     padding-bottom: 15px;
     border-bottom: 2px solid var(--accent-color);
 }
@@ -226,13 +226,14 @@
 }
 
 /* Checkbox for toggle */
-#toggle-form, #toggle-form-hours {
+.settings-section input[type="checkbox"],
+#toggle-package-form {
     display: none;
 }
 
-/* WAŻNA ZMIANA: Dodaj regułę dla ID Stawki za Godzinę */
-#toggle-form:checked ~ .edit-form,
-#toggle-form-hours:checked ~ .edit-form {
+/* REGUŁA AKTYWUJĄCA PANELE ISTNIEJĄCYCH PAKIETÓW */
+/* Jeśli checkbox wewnątrz settings-section jest zaznaczony, pokaż jego sąsiada .edit-form */
+.settings-section input[type="checkbox"]:checked ~ .edit-form {
     display: block;
 }
 
@@ -250,15 +251,39 @@
     cursor: pointer;
 }
 
-/* Responsywność */
-@media (max-width: 968px) {
-    .sidebar {
-        width: 200px;
-    }
+.btn-delete {
+    /* Ustawienia ogólne (powinien je mieć z klasy .btn, ale powtarzamy dla pewności) */
+    padding: 8px 15px;
+    font-size: 0.85rem;
 
-    .main-content {
-        margin-left: 200px;
-    }
+    /* Kolory usuwania */
+    background-color: var(--accent-color, #a10000); /* Głęboka czerwień (np. a10000) */
+    color: white; /* Biały tekst, aby był czytelny na ciemnym tle */
+    border: 1px solid var(--accent-color, #a10000);
+
+    /* Cień i przejścia */
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.package-header-row {
+    display: flex;
+    justify-content: space-between; /* Rozsuwa elementy na boki (nagłówek lewo, przycisk prawo) */
+    align-items: center; /* Wyśrodkowuje elementy w pionie */
+    margin-bottom: 10px; /* Dodaj margines pod spodem, by oddzielić od reszty sekcji */
+}
+
+.btn-delete:hover {
+    background-color: #c00000; /* Jaśniejsza czerwień przy najechaniu */
+    border-color: #c00000;
+    transform: translateY(-1px); /* Lekkie uniesienie */
+    box-shadow: 0 3px 10px rgba(161, 0, 0, 0.5); /* Delikatny cień */
+}
+
+/* Opcjonalny styl, aby ikonka była zawsze wyśrodkowana z tekstem */
+.btn-delete i {
+    margin-right: 5px;
 }
 
 @media (max-width: 768px) {

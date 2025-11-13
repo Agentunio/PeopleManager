@@ -8,13 +8,13 @@
     $error = '';
     $success = '';
     if(isset($_POST['packageSubmit'])){
-        $packageName = $_POST['packageName'];
-        $packagePrice = $_POST['packagePrice'];
-
         if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
             $error = "Sesja wygasła. Odśwież stronę i spróbuj ponownie.";
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
+
+        $packageName = $_POST['packageName'];
+        $packagePrice = $_POST['packagePrice'];
 
         if(empty($packageName) || empty($packagePrice)){
             $error = "Wszystkie pola są wymagane";
@@ -38,6 +38,53 @@
             }
         }
     }
+
+    if(isset($_POST['delete_package_submit'])){
+        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+            $error = "Sesja wygasła. Odśwież stronę i spróbuj ponownie.";
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+
+        $package_id_to_delete = $_POST['package_id_to_delete'];
+
+        if(empty($package_id_to_delete) || !is_numeric($package_id_to_delete)){
+            $error = 'Coś poszło nie tak spróbuj ponownie.';
+        }else{
+            $sql = "DELETE FROM settings WHERE id = ? ";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$package_id_to_delete]);
+            $success = 'Poprawnie usunięto pakiet';
+        }
+
+    }
+
+    if(isset($_POST['edit-package-submit'])){
+        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+            $error = "Sesja wygasła. Odśwież stronę i spróbuj ponownie.";
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+
+        $newPackageName = $_POST['new-name-package'];
+        $newPackageId = $_POST['package_id_to_edit'];
+        $newPackagePrice = $_POST['new-amount-package'];
+
+        if (empty($newPackageName) || empty($newPackageId) || empty($newPackagePrice)) {
+            $error = 'Wszystkie pola są wymagane.';
+        }
+        else if(!is_numeric($newPackagePrice)){
+            $error = 'Coś poszło nie tak. Spróbuj ponownie.';
+        }
+        else{
+            $sql = "UPDATE settings SET name = ?, price = ? WHERE id = ? ";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$newPackageName, $newPackagePrice, $newPackageId]);
+            if($stmt){
+                $success = 'Poprawnie zaktualizowano pakiet';
+            }else{
+                $error = 'Nie zaktualizowano pakietu. Spróbuj ponownie.';
+            }
+        }
+    }
 ?>
 
     <div class="admin-panel">
@@ -46,6 +93,17 @@
         ?>
 
         <main class="main-content">
+            <?php if(!empty($error)): ?>
+                <div class="alert alert-error">
+                    <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if(!empty($success)): ?>
+                <div class="alert alert-success">
+                    <?php echo htmlspecialchars($success); ?>
+                </div>
+            <?php endif; ?>
             <div class="header">
                 <h1>Ustawienia Systemu</h1>
                 <p>Zarządzaj ustawieniami stawek, parametrami systemu oraz konfiguracją</p>
@@ -55,22 +113,11 @@
                 </label>
             </div>
 
-            <input type="checkbox" id="toggle-package-form">
+            <input type="checkbox" <?php if (!empty($error) || !empty($success)): ?>checked<?php endif; ?> id="toggle-package-form">
 
             <div class="edit-form">
                 <h2>Dodaj Nowy Pakiet</h2>
 
-                <?php if(!empty($error)): ?>
-                    <div class="alert alert-error">
-                        <?php echo htmlspecialchars($error); ?>
-                    </div>
-                <?php endif; ?>
-
-                <?php if(!empty($success)): ?>
-                    <div class="alert alert-success">
-                        <?php echo htmlspecialchars($success); ?>
-                    </div>
-                <?php endif; ?>
 
                 <form id="packageForm" action="" method="post">
                     <div class="form-group">
@@ -92,55 +139,89 @@
             </div>
 
             <?php
-                $sql = "SELECT name, price FROM settings";
+                $sql = "SELECT id,name, price FROM settings";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute();
-                $row = $stmt->fetch();
+                $row = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 if($row):
             ?>
                 <div class="settings-container">
                     <h2>Lista istniejących pakietów</h2>
                 </div>
-                
-                <div class="settings-container">
+                    <?php foreach($row as $package): ?>
+                    <?php
+                    $unique_toggle_id = 'toggle-form-' . htmlspecialchars($package['id']);
+                    ?>
+                    <div class="settings-container">
                         <div class="settings-section">
-                            <h2><?= htmlspecialchars($row['name']) ?></h2>
+                            <div class="package-header-row">
+                                <h2><?= htmlspecialchars($package['name']) ?></h2>
+                                <div class="package-actions">
+                                    <form action="" method="post" onsubmit="return confirm('Czy na pewno chcesz usunąć pakiet: <?= htmlspecialchars($package['name']) ?>?');">
+                                        <input type="hidden" name="package_id_to_delete" value="<?= htmlspecialchars($package['id']) ?>">
+                                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                        <button class="btn btn-delete" type="submit" name="delete_package_submit">
+                                            <i class="fas fa-trash-alt"></i>
+                                            Usuń Pakiet
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
 
                             <div class="current-amount">
                                 <div class="amount-info">
                                     <span class="amount-label">Aktualna kwota brutto wynosi:</span>
-                                    <span class="amount-value" id="amount-value-hours"><?= htmlspecialchars($row['price']) ?></span>
+                                    <span class="amount-value" id="amount-value-<?= htmlspecialchars($package['id']) ?>"><?= htmlspecialchars($package['price']) ?></span>
                                     <span class="currency">PLN</span>
                                 </div>
-                                <label for="toggle-form-hours" class="btn btn-change">
+                                <label for="<?= $unique_toggle_id ?>" class="btn btn-change">
                                     <i class="fas fa-edit"></i>
                                     Zmień kwotę
                                 </label>
                             </div>
 
-                            <input type="checkbox" id="toggle-form-hours">
+                            <input type="checkbox" id="<?= $unique_toggle_id ?>">
                             <div class="edit-form">
-                                <form action="" method="post" id="form-hours">
+                                <form action="" method="post" id="form-package">
+                                    <input type="hidden" name="package_id_to_edit" value="<?= htmlspecialchars($package['id']) ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+
                                     <div class="form-group">
-                                        <label class="form-label" for="new-amount-hours">
+                                        <label class="form-label" for="new-name-package">
+                                            <i class="fas fa-tag"></i>
+                                            Nowa nazwa pakietu
+                                        </label>
+                                        <input
+                                                type="text"
+                                                id="new-name-package"
+                                                class="form-input"
+                                                name="new-name-package"
+                                                value="<?= htmlspecialchars($package['name']) ?>"
+                                                required
+                                        >
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="new-amount-package">
                                             <i class="fas fa-money-bill-wave"></i>
                                             Nowa kwota brutto (PLN)
                                         </label>
                                         <input
-                                                type="text"
-                                                id="new-amount-hours"
+                                                type="number"
+                                                id="new-amount-package"
                                                 class="form-input"
-                                                name="new-amount-hours"
-                                                value="<?= htmlspecialchars($row['price']) ?>"
+                                                name="new-amount-package"
+                                                value="<?= htmlspecialchars($package['price']) ?>"
+                                                step="0.01" min="0" required
                                         >
                                     </div>
 
                                     <div class="form-actions">
-                                        <label for="toggle-form-hours" class="btn btn-cancel cancel-hours">
+                                        <label for="<?= $unique_toggle_id ?>" class="btn btn-cancel">
                                             <i class="fas fa-times"></i>
                                             Anuluj
                                         </label>
-                                        <button type="submit" name="new-amount-hours-submit" class="btn btn-submit" id="submit-hours">
+                                        <button type="submit" name="edit-package-submit" class="btn btn-submit" id="submit-package-edit">
                                             <i class="fas fa-check"></i>
                                             Zatwierdź
                                         </button>
@@ -149,8 +230,8 @@
                             </div>
 
                         </div>
-                </div>
-                
+                    </div>
+                <?php endforeach; ?>
             <?php else: ?>
                     <div class="settings-container">
                         <div class="settings-section">
