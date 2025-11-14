@@ -106,7 +106,7 @@
             <?php endif; ?>
             <div class="header">
                 <h1>Ustawienia Systemu</h1>
-                <p>Zarządzaj ustawieniami stawek, parametrami systemu oraz konfiguracją</p>
+                <p>Zarządzaj ustawieniami stawek, wprowadź własne stawki</p>
 
                 <label for="toggle-package-form" class="toggle-btn btn btn-change">
                     <i class="fa-solid fa-plus"></i> Nowy Pakiet
