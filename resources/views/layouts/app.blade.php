@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Panel Administratora')</title>
+    <link rel="stylesheet" href="{{ asset('css/main.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @stack('styles')
+</head>
+<body>
+    @yield('content')
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/pl.js"></script>
+
+    <script>
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: '#1f1f1f',
+            color: '#f0f0f0',
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        });
+
+        window.showToast = {
+            success: (message) => Toast.fire({ icon: 'success', title: message }),
+            error: (message) => Toast.fire({ icon: 'error', title: message }),
+            warning: (message) => Toast.fire({ icon: 'warning', title: message }),
+            info: (message) => Toast.fire({ icon: 'info', title: message })
+        };
+    </script>
+
+    <script src="{{ asset('js/script.js') }}"></script>
+
+    @if(session('success'))
+    <script>
+        showToast.success('{{ session('success') }}');
+    </script>
+    @endif
+
+    @if(session('error'))
+    <script>
+        showToast.error('{{ session('error') }}');
+    </script>
+    @endif
+
+    @if($errors->any() && !request()->routeIs('login'))
+    <script>
+        showToast.error('{{ $errors->first() }}');
+    </script>
+    @endif
+
+    @stack('scripts')
+</body>
+</html>
