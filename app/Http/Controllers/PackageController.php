@@ -10,9 +10,6 @@ use Illuminate\View\View;
 
 class PackageController extends Controller
 {
-    /**
-     * Lista pakietów (ustawienia)
-     */
     public function index(): View
     {
         $packages = Package::orderBy('name')->get();
@@ -22,9 +19,6 @@ class PackageController extends Controller
         ]);
     }
 
-    /**
-     * Zapisuje nowy pakiet
-     */
     public function store(PackageStoreRequest $request): RedirectResponse
     {
         Package::create($request->validated());
@@ -32,9 +26,6 @@ class PackageController extends Controller
         return back()->with('success', 'Pakiet został dodany pomyślnie.');
     }
 
-    /**
-     * Aktualizuje pakiet
-     */
     public function update(PackageUpdateRequest $request, Package $package): RedirectResponse
     {
         $package->update($request->validated());
@@ -42,9 +33,6 @@ class PackageController extends Controller
         return back()->with('success', 'Pakiet został zaktualizowany.');
     }
 
-    /**
-     * Usuwa pakiet
-     */
     public function destroy(Package $package): RedirectResponse
     {
         $name = $package->name;

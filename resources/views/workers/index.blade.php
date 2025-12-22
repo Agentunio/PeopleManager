@@ -294,12 +294,11 @@
 <script src="{{ asset('js/workers.js') }}"></script>
 <script>
     $(document).ready(function () {
-        // Obsługa potwierdzenia usuwania przez SweetAlert2
         $('.delete-form').on('submit', function(e) {
             e.preventDefault();
-            const form = this;
+            const form = $(this);
             const name = $(this).data('name');
-            
+            const url = form.attr('action');
             Swal.fire({
                 title: 'Czy na pewno?',
                 text: `Chcesz usunąć pracownika: ${name}?`,
@@ -313,16 +312,36 @@
                 color: '#f0f0f0'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    form.submit();
+                    $.ajax({
+                        type: "DELETE",
+                        url: url,
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function (response) {
+                            if (response.status === 'success') {
+                                showToast.success(response.message);
+                                form.closest('.settings-container').fadeOut();
+                            }
+                        },
+                        error: function (xhr) {
+                            let errors = xhr.responseJSON?.errors;
+                            if (errors) {
+                                let firstError = Object.values(errors).flat()[0];
+                                showToast.error(firstError);
+                            } else {
+                                showToast.error('Wystąpił błąd podczas usuwania pracownika');
+                            }
+                        }
+                    });
                 }
             });
         });
 
-        // Obsługa formularza dodawania pracownika
         $("#addWorkerForm").on("submit", function (e) {
             e.preventDefault();
             const form = $("#addWorkerForm");
-            
+
             $.ajax({
                 type: "POST",
                 url: "{{ route('workers.store') }}",
@@ -334,6 +353,7 @@
                 success: function (response) {
                     if (response.status === 'success') {
                         showToast.success(response.message);
+                        $('#toggle-worker-form').prop('checked', false);
                         form[0].reset();
                     }
                 },

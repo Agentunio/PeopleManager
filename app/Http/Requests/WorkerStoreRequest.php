@@ -16,13 +16,13 @@ class WorkerStoreRequest extends FormRequest
         return [
             'first_name' => ['required', 'string'],
             'last_name' => ['required', 'string'],
-            'phone' => ['nullable', 'string'],
-            'address' => ['nullable', 'string'],
-            'date_of_birth' => ['nullable', 'date'],
+            'phone' => ['required', 'string'],
+            'address' => ['required', 'string'],
+            'date_of_birth' => ['required', 'date', 'before:today'],
             'is_student' => ['required', 'boolean'],
             'is_employed' => ['required', 'boolean'],
-            'contract_from' => ['nullable', 'date'],
-            'contract_to' => ['nullable', 'date'],
+            'contract_from' => ['required', 'date'],
+            'contract_to' => ['required', 'date', 'after:contract_from'],
         ];
     }
 
@@ -31,6 +31,15 @@ class WorkerStoreRequest extends FormRequest
         return [
             'first_name.required' => 'Imię jest wymagane.',
             'last_name.required' => 'Nazwisko jest wymagane.',
+            'phone.required' => 'Telefon jest wymagany.',
+            'address.required' => 'Adres jest wymagany.',
+            'date_of_birth.required' => 'Data urodzenia jest wymagana.',
+            'date_of_birth.before' => 'Data urodzenia nie może być późniejsza niż dzisiaj.',
+            'is_student.required' => 'Status studenta jest wymagany.',
+            'is_employed.required' => 'Status zatrudnienia jest wymagany.',
+            'contract_from.required' => 'Data startu umowy jest wymagana.',
+            'contract_to.required' => 'Data końca umowy jest wymagana.',
+            'contract_to.after' => 'Data końca umowy nie może być przed datą początku umowy',
         ];
     }
 

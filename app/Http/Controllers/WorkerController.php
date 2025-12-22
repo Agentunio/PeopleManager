@@ -12,9 +12,6 @@ use Illuminate\View\View;
 
 class WorkerController extends Controller
 {
-    /**
-     * Lista pracowników
-     */
     public function index(Request $request): View
     {
         $workers = Worker::orderBy('last_name')->get();
@@ -24,35 +21,24 @@ class WorkerController extends Controller
         ]);
     }
 
-    /**
-     * Waliduje dane pracownika (AJAX) - jak w oryginalnym workerAdd.php
-     */
     public function store(WorkerStoreRequest $request): JsonResponse
     {
+        Worker::create($request->validated());
+
         return response()->json([
             'status' => 'success',
-            'message' => 'Poprawny ajax',
+            'message' => 'Pracownik dodany pomyślnie',
         ]);
     }
 
-    /**
-     * Aktualizuje pracownika
-     */
-    public function update(WorkerUpdateRequest $request, Worker $worker): RedirectResponse
+    public function destroy(Worker $worker): JsonResponse
     {
-        $worker->update($request->validated());
-
-        return back()->with('success', 'Dane pracownika zostały zaktualizowane.');
-    }
-
-    /**
-     * Usuwa pracownika
-     */
-    public function destroy(Worker $worker): RedirectResponse
-    {
-        $name = $worker->first_name . ' ' . $worker->last_name;
         $worker->delete();
 
-        return back()->with('success', "Pracownik {$name} został usunięty.");
+        return response()->json([
+           'status' => 'success',
+           'message' => 'Pracownik usunięty pomyślnie',
+        ]);
     }
+
 }

@@ -7,9 +7,6 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    /**
-     * Wyświetla dashboard z podsumowaniem
-     */
     public function index(): View
     {
         $workers = Worker::orderBy('last_name')
