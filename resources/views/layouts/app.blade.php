@@ -46,8 +46,6 @@
         };
     </script>
 
-    <script src="{{ asset('js/script.js') }}"></script>
-
     @if(session('success'))
     <script>
         showToast.success('{{ session('success') }}');

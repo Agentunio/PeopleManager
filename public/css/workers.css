@@ -103,8 +103,11 @@
     flex-basis: 120px; /* Minimalna szerokość dla przycisku */
 }
 
+#search-container{
+    margin-bottom: 20px;
+}
+
 .worker-search-bar .form-actions .btn {
-    min-width: 100%;
     height: 48px;
     display: flex;
     align-items: center;
