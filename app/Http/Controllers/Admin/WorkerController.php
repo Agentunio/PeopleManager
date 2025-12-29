@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
-use App\Http\Requests\WorkerStoreRequest;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\WorkerStoreRequest;
 use App\Models\Worker;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,12 +29,12 @@ class WorkerController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'status' => 'success',
-                'html' => view('workers.partials.list', compact('workers'))->render(),
+                'html' => view('admin.workers.partials.list', compact('workers'))->render(),
                 'count' => $workers->count(),
             ]);
         }
 
-        return view('workers.index', [
+        return view('admin.workers.index', [
             'workers' => $workers,
         ]);
     }
@@ -45,7 +46,7 @@ class WorkerController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Pracownik dodany pomyślnie',
-            'html' => view('workers.partials.card', compact('worker'))->render(),
+            'html' => view('admin.workers.partials.card', compact('worker'))->render(),
         ]);
     }
 
@@ -56,7 +57,7 @@ class WorkerController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Pracownik został zaktualizowany',
-            'html' => view('workers.partials.card', compact('worker'))->render(),
+            'html' => view('admin.workers.partials.card', compact('worker'))->render(),
         ]);
     }
 

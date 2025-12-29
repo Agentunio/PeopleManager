@@ -1,5 +1,5 @@
 @forelse($workers as $worker)
-    @include('workers.partials.card', ['worker' => $worker])
+    @include('admin.workers.partials.card', ['worker' => $worker])
 @empty
 <div class="settings-container empty-state">
     <div class="settings-section">

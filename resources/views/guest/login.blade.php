@@ -31,19 +31,10 @@
     </form>
 </div>
 
+<script src="{{ asset('js/login.js') }}"></script>
 @if($errors->any())
 <script>
-    Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'error',
-        title: '{{ $errors->first() }}',
-        showConfirmButton: false,
-        timer: 4000,
-        timerProgressBar: true,
-        background: '#1f1f1f',
-        color: '#f0f0f0'
-    });
+    showLoginError('{{ $errors->first() }}');
 </script>
 @endif
 
