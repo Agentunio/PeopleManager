@@ -1,21 +1,4 @@
 $(document).ready(function() {
-    const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        background: '#1f1f1f',
-        color: '#f0f0f0'
-    });
-
-    const showToast = {
-        success: (message) => Toast.fire({ icon: 'success', title: message }),
-        error: (message) => Toast.fire({ icon: 'error', title: message }),
-        warning: (message) => Toast.fire({ icon: 'warning', title: message }),
-        info: (message) => Toast.fire({ icon: 'info', title: message })
-    };
-
     function initDragAndDrop() {
         $(".worker-card.draggable").draggable({
             helper: "clone",
@@ -46,7 +29,10 @@ $(document).ready(function() {
                     return;
                 }
 
-                $(`.shift-dropzone:not([data-shift="${shiftType}"]) [data-worker-id="${workerId}"]`).remove();
+                const otherDropzone = $(`.shift-dropzone:not([data-shift="${shiftType}"])`);
+                otherDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).remove();
+                otherDropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
+                updatePlaceholder(otherDropzone);
 
                 addWorkerToShift(workerId, workerName, shiftType, $(this));
 
@@ -59,15 +45,21 @@ $(document).ready(function() {
     }
 
     function addWorkerToShift(workerId, workerName, shiftType, dropzone) {
+        const inputName = shiftType === 'morning' ? 'morning_workers[]' : 'afternoon_workers[]';
+        
         const workerHtml = `
             <div class="assigned-worker" data-worker-id="${workerId}">
                 <span class="worker-name">${workerName}</span>
-                <button class="remove-worker" data-worker-id="${workerId}">
+                <button type="button" class="remove-worker" data-worker-id="${workerId}">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
         `;
+        
+        const hiddenInput = `<input type="hidden" name="${inputName}" value="${workerId}" data-worker-id="${workerId}">`;
+        
         dropzone.find('.assigned-workers').append(workerHtml);
+        dropzone.find('.hidden-inputs').append(hiddenInput);
     }
 
     function updatePlaceholder(dropzone) {
@@ -78,7 +70,7 @@ $(document).ready(function() {
     function updateCounts() {
         const morningCount = $('#morning-shift .assigned-worker').length;
         const afternoonCount = $('#afternoon-shift .assigned-worker').length;
-        
+
         $('#morning-count').text(morningCount);
         $('#afternoon-count').text(afternoonCount);
         $('#total-assigned').text(morningCount + afternoonCount);
@@ -86,7 +78,11 @@ $(document).ready(function() {
 
     $(document).on('click', '.remove-worker', function() {
         const dropzone = $(this).closest('.shift-dropzone');
+        const workerId = $(this).data('worker-id');
+        
         $(this).closest('.assigned-worker').remove();
+        dropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
+        
         updatePlaceholder(dropzone);
         updateCounts();
     });
@@ -98,20 +94,11 @@ $(document).ready(function() {
     $('#close-modal, #cancel-availability').on('click', function() {
         $('#availability-modal').fadeOut(200);
     });
-
-    $('#save-availability').on('click', function() {
-        $('#availability-modal').fadeOut(200);
-        showToast.success('Dostępność została zapisana');
-    });
-
+    
     $('#availability-modal').on('click', function(e) {
         if (e.target === this) {
             $(this).fadeOut(200);
         }
-    });
-
-    $('#save-schedule').on('click', function() {
-        showToast.success('Grafik został zapisany');
     });
 
     initDragAndDrop();

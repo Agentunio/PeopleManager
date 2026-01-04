@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PackageController;
+use App\Http\Controllers\Admin\PlannerAvailableController;
+use App\Http\Controllers\Admin\PlannerController;
+use App\Http\Controllers\Admin\SettlementController;
 use App\Http\Controllers\Admin\WorkerController;
 use App\Http\Controllers\Guest\AuthController;
 use Illuminate\Support\Facades\Route;
@@ -14,20 +17,33 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/panel', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::prefix('workers')->name('workers.')->group(function () {
+    Route::prefix('pracownicy')->name('workers.')->group(function () {
         Route::get('/', [WorkerController::class, 'index'])->name('index');
         Route::post('/', [WorkerController::class, 'store'])->name('store');
         Route::put('/{worker}', [WorkerController::class, 'update'])->name('update');
         Route::delete('/{worker}', [WorkerController::class, 'destroy'])->name('destroy');
     });
 
-    Route::prefix('settings')->name('settings.')->group(function () {
+    Route::prefix('ustawienia')->name('settings.')->group(function () {
         Route::get('/', [PackageController::class, 'index'])->name('index');
         Route::post('/packages', [PackageController::class, 'store'])->name('packages.store');
         Route::put('/packages/{package}', [PackageController::class, 'update'])->name('packages.update');
         Route::delete('/packages/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
     });
 
+    Route::prefix('grafik')->name('planner.')->group(function () {
+       Route::get('/', [PlannerController::class, 'index'])->name('index');
+
+        Route::prefix('dostepnosc')->name('schedule.')->group(function () {
+            Route::get('/', [PlannerAvailableController::class, 'index'])->name('index');
+        });
+
+        Route::prefix('rozliczenie')->name('settlement.')->group(function () {
+            Route::get('/', [SettlementController::class, 'index'])->name('index');
+        });
+
+        Route::get('/{date}', [PlannerController::class, 'day'])->name('day');
+    });
 });

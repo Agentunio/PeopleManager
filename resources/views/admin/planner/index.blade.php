@@ -15,7 +15,7 @@
         <div class="header">
             <h1>Grafik pracy</h1>
             <p>Zarządzaj harmonogramem pracy. Wybierz datę, aby przypisać pracowników do zmian.</p>
-            <a href="{{ route('planner.settings') }}" class="btn btn-change" style="margin-top: 15px;">
+            <a href="{{ route('planner.schedule.index') }}" class="btn btn-change">
                 <i class="fas fa-calendar-check"></i> Włącz grafik
             </a>
         </div>
@@ -29,17 +29,32 @@
                     <div id="calendar-inline"></div>
                 </div>
                 <div class="calendar-legend">
-                    <div class="legend-item">
-                        <span class="legend-dot legend-full"></span>
-                        <span>Pełna obsada</span>
+                    <div class="legend-section">
+                        <span class="legend-section-title">Obsada:</span>
+                        <div class="legend-item">
+                            <span class="legend-dot legend-full"></span>
+                            <span>Pełna</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot legend-partial"></span>
+                            <span>Częściowa</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot legend-empty"></span>
+                            <span>Brak</span>
+                        </div>
                     </div>
-                    <div class="legend-item">
-                        <span class="legend-dot legend-partial"></span>
-                        <span>Częściowa obsada</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-dot legend-empty"></span>
-                        <span>Brak obsady</span>
+                    <div class="legend-divider"></div>
+                    <div class="legend-section">
+                        <span class="legend-section-title">Rozliczenie:</span>
+                        <div class="legend-item">
+                            <span class="legend-icon legend-settled"><i class="fas fa-check"></i></span>
+                            <span>Rozliczony</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-icon legend-unsettled"><i class="fas fa-clock"></i></span>
+                            <span>Nierozliczony</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -49,8 +64,5 @@
 @endsection
 
 @push('scripts')
-<script>
-    window.plannerDayUrl = "{{ route('planner.day', '') }}";
-</script>
 <script src="{{ asset('js/planner.js') }}"></script>
 @endpush

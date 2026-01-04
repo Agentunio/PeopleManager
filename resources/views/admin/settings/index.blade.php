@@ -11,26 +11,25 @@
     @include('partials.menu')
 
     <main class="main-content">
-        @include('partials.alerts')
 
         <div class="header">
             <h1>Ustawienia Systemu</h1>
             <p>Zarządzaj ustawieniami stawek, wprowadź własne stawki</p>
 
             <label for="toggle-package-form" class="toggle-btn btn btn-change">
-                <i class="fa-solid fa-plus"></i> Nowy Pakiet
+                <i class="fa-solid fa-plus"></i> Nowe ustawienie
             </label>
         </div>
 
         <input type="checkbox" @if($errors->any() || session('success')) checked @endif id="toggle-package-form">
 
         <div class="edit-form">
-            <h2>Dodaj Nowy Pakiet</h2>
+            <h2>Dodaj nowe ustawienie</h2>
 
             <form id="packageForm" action="{{ route('settings.packages.store') }}" method="post">
                 @csrf
                 <div class="form-group">
-                    <label for="packageName" class="form-label">Nazwa Pakietu</label>
+                    <label for="packageName" class="form-label">Nazwa ustawienia</label>
                     <input type="text" id="packageName" name="name" class="form-input" placeholder="np. Pakiet Standard, Pakiet Premium" value="{{ old('name') }}" required>
                 </div>
 
@@ -90,7 +89,7 @@
                                 <div class="form-group">
                                     <label class="form-label" for="new-name-package-{{ $package->id }}">
                                         <i class="fas fa-tag"></i>
-                                        Nowa nazwa pakietu
+                                        Nowa nazwa ustawienia
                                     </label>
                                     <input
                                         type="text"
@@ -136,7 +135,7 @@
         @else
             <div class="settings-container">
                 <div class="settings-section">
-                    <h2>Brak istniejących pakietów</h2>
+                    <h2>Brak istniejących ustawień</h2>
                 </div>
             </div>
         @endif

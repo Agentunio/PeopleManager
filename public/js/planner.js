@@ -4,7 +4,7 @@ $(document).ready(function() {
         locale: "pl",
         dateFormat: "Y-m-d",
         onChange: function(selectedDates, dateStr) {
-            window.location.href = window.plannerDayUrl + "/" + dateStr;
+            window.location.href = "/grafik/" + dateStr;
         }
     });
 });

@@ -1,11 +1,12 @@
 $(document).ready(function() {
-    // Inicjalizacja date pickerów
     flatpickr("#date-from", {
         enableTime: true,
         time_24hr: true,
         locale: "pl",
         dateFormat: "Y-m-d H:i",
-        minDate: "today"
+        minDate: "today",
+        static: true,
+        appendTo: document.querySelector('.planner-settings-container')
     });
 
     flatpickr("#date-to", {
@@ -13,41 +14,38 @@ $(document).ready(function() {
         time_24hr: true,
         locale: "pl",
         dateFormat: "Y-m-d H:i",
-        minDate: "today"
+        minDate: "today",
+        static: true,
+        appendTo: document.querySelector('.planner-settings-container')
     });
 
-    // Obsługa wyboru opcji
-    $('.availability-option').on('click', function() {
-        $('.availability-option').removeClass('selected');
-        $(this).addClass('selected');
-        $('#save-settings').prop('disabled', false);
-    });
-
-    // Aktualizacja dat dla opcji "tydzień"
-    function updateWeekDates(days = 7) {
-        const now = new Date();
-        const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-        
-        const options = { 
-            year: 'numeric', 
-            month: 'long', 
+    function formatDate(date) {
+        return date.toLocaleString('pl-PL', {
+            year: 'numeric',
+            month: 'long',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
-        };
-        
-        $('#week-start').text(now.toLocaleDateString('pl-PL', options));
-        $('#week-end').text(end.toLocaleDateString('pl-PL', options));
+        });
+    }
+
+    function updateWeekDates() {
+        const days = parseInt($('input[name="days"]:checked').val()) || 7;
+        const now = new Date();
+        const end = new Date(now);
+        end.setDate(end.getDate() + days);
+
+        $('#week-start').text(formatDate(now));
+        $('#week-end').text(formatDate(end));
     }
 
     updateWeekDates();
 
-    // Quick action buttons
-    $('.quick-action-btn').on('click', function(e) {
+    $('input[name="days"]').on('change', function() {
+        updateWeekDates();
+    });
+
+    $('#date-from, #date-to').on('click', function(e) {
         e.stopPropagation();
-        const days = $(this).data('days');
-        $('.quick-action-btn').removeClass('active');
-        $(this).addClass('active');
-        updateWeekDates(days);
     });
 });

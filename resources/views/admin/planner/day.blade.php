@@ -12,6 +12,9 @@
     @include('partials.menu')
 
     <main class="main-content">
+        <a href="{{ route('planner.index') }}" class="settings-back-link">
+            <i class="fas fa-arrow-left"></i> Powrót do grafiku
+        </a>
         <div class="header">
             <h1>Grafik pracy</h1>
             <p>Zarządzaj harmonogramem pracy. Wybierz datę, aby przypisać pracowników do zmian.</p>
@@ -19,24 +22,21 @@
 
         <div id="day-view" class="planner-view">
             <div class="day-view-header">
-                <a href="{{ route('planner.index') }}" class="btn btn-cancel">
-                    <i class="fas fa-arrow-left"></i> Powrót do kalendarza
-                </a>
                 <h2 id="selected-date-title">Grafik na dzień: <span>{{ $formattedDate ?? '--' }}</span></h2>
             </div>
 
+            <form id="schedule-form" action="#" method="POST">
+            @csrf
             <div class="day-view-content">
-                <!-- LISTA PRACOWNIKÓW -->
                 <div class="workers-panel">
                     <div class="workers-panel-header">
-                        <h3><i class="fas fa-users"></i> Pracownicy</h3>
+                        <h3><i class="fas fa-users"></i> Dostępni pracownicy</h3>
                         <button id="change-availability-btn" class="btn btn-change">
                             <i class="fas fa-user-clock"></i> Zmień dostępność
                         </button>
                     </div>
 
                     <div class="workers-list" id="workers-list">
-                        <!-- Pracownicy do przeciągania -->
                         <div class="worker-card draggable" data-worker-id="1" data-morning="true" data-afternoon="true">
                             <span class="worker-name">Jan Kowalski</span>
                             <div class="worker-availability-badges">
@@ -85,9 +85,7 @@
                     </div>
                 </div>
 
-                <!-- ZMIANY -->
                 <div class="shifts-panel">
-                    <!-- ZMIANA RANNA -->
                     <div class="shift-box">
                         <div class="shift-header shift-morning">
                             <div class="shift-icon">
@@ -99,6 +97,9 @@
                             <div class="shift-count">
                                 <span id="morning-count">0</span> / 3
                             </div>
+                            <button class="btn btn-cancel btn-edit-required" data-shift="morning">
+                                <i class="fas fa-edit"></i> Edytuj ilość dostępnych maksymalnych miejsc zmiany
+                            </button>
                         </div>
                         <div class="shift-dropzone" id="morning-shift" data-shift="morning">
                             <div class="dropzone-placeholder">
@@ -106,10 +107,10 @@
                                 <span>Przeciągnij pracownika tutaj</span>
                             </div>
                             <div class="assigned-workers"></div>
+                            <div class="hidden-inputs"></div>
                         </div>
                     </div>
 
-                    <!-- ZMIANA POPOŁUDNIOWA -->
                     <div class="shift-box">
                         <div class="shift-header shift-afternoon">
                             <div class="shift-icon">
@@ -121,6 +122,9 @@
                             <div class="shift-count">
                                 <span id="afternoon-count">0</span> / 3
                             </div>
+                            <button class="btn btn-cancel btn-edit-required" data-shift="afternoon">
+                                <i class="fas fa-edit"></i> Edytuj ilość dostępnych maksymalnych miejsc zmiany
+                            </button>
                         </div>
                         <div class="shift-dropzone" id="afternoon-shift" data-shift="afternoon">
                             <div class="dropzone-placeholder">
@@ -128,12 +132,12 @@
                                 <span>Przeciągnij pracownika tutaj</span>
                             </div>
                             <div class="assigned-workers"></div>
+                            <div class="hidden-inputs"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- PODSUMOWANIE -->
             <div class="day-summary">
                 <div class="summary-item">
                     <i class="fas fa-users"></i>
@@ -143,13 +147,16 @@
                     <i class="fas fa-user-check"></i>
                     <span>Dostępnych pracowników: <strong id="available-workers">5</strong></span>
                 </div>
-                <button id="save-schedule" class="btn btn-submit">
+                <a href="{{ route('planner.settlement.index') }}" id="settle-day" class="btn btn-change">
+                    <i class="fas fa-calculator"></i> Rozlicz dzień
+                </a>
+                <button type="submit" id="save-schedule" class="btn btn-submit">
                     <i class="fas fa-save"></i> Zapisz grafik
                 </button>
             </div>
+            </form>
         </div>
 
-        <!-- MODAL DOSTĘPNOŚCI -->
         <div id="availability-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
@@ -287,6 +294,5 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/jquery-ui@1.13.2/dist/jquery-ui.min.js"></script>
 <script src="{{ asset('js/planner-day.js') }}"></script>
 @endpush

@@ -12,7 +12,6 @@
     @include('partials.menu')
 
     <main class="main-content">
-        @include('partials.alerts')
 
         <div class="header">
             <h1>Pracownicy</h1>

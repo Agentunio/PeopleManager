@@ -1,22 +1,9 @@
-.planner-settings-container {
-    max-width: 700px;
-}
-
-.settings-back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    color: #aaa;
-    text-decoration: none;
-    transition: color 0.2s;
-}
-
-.settings-back-link:hover {
-    color: #fff;
-}
+/* ========================================
+   AVAILABILITY OPTIONS
+   ======================================== */
 
 .availability-option {
+    display: block;
     background: #1a1a1a;
     border: 2px solid #333;
     border-radius: 12px;
@@ -30,7 +17,15 @@
     border-color: #555;
 }
 
-.availability-option.selected {
+/* Ukryj prawdziwy radio button */
+.availability-option > input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Stan wybrany - bazuje na :checked */
+.availability-option:has(> input[type="radio"]:checked) {
     border-color: #e50914;
     background: rgba(229, 9, 20, 0.05);
 }
@@ -41,6 +36,7 @@
     gap: 15px;
 }
 
+/* Custom radio button */
 .availability-radio {
     width: 22px;
     height: 22px;
@@ -53,7 +49,7 @@
     transition: all 0.2s;
 }
 
-.availability-option.selected .availability-radio {
+.availability-option:has(> input[type="radio"]:checked) .availability-radio {
     border-color: #e50914;
 }
 
@@ -67,7 +63,7 @@
     transition: all 0.2s;
 }
 
-.availability-option.selected .availability-radio-inner {
+.availability-option:has(> input[type="radio"]:checked) .availability-radio-inner {
     opacity: 1;
     transform: scale(1);
 }
@@ -85,7 +81,7 @@
     transition: all 0.2s;
 }
 
-.availability-option.selected .availability-option-icon {
+.availability-option:has(> input[type="radio"]:checked) .availability-option-icon {
     background: linear-gradient(135deg, #e50914, #b5070f);
     color: #fff;
 }
@@ -106,6 +102,7 @@
     color: #888;
 }
 
+/* Details - pokazuj tylko gdy wybrane */
 .availability-option-details {
     margin-top: 20px;
     padding-top: 20px;
@@ -113,36 +110,37 @@
     display: none;
 }
 
-.availability-option.selected .availability-option-details {
+.availability-option:has(> input[type="radio"]:checked) .availability-option-details {
     display: block;
 }
 
+/* ========================================
+   DATE RANGE
+   ======================================== */
+
 .date-range-row {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    display: flex;
     gap: 15px;
-    align-items: end;
+    align-items: flex-end;
 }
 
 .date-range-separator {
-    padding-bottom: 12px;
     color: #666;
-    font-weight: 500;
 }
 
 .planner-settings-container .form-group {
     margin-bottom: 0;
 }
 
-.planner-settings-container .form-group label {
+.planner-settings-container .form-group > label {
     display: block;
     margin-bottom: 8px;
     color: #aaa;
     font-size: 0.9rem;
+    cursor: default;
 }
 
-.planner-settings-container .form-group input {
-    width: 100%;
+.planner-settings-container .form-group input[type="text"] {
     padding: 12px 15px;
     background: #252525;
     border: 1px solid #333;
@@ -152,15 +150,60 @@
     transition: all 0.2s;
 }
 
-.planner-settings-container .form-group input:focus {
+.planner-settings-container .form-group input[type="text"]:focus {
     outline: none;
     border-color: #e50914;
     box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.1);
 }
 
-.planner-settings-container .form-group input::placeholder {
+.planner-settings-container .form-group input[type="text"]::placeholder {
     color: #666;
 }
+
+/* ========================================
+   QUICK ACTIONS (dni)
+   ======================================== */
+
+.quick-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.quick-action-btn {
+    padding: 8px 16px;
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #aaa;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quick-action-btn:hover {
+    background: #333;
+    color: #fff;
+    border-color: #444;
+}
+
+/* Ukryj radio w quick action */
+.quick-action-btn input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Stan wybrany dla quick action */
+.quick-action-btn:has(input[type="radio"]:checked) {
+    background: #e50914;
+    border-color: #e50914;
+    color: #fff;
+}
+
+/* ========================================
+   STATUS
+   ======================================== */
 
 .current-status {
     background: #1a1a1a;
@@ -213,6 +256,10 @@
     font-size: 1rem;
 }
 
+/* ========================================
+   ACTIONS
+   ======================================== */
+
 .settings-actions {
     display: flex;
     gap: 15px;
@@ -225,34 +272,36 @@
     font-size: 1rem;
 }
 
-.quick-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
+.settings-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #888;
+    text-decoration: none;
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+    transition: color 0.2s;
 }
 
-.quick-action-btn {
-    padding: 8px 16px;
-    background: #252525;
-    border: 1px solid #333;
-    border-radius: 6px;
-    color: #aaa;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
+.settings-back-link:hover {
+    color: #e50914;
 }
 
-.quick-action-btn:hover {
-    background: #333;
-    color: #fff;
-    border-color: #444;
+.flatpickr-calendar.static.open > *{
+    background-color: #252525 !important;
 }
 
-.quick-action-btn.active {
-    background: #e50914;
-    border-color: #e50914;
-    color: #fff;
+.flatpickr-months .flatpickr-month, .flatpickr-current-month .flatpickr-monthDropdown-months, span.flatpickr-weekday {
+    background-color: #252525 !important;
 }
+
+.flatpickr-time input, .flatpickr-time .flatpickr-am-pm, .flatpickr-time input, .flatpickr-time .flatpickr-am-pm{
+    background-color: rgba(0, 0, 0, 0.2) !important
+}
+
+    /* ========================================
+       RESPONSIVE
+       ======================================== */
 
 @media (max-width: 600px) {
     .date-range-row {
@@ -266,5 +315,9 @@
 
     .settings-actions {
         flex-direction: column;
+    }
+
+    .quick-actions {
+        flex-wrap: wrap;
     }
 }

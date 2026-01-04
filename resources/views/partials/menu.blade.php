@@ -14,7 +14,7 @@
             </a>
         </li>
         <li>
-            <a href="#grafik">
+            <a href="{{ route('planner.index') }}"  class="{{ request()->routeIs('planner.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-calendar-alt"></i> Grafik
             </a>
         </li>
