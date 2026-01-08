@@ -147,7 +147,7 @@
                     <i class="fas fa-user-check"></i>
                     <span>Dostępnych pracowników: <strong id="available-workers">5</strong></span>
                 </div>
-                <a href="{{ route('planner.settlement.index') }}" id="settle-day" class="btn btn-change">
+                <a href="{{ route('planner.end-day.index') }}" id="settle-day" class="btn btn-change">
                     <i class="fas fa-calculator"></i> Rozlicz dzień
                 </a>
                 <button type="submit" id="save-schedule" class="btn btn-submit">

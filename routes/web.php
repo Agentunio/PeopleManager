@@ -38,9 +38,10 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('dostepnosc')->name('schedule.')->group(function () {
             Route::get('/', [PlannerAvailableController::class, 'index'])->name('index');
+            Route::post('/', [PlannerAvailableController::class, 'store'])->name('store');
         });
 
-        Route::prefix('rozliczenie')->name('settlement.')->group(function () {
+        Route::prefix('rozliczenie')->name('end-day.')->group(function () {
             Route::get('/', [SettlementController::class, 'index'])->name('index');
         });
 

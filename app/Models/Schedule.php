@@ -4,14 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Package extends Model
+class Schedule extends Model
 {
-    protected $table = 'settings';
+    protected $table = 'schedules';
 
     public $timestamps = false;
 
     protected $fillable = [
-        'name',
-        'price',
+        'type',
+        'days',
+        'start_date',
+        'end_date',
     ];
 }

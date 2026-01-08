@@ -21,7 +21,7 @@
             <p>Ustaw okres dostępności grafiku dla pracowników</p>
         </div>
 
-        <form id="availability-form" action="#" method="POST">
+        <form id="availability-form" action="{{ route('planner.schedule.store') }}" method="POST">
             @csrf
 
             <div class="planner-settings-container">
@@ -38,7 +38,7 @@
                 </div>
 
                 <label class="availability-option">
-                    <input type="radio" name="option" value="range">
+                    <input type="radio" name="type" value="range">
                     <div class="availability-option-header">
                         <div class="availability-radio">
                             <div class="availability-radio-inner"></div>
@@ -55,19 +55,19 @@
                         <div class="date-range-row">
                             <div class="form-group">
                                 <label for="date-from">Data i godzina rozpoczęcia</label>
-                                <input type="text" id="date-from" name="date_from" placeholder="Wybierz datę i godzinę">
+                                <input type="text" id="date-from" name="start_date" placeholder="Wybierz datę i godzinę">
                             </div>
                             <div class="date-range-separator">do</div>
                             <div class="form-group">
                                 <label for="date-to">Data i godzina zakończenia</label>
-                                <input type="text" id="date-to" name="date_to" placeholder="Wybierz datę i godzinę">
+                                <input type="text" id="date-to" name="end_date" placeholder="Wybierz datę i godzinę">
                             </div>
                         </div>
                     </div>
                 </label>
 
                 <label class="availability-option">
-                    <input type="radio" name="option" value="week">
+                    <input type="radio" name="type" value="week">
                     <div class="availability-option-header">
                         <div class="availability-radio">
                             <div class="availability-radio-inner"></div>
@@ -100,7 +100,7 @@
                 </label>
 
                 <label class="availability-option">
-                    <input type="radio" name="option" value="always">
+                    <input type="radio" name="type" value="always">
                     <div class="availability-option-header">
                         <div class="availability-radio">
                             <div class="availability-radio-inner"></div>
@@ -117,6 +117,28 @@
                         <div class="current-status-info" style="color: #aaa;">
                             <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 8px;"></i>
                             Grafik pozostanie aktywny dopóki go ręcznie nie wyłączysz
+                        </div>
+                    </div>
+                </label>
+
+                <label class="availability-option">
+                    <input type="radio" name="type" value="disabled">
+                    <div class="availability-option-header">
+                        <div class="availability-radio">
+                            <div class="availability-radio-inner"></div>
+                        </div>
+                        <div class="availability-option-icon">
+                            <i class="fas fa-power-off"></i>
+                        </div>
+                        <div class="availability-option-content">
+                            <div class="availability-option-title">Wyłącz grafik</div>
+                            <div class="availability-option-desc">Grafik przestanie być aktywny</div>
+                        </div>
+                    </div>
+                    <div class="availability-option-details">
+                        <div class="current-status-info" style="color: #aaa;">
+                            <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 8px;"></i>
+                            Grafik pozostanie nieaktywny dopóki go nie wyłączysz ponownie
                         </div>
                     </div>
                 </label>

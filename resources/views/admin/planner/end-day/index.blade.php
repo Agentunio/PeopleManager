@@ -5,7 +5,7 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/settings.css') }}">
     <link rel="stylesheet" href="{{ asset('css/planner.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/settlement.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/end-day.css') }}">
 @endpush
 
 @section('content')
@@ -27,7 +27,6 @@
             <input type="hidden" name="date" value="{{ $date ?? '2026-01-04' }}">
 
             <div class="settlement-container">
-                <!-- ZMIANA RANNA -->
                 <div class="settlement-shift">
                     <div class="settlement-shift-header shift-morning">
                         <div class="shift-icon">
@@ -37,7 +36,6 @@
                     </div>
 
                     <div class="settlement-workers">
-                        <!-- Pracownik 1 -->
                         <div class="settlement-worker-card">
                             <div class="worker-info">
                                 <span class="worker-name">Jan Kowalski</span>
@@ -68,7 +66,6 @@
                             </div>
                         </div>
 
-                        <!-- Pracownik 2 -->
                         <div class="settlement-worker-card">
                             <div class="worker-info">
                                 <span class="worker-name">Anna Nowak</span>

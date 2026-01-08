@@ -8,9 +8,6 @@ use Illuminate\Support\Facades\Hash;
 
 class AdminSeeder extends Seeder
 {
-    /**
-     * Tworzy użytkownika admin (jak w oryginalnym adduser.php)
-     */
     public function run(): void
     {
         User::updateOrCreate(
