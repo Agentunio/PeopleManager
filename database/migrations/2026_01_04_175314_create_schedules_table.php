@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('schedules', function (Blueprint $table) {
             $table->id();
             $table->enum('type', ['disabled', 'range', 'week', 'always'])->default('disabled');
-            $table->integer('days')->nullable();
             $table->datetime('start_date')->nullable();
             $table->datetime('end_date')->nullable();
             $table->timestamps();

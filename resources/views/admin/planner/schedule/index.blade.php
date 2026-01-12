@@ -28,9 +28,15 @@
                 <div class="current-status">
                     <div class="current-status-header">
                         <span class="current-status-title">Aktualny status</span>
-                        <span class="status-badge inactive">
-                            <i class="fas fa-circle"></i> Nieaktywny
-                        </span>
+                        @if($schedule)
+                            <span class="status-badge active">
+                                <i class="fas fa-circle"></i> Aktywny
+                            </span>
+                        @else
+                            <span class="status-badge inactive">
+                                <i class="fas fa-circle"></i> Nieaktywny
+                            </span>
+                        @endif
                     </div>
                     <div class="current-status-info">
                         Grafik jest obecnie wyłączony. Wybierz opcję poniżej, aby go aktywować.

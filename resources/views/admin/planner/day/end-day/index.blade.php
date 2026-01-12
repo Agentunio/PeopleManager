@@ -5,7 +5,7 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/settings.css') }}">
     <link rel="stylesheet" href="{{ asset('css/planner.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/end-day.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/settlement.css') }}">
 @endpush
 
 @section('content')
@@ -13,7 +13,7 @@
     @include('partials.menu')
 
     <main class="main-content">
-        <a href="{{ route('planner.day', $date ?? '2026-01-04') }}" class="settings-back-link">
+        <a href="{{ route('planner.day.index', $date ?? '2026-01-04') }}" class="settings-back-link">
             <i class="fas fa-arrow-left"></i> Powrót do grafiku dnia
         </a>
 
@@ -205,7 +205,7 @@
 
                 <!-- PRZYCISKI -->
                 <div class="settlement-actions">
-                    <a href="{{ route('planner.day', $date ?? '2026-01-04') }}" class="btn btn-cancel">
+                    <a href="{{ route('planner.day.index', $date ?? '2026-01-04') }}" class="btn btn-cancel">
                         <i class="fas fa-times"></i> Anuluj
                     </a>
                     <button type="submit" class="btn btn-submit">

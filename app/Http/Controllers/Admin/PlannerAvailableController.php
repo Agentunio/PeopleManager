@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\PackageStoreRequest;
 use App\Http\Requests\Admin\PlannerAvailableRequest;
 use App\Models\Schedule;
 use Illuminate\Http\RedirectResponse;
@@ -11,7 +10,9 @@ class PlannerAvailableController extends Controller
 {
     public function index(): View
     {
-        return view('admin.planner.schedule.index');
+        $schedule = Schedule::isActive();
+
+        return view('admin.planner.schedule.index', ['schedule' => $schedule]);
     }
 
     public function store(PlannerAvailableRequest $request): RedirectResponse
@@ -20,7 +21,9 @@ class PlannerAvailableController extends Controller
         if ($type === 'range') {
             $start_date = $request->start_date;
             $end_date = $request->end_date;
-        } else if ($type === 'week') {
+        }
+
+        if ($type === 'week') {
             $days = $request->days;
         }
 

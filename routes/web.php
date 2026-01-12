@@ -1,10 +1,11 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DayController;
 use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\PlannerAvailableController;
 use App\Http\Controllers\Admin\PlannerController;
-use App\Http\Controllers\Admin\SettlementController;
+use App\Http\Controllers\Admin\EndDayController;
 use App\Http\Controllers\Admin\WorkerController;
 use App\Http\Controllers\Guest\AuthController;
 use Illuminate\Support\Facades\Route;
@@ -41,10 +42,11 @@ Route::middleware('auth')->group(function () {
             Route::post('/', [PlannerAvailableController::class, 'store'])->name('store');
         });
 
-        Route::prefix('rozliczenie')->name('end-day.')->group(function () {
-            Route::get('/', [SettlementController::class, 'index'])->name('index');
+
+        Route::prefix('/{date}')->name('day.')->group(function () {
+            Route::get('/', [DayController::class, 'index'])->name('index');
+            Route::get('/rozliczenie', [EndDayController::class, 'index'])->name('end-day');
         });
 
-        Route::get('/{date}', [PlannerController::class, 'day'])->name('day');
     });
 });

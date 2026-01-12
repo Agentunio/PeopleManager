@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\View\View;
-class SettlementController extends Controller
+class EndDayController extends Controller
 {
     public function index(): View
     {
-        return view('admin.planner.settlement.index');
+        return view('admin.planner.day.end-day.index');
     }
 
 }

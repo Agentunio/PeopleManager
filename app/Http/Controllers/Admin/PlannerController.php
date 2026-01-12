@@ -9,8 +9,4 @@ class PlannerController extends Controller
     {
         return view('admin.planner.index');
     }
-
-    public function day(): View{
-        return view('admin.planner.day');
-    }
 }
