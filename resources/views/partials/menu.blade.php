@@ -20,7 +20,7 @@
         </li>
         <li>
             <a href="{{ route('settings.index') }}" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
-                <i class="fa-solid fa-cog"></i> Ustawienia
+                <i class="fa-solid fa-cog"></i> Stawki
             </a>
         </li>
         <li>

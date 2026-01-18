@@ -28,7 +28,7 @@
                 <div class="current-status">
                     <div class="current-status-header">
                         <span class="current-status-title">Aktualny status</span>
-                        @if($schedule)
+                        @if($schedule->isActive())
                             <span class="status-badge active">
                                 <i class="fas fa-circle"></i> Aktywny
                             </span>
@@ -39,7 +39,15 @@
                         @endif
                     </div>
                     <div class="current-status-info">
-                        Grafik jest obecnie wyłączony. Wybierz opcję poniżej, aby go aktywować.
+                        @if($schedule->isActive())
+                            @if($schedule->type != 'always')
+                            <p>Grafik jest obecnie włączony. Jest aktywny od {{ date('d.m.Y H:m', strtotime($schedule->start_date)) }} do {{ date('d.m.Y H:m', strtotime($schedule->end_date)) }}</p>
+                            @else
+                                <p>Grafik będzie aktywny do jego manulanego wyłączenia</p>
+                            @endif
+                        @else
+                            <p>Grafik jest obecnie wyłączony. Wybierz opcję poniżej, aby go aktywować.</p>
+                        @endif
                     </div>
                 </div>
 

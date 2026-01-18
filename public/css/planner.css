@@ -379,7 +379,7 @@ a{
     width: 100%;
     justify-content: center;
     font-size: 0.85rem;
-    padding: 10px 15px;
+    padding: 10px 0;
 }
 
 .workers-list {

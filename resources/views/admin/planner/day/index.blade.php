@@ -22,7 +22,7 @@
 
         <div id="day-view" class="planner-view">
             <div class="day-view-header">
-                <h2 id="selected-date-title">Grafik na dzień: <span>{{ $formattedDate ?? '--' }}</span></h2>
+                <h2 id="selected-date-title">Grafik na dzień: <span>{{ date('d.m.Y', strtotime($date)) ?? '--' }}</span></h2>
             </div>
 
             <form id="schedule-form" action="#" method="POST">
@@ -31,9 +31,9 @@
                 <div class="workers-panel">
                     <div class="workers-panel-header">
                         <h3><i class="fas fa-users"></i> Dostępni pracownicy</h3>
-                        <button id="change-availability-btn" class="btn btn-change">
+                        <span id="change-availability-btn" class="btn btn-change">
                             <i class="fas fa-user-clock"></i> Zmień dostępność
-                        </button>
+                        </span>
                     </div>
 
                     <div class="workers-list" id="workers-list">
@@ -95,11 +95,8 @@
                                 <h3>Zmiana ranna</h3>
                             </div>
                             <div class="shift-count">
-                                <span id="morning-count">0</span> / 3
+                                Liczba pracowników aktualnie przypisanych <span id="morning-count">0</span>
                             </div>
-                            <button class="btn btn-cancel btn-edit-required" data-shift="morning">
-                                <i class="fas fa-edit"></i> Edytuj ilość dostępnych maksymalnych miejsc zmiany
-                            </button>
                         </div>
                         <div class="shift-dropzone" id="morning-shift" data-shift="morning">
                             <div class="dropzone-placeholder">
@@ -120,11 +117,8 @@
                                 <h3>Zmiana popołudniowa</h3>
                             </div>
                             <div class="shift-count">
-                                <span id="afternoon-count">0</span> / 3
+                                Liczba pracowników aktualnie przypisanych <span id="afternoon-count">0</span>
                             </div>
-                            <button class="btn btn-cancel btn-edit-required" data-shift="afternoon">
-                                <i class="fas fa-edit"></i> Edytuj ilość dostępnych maksymalnych miejsc zmiany
-                            </button>
                         </div>
                         <div class="shift-dropzone" id="afternoon-shift" data-shift="afternoon">
                             <div class="dropzone-placeholder">
@@ -140,12 +134,10 @@
 
             <div class="day-summary">
                 <div class="summary-item">
-                    <i class="fas fa-users"></i>
-                    <span>Łącznie przypisanych: <strong id="total-assigned">0</strong></span>
-                </div>
-                <div class="summary-item">
                     <i class="fas fa-user-check"></i>
-                    <span>Dostępnych pracowników: <strong id="available-workers">5</strong></span>
+                    <span>Dostępnych pracowników rano: <strong id="available-workers">5</strong></span>
+                    <i class="fas fa-user-check"></i>
+                    <span>Dostępnych pracowników popułudniu: <strong id="available-workers">5</strong></span>
                 </div>
                 <a href="{{ route('planner.day.end-day', $date) }}" id="settle-day" class="btn btn-change">
                     <i class="fas fa-calculator"></i> Rozlicz dzień
@@ -167,120 +159,31 @@
                 </div>
                 <div class="modal-body">
                     <div class="availability-list">
-                        <div class="availability-item" data-worker-id="1">
-                            <span class="worker-name">Jan Kowalski</span>
-                            <div class="availability-toggles">
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Ranna</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="morning" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Popołudniowa</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="afternoon" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="availability-item" data-worker-id="2">
-                            <span class="worker-name">Anna Nowak</span>
-                            <div class="availability-toggles">
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Ranna</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="morning" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Popołudniowa</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="afternoon" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                        <form action="">
+                        @forelse($workers as $worker)
+                            <div class="availability-item">
+                                <span class="worker-name">{{ $worker->first_name . $worker->last_name }}</span>
+                                <div class="availability-toggles">
+                                    <div class="toggle-group">
+                                        <span class="toggle-label">Ranna</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" data-shift="morning" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <div class="toggle-group">
+                                        <span class="toggle-label">Popołudniowa</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" data-shift="afternoon" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="availability-item" data-worker-id="3">
-                            <span class="worker-name">Piotr Wiśniewski</span>
-                            <div class="availability-toggles">
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Ranna</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="morning" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Popołudniowa</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="afternoon" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="availability-item" data-worker-id="4">
-                            <span class="worker-name">Maria Zielińska</span>
-                            <div class="availability-toggles">
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Ranna</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="morning">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Popołudniowa</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="afternoon">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="availability-item" data-worker-id="5">
-                            <span class="worker-name">Tomasz Dąbrowski</span>
-                            <div class="availability-toggles">
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Ranna</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="morning" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Popołudniowa</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="afternoon" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="availability-item" data-worker-id="6">
-                            <span class="worker-name">Katarzyna Lewandowska</span>
-                            <div class="availability-toggles">
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Ranna</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="morning" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="toggle-group">
-                                    <span class="toggle-label">Popołudniowa</span>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" data-shift="afternoon" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+                            @empty
+                                <p>Brak pracowników</p>
+                        @endforelse
+                        </form>
                     </div>
                 </div>
                 <div class="modal-footer">

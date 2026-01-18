@@ -17,7 +17,9 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+});
 
+Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
     Route::get('/panel', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::prefix('pracownicy')->name('workers.')->group(function () {
@@ -29,9 +31,9 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('ustawienia')->name('settings.')->group(function () {
         Route::get('/', [PackageController::class, 'index'])->name('index');
-        Route::post('/packages', [PackageController::class, 'store'])->name('packages.store');
-        Route::put('/packages/{package}', [PackageController::class, 'update'])->name('packages.update');
-        Route::delete('/packages/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
+        Route::post('/stawki', [PackageController::class, 'store'])->name('packages.store');
+        Route::put('/stawki/{package}', [PackageController::class, 'update'])->name('packages.update');
+        Route::delete('/stawki/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
     });
 
     Route::prefix('grafik')->name('planner.')->group(function () {

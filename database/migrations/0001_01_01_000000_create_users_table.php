@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('username')->unique();
             $table->string('password');
-            $table->enum('role', ['admin', 'user'])->default('user');
+            $table->enum('role', ['admin', 'worker'])->default('worker');
         });
 
         Schema::create('login_attempts', function (Blueprint $table) {

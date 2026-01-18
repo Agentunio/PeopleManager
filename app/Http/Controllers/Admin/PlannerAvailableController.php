@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\PlannerAvailableRequest;
+use App\Http\Requests\Admin\PlannerAvailableStoreRequest;
 use App\Models\Schedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -10,12 +10,11 @@ class PlannerAvailableController extends Controller
 {
     public function index(): View
     {
-        $schedule = Schedule::isActive();
-
+        $schedule = Schedule::getCurrent();
         return view('admin.planner.schedule.index', ['schedule' => $schedule]);
     }
 
-    public function store(PlannerAvailableRequest $request): RedirectResponse
+    public function store(PlannerAvailableStoreRequest $request): RedirectResponse
     {
         $type = $request->type;
         if ($type === 'range') {
@@ -27,7 +26,7 @@ class PlannerAvailableController extends Controller
             $days = $request->days;
         }
 
-        Schedule::create($request->validated());
+        Schedule::updateOrCreate(['id' => 1], $request->validated());
 
         if ($type === 'range') {
             return back()->with('success', "Poprawnie zaplanowano grafik pomiędzy {$start_date} a {$end_date}");

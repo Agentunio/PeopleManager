@@ -14,19 +14,20 @@ class Schedule extends Model
         'type',
         'start_date',
         'end_date',
+        'id',
     ];
 
-    public static function isActive(): bool{
-        $schedule = self::latest('id')->first();
+    public static function getCurrent(): ?self
+    {
+        return self::first();
+    }
 
-        if(!$schedule){
-            return false;
-        }
-
-        return match ($schedule->type) {
+    public function isActive(): bool
+    {
+        return match ($this->type) {
             'disabled' => false,
             'always' => true,
-            'range', 'week' => now()->between($schedule->start_date, $schedule->end_date),
+            'range', 'week' => now()->between($this->start_date, $this->end_date),
             default => false,
         };
     }

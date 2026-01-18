@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Ustawienia - Panel administratora')
+@section('title', 'Stawki - Panel administratora')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/settings.css') }}">
@@ -13,23 +13,23 @@
     <main class="main-content">
 
         <div class="header">
-            <h1>Ustawienia Systemu</h1>
-            <p>Zarządzaj ustawieniami stawek, wprowadź własne stawki</p>
+            <h1>Stawki</h1>
+            <p>Zarządzaj stawkami, wprowadź własne stawki</p>
 
             <label for="toggle-package-form" class="toggle-btn btn btn-change">
-                <i class="fa-solid fa-plus"></i> Nowe ustawienie
+                <i class="fa-solid fa-plus"></i> Nowa stawka
             </label>
         </div>
 
         <input type="checkbox" @if($errors->any() || session('success')) checked @endif id="toggle-package-form">
 
         <div class="edit-form">
-            <h2>Dodaj nowe ustawienie</h2>
+            <h2>Dodaj nowe stawki</h2>
 
             <form id="packageForm" action="{{ route('settings.packages.store') }}" method="post">
                 @csrf
                 <div class="form-group">
-                    <label for="packageName" class="form-label">Nazwa ustawienia</label>
+                    <label for="packageName" class="form-label">Nazwa stawki</label>
                     <input type="text" id="packageName" name="name" class="form-input" placeholder="np. Pakiet Standard, Pakiet Premium" value="{{ old('name') }}" required>
                 </div>
 
@@ -40,14 +40,14 @@
 
                 <div class="form-actions">
                     <label for="toggle-package-form" class="btn btn-cancel toggle-btn">Anuluj</label>
-                    <button type="submit" class="btn btn-submit">Zapisz Pakiet</button>
+                    <button type="submit" class="btn btn-submit">Zapisz stawkę</button>
                 </div>
             </form>
         </div>
 
         @if($packages->count() > 0)
             <div class="settings-container">
-                <h2>Lista istniejących pakietów</h2>
+                <h2>Lista istniejących stawek</h2>
             </div>
 
             @foreach($packages as $package)
@@ -62,7 +62,7 @@
                                     @method('DELETE')
                                     <button class="btn btn-delete" type="submit">
                                         <i class="fas fa-trash-alt"></i>
-                                        Usuń Pakiet
+                                        Usuń stawkę
                                     </button>
                                 </form>
                             </div>
@@ -89,7 +89,7 @@
                                 <div class="form-group">
                                     <label class="form-label" for="new-name-package-{{ $package->id }}">
                                         <i class="fas fa-tag"></i>
-                                        Nowa nazwa ustawienia
+                                        Nowa nazwa stawki
                                     </label>
                                     <input
                                         type="text"
@@ -135,7 +135,7 @@
         @else
             <div class="settings-container">
                 <div class="settings-section">
-                    <h2>Brak istniejących ustawień</h2>
+                    <h2>Brak istniejących stawek</h2>
                 </div>
             </div>
         @endif

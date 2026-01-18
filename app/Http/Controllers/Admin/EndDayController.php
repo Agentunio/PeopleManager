@@ -7,7 +7,7 @@ class EndDayController extends Controller
 {
     public function index(): View
     {
-        return view('admin.planner.day.end-day.index');
+        return view('admin.planner.day.end-day.index', ['date' => request()->route('date')]);
     }
 
 }

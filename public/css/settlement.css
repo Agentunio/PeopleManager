@@ -8,7 +8,241 @@
     gap: 25px;
 }
 
-/* Shift Section */
+/* ========================================
+   DEFAULTS SECTION (POZA FORMULARZEM)
+   ======================================== */
+
+.settlement-defaults-section {
+    background: #1f1f1f;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+
+.defaults-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, rgba(229, 9, 20, 0.15), rgba(180, 7, 16, 0.08));
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.defaults-header .defaults-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent-color), #b40710);
+}
+
+.defaults-header .defaults-icon i {
+    color: white;
+    font-size: 1.5rem;
+}
+
+.defaults-header h2 {
+    color: var(--secondary-color);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.defaults-header .defaults-hint {
+    width: 100%;
+    margin: 10px 0 0 0;
+    padding-left: 65px;
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.defaults-content {
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.defaults-shift-group {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.defaults-shift-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.defaults-shift-label i {
+    font-size: 1.2rem;
+}
+
+.defaults-shift-label span {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.defaults-shift-label.shift-morning-label i {
+    color: #ffc107;
+}
+
+.defaults-shift-label.shift-afternoon-label i {
+    color: #9c27b0;
+}
+
+.defaults-fields {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.defaults-fields .field-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.defaults-fields .btn-apply-defaults {
+    padding: 12px 25px;
+    background: linear-gradient(135deg, var(--accent-color), #b40710);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.defaults-fields .btn-apply-defaults:hover {
+    background: linear-gradient(135deg, #ff1a2b, var(--accent-color));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+}
+
+.defaults-fields .btn-apply-defaults:active {
+    transform: translateY(0);
+}
+
+/* ========================================
+   GLOBAL PACKAGES SECTION
+   ======================================== */
+
+.settlement-global-section {
+    background: #1f1f1f;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.global-section-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(56, 142, 60, 0.1));
+    border-bottom: 1px solid var(--border-color);
+}
+
+.global-section-header .global-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #4caf50, #388e3c);
+}
+
+.global-section-header .global-icon i {
+    color: white;
+    font-size: 1.5rem;
+}
+
+.global-section-header h2 {
+    color: var(--secondary-color);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.global-section-content {
+    padding: 25px;
+}
+
+.global-shifts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+}
+
+.global-shift-group {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.global-shift-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.global-shift-label i {
+    font-size: 1.2rem;
+}
+
+.global-shift-label span {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.global-shift-label.shift-morning-label i {
+    color: #ffc107;
+}
+
+.global-shift-label.shift-afternoon-label i {
+    color: #9c27b0;
+}
+
+.global-shift-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.global-shift-fields .field-group input {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* ========================================
+   SHIFT SECTION
+   ======================================== */
+
 .settlement-shift {
     background: #1f1f1f;
     border: 1px solid var(--border-color);
@@ -60,9 +294,21 @@
     font-size: 1.3rem;
     font-weight: 600;
     margin: 0;
+    flex: 1;
 }
 
-/* Workers List */
+.settlement-shift-header .workers-count {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+/* ========================================
+   WORKERS LIST
+   ======================================== */
+
 .settlement-workers {
     padding: 20px;
     display: flex;
@@ -98,7 +344,7 @@
 /* Settlement Fields */
 .worker-settlement-fields {
     display: grid;
-    grid-template-columns: 1fr 1fr 120px;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
     align-items: end;
 }
@@ -167,10 +413,24 @@
     font-weight: 500;
 }
 
-/* Packages Input */
-.field-packages input {
-    width: 100%;
-    text-align: center;
+/* Field Updated Animation */
+.field-updated {
+    animation: fieldPulse 0.5s ease;
+}
+
+@keyframes fieldPulse {
+    0% {
+        border-color: var(--border-color);
+        box-shadow: none;
+    }
+    50% {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.3);
+    }
+    100% {
+        border-color: var(--border-color);
+        box-shadow: none;
+    }
 }
 
 /* Remove spinner from number inputs */
@@ -184,7 +444,10 @@
     -moz-appearance: textfield;
 }
 
-/* Actions */
+/* ========================================
+   ACTIONS
+   ======================================== */
+
 .settlement-actions {
     display: flex;
     gap: 15px;
@@ -201,33 +464,36 @@
    RESPONSIVE
    ======================================== */
 
-@media (max-width: 900px) {
-    .worker-settlement-fields {
-        grid-template-columns: 1fr 1fr;
+@media (max-width: 1024px) {
+    .defaults-fields {
+        flex-direction: column;
+        align-items: stretch;
     }
 
-    .field-packages {
-        grid-column: span 2;
+    .defaults-fields .field-group {
+        min-width: auto;
     }
 
-    .field-packages input {
-        max-width: 150px;
+    .defaults-fields .btn-apply-defaults {
+        align-self: flex-start;
+    }
+
+    .global-shifts-grid {
+        grid-template-columns: 1fr;
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
     .worker-settlement-fields {
         grid-template-columns: 1fr;
     }
 
-    .field-packages {
-        grid-column: span 1;
+    .defaults-header .defaults-hint {
+        padding-left: 0;
     }
+}
 
-    .field-packages input {
-        max-width: none;
-    }
-
+@media (max-width: 600px) {
     .time-inputs {
         justify-content: flex-start;
     }
@@ -244,5 +510,28 @@
     .settlement-actions .btn {
         width: 100%;
         justify-content: center;
+    }
+
+    .settlement-shift-header {
+        flex-wrap: wrap;
+    }
+
+    .settlement-shift-header .workers-count {
+        width: 100%;
+        margin-top: 10px;
+        text-align: center;
+    }
+
+    .defaults-shift-group {
+        padding: 15px;
+    }
+
+    .defaults-fields .btn-apply-defaults {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .global-shift-group {
+        padding: 15px;
     }
 }
