@@ -46,7 +46,7 @@ $(document).ready(function() {
 
     function addWorkerToShift(workerId, workerName, shiftType, dropzone) {
         const inputName = shiftType === 'morning' ? 'morning_workers[]' : 'afternoon_workers[]';
-        
+
         const workerHtml = `
             <div class="assigned-worker" data-worker-id="${workerId}">
                 <span class="worker-name">${workerName}</span>
@@ -55,9 +55,9 @@ $(document).ready(function() {
                 </button>
             </div>
         `;
-        
+
         const hiddenInput = `<input type="hidden" name="${inputName}" value="${workerId}" data-worker-id="${workerId}">`;
-        
+
         dropzone.find('.assigned-workers').append(workerHtml);
         dropzone.find('.hidden-inputs').append(hiddenInput);
     }
@@ -79,10 +79,10 @@ $(document).ready(function() {
     $(document).on('click', '.remove-worker', function() {
         const dropzone = $(this).closest('.shift-dropzone');
         const workerId = $(this).data('worker-id');
-        
+
         $(this).closest('.assigned-worker').remove();
         dropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
-        
+
         updatePlaceholder(dropzone);
         updateCounts();
     });
@@ -94,7 +94,7 @@ $(document).ready(function() {
     $('#close-modal, #cancel-availability').on('click', function() {
         $('#availability-modal').fadeOut(200);
     });
-    
+
     $('#availability-modal').on('click', function(e) {
         if (e.target === this) {
             $(this).fadeOut(200);
@@ -102,4 +102,35 @@ $(document).ready(function() {
     });
 
     initDragAndDrop();
+
+    $('#availability-form').on('submit', function(e) {
+        e.preventDefault();
+
+        const form = $(this);
+        const url = form.attr('action');
+
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: form.serialize(),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success) {
+                    showToast.success(response.message);
+                    $('#availability-modal').fadeOut(200);
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON.errors;
+                    const firstError = Object.values(errors)[0][0];
+                    showToast.error(firstError);
+                } else {
+                    showToast.error('Wystąpił błąd podczas zapisywania');
+                }
+            }
+        });
+    });
 });

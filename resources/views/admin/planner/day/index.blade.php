@@ -149,49 +149,52 @@
             </form>
         </div>
 
-        <div id="availability-modal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3><i class="fas fa-user-clock"></i> Zmień dostępność pracowników</h3>
-                    <button class="modal-close" id="close-modal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="availability-list">
-                        <form action="">
-                        @forelse($workers as $worker)
-                            <div class="availability-item">
-                                <span class="worker-name">{{ $worker->first_name . $worker->last_name }}</span>
-                                <div class="availability-toggles">
-                                    <div class="toggle-group">
-                                        <span class="toggle-label">Ranna</span>
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" data-shift="morning" checked>
-                                            <span class="toggle-slider"></span>
-                                        </label>
-                                    </div>
-                                    <div class="toggle-group">
-                                        <span class="toggle-label">Popołudniowa</span>
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" data-shift="afternoon" checked>
-                                            <span class="toggle-slider"></span>
-                                        </label>
+        <form id="availability-form" action="{{ route('planner.day.availability', $date) }}" method="POST">
+            @csrf
+            <div id="availability-modal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-user-clock"></i> Zmień dostępność pracowników</h3>
+                        <div class="modal-close" id="close-modal">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="availability-list">
+                            @forelse($workers as $worker)
+                                @php $availability = $worker->availabilities->first(); @endphp
+                                <div class="availability-item">
+                                    <input type="hidden" name="workers[{{ $worker->id }}][worker_id]" value="{{ $worker->id }}">
+                                    <span class="worker-name">{{ $worker->first_name . $worker->last_name }}</span>
+                                    <div class="availability-toggles">
+                                        <div class="toggle-group">
+                                            <span class="toggle-label">Ranna</span>
+                                            <label class="toggle-switch">
+                                                <input name="workers[{{ $worker->id }}][morning_shift]" type="checkbox" data-shift="morning" @checked($availability?->morning_shift)>
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </div>
+                                        <div class="toggle-group">
+                                            <span class="toggle-label">Popołudniowa</span>
+                                            <label class="toggle-switch">
+                                                <input name="workers[{{ $worker->id }}][afternoon_shift]" type="checkbox" data-shift="afternoon" @checked($availability?->afternoon_shift)>
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            @empty
-                                <p>Brak pracowników</p>
-                        @endforelse
-                        </form>
+                                @empty
+                                    <p>Brak pracowników</p>
+                            @endforelse
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="btn btn-cancel" id="cancel-availability">Anuluj</div>
+                        <button type="submit" class="btn btn-submit" id="save-availability">Zapisz zmiany</button>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-cancel" id="cancel-availability">Anuluj</button>
-                    <button class="btn btn-submit" id="save-availability">Zapisz zmiany</button>
-                </div>
             </div>
-        </div>
+        </form>
     </main>
 </div>
 @endsection

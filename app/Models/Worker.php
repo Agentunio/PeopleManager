@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Worker extends Model
 {
@@ -30,5 +31,10 @@ class Worker extends Model
             'is_student' => 'boolean',
             'is_employed' => 'boolean',
         ];
+    }
+
+    public function availabilities(): HasMany
+    {
+        return $this->hasMany(WorkerAvailability::class);
     }
 }

@@ -14,7 +14,6 @@ class Schedule extends Model
         'type',
         'start_date',
         'end_date',
-        'id',
     ];
 
     public static function getCurrent(): ?self
