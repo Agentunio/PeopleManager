@@ -30,22 +30,6 @@
                 </div>
                 <div class="calendar-legend">
                     <div class="legend-section">
-                        <span class="legend-section-title">Obsada:</span>
-                        <div class="legend-item">
-                            <span class="legend-dot legend-full"></span>
-                            <span>Pełna</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot legend-partial"></span>
-                            <span>Częściowa</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-dot legend-empty"></span>
-                            <span>Brak</span>
-                        </div>
-                    </div>
-                    <div class="legend-divider"></div>
-                    <div class="legend-section">
                         <span class="legend-section-title">Rozliczenie:</span>
                         <div class="legend-item">
                             <span class="legend-icon legend-settled"><i class="fas fa-check"></i></span>

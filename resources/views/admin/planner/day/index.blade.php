@@ -25,7 +25,7 @@
                 <h2 id="selected-date-title">Grafik na dzień: <span>{{ date('d.m.Y', strtotime($date)) ?? '--' }}</span></h2>
             </div>
 
-            <form id="schedule-form" action="#" method="POST">
+            <form id="schedule-form" action="{{ route('planner.day.shift', $date) }}" method="POST">
             @csrf
             <div class="day-view-content">
                 <div class="workers-panel">
@@ -35,53 +35,8 @@
                             <i class="fas fa-user-clock"></i> Zmień dostępność
                         </span>
                     </div>
-
                     <div class="workers-list" id="workers-list">
-                        <div class="worker-card draggable" data-worker-id="1" data-morning="true" data-afternoon="true">
-                            <span class="worker-name">Jan Kowalski</span>
-                            <div class="worker-availability-badges">
-                                <span class="badge badge-morning">R</span>
-                                <span class="badge badge-afternoon">P</span>
-                            </div>
-                        </div>
-
-                        <div class="worker-card draggable" data-worker-id="2" data-morning="true" data-afternoon="true">
-                            <span class="worker-name">Anna Nowak</span>
-                            <div class="worker-availability-badges">
-                                <span class="badge badge-morning">R</span>
-                                <span class="badge badge-afternoon">P</span>
-                            </div>
-                        </div>
-
-                        <div class="worker-card draggable" data-worker-id="3" data-morning="true" data-afternoon="true">
-                            <span class="worker-name">Piotr Wiśniewski</span>
-                            <div class="worker-availability-badges">
-                                <span class="badge badge-morning">R</span>
-                                <span class="badge badge-afternoon">P</span>
-                            </div>
-                        </div>
-
-                        <div class="worker-card draggable" data-worker-id="4" data-morning="false" data-afternoon="false">
-                            <span class="worker-name">Maria Zielińska</span>
-                            <div class="worker-availability-badges">
-                            </div>
-                        </div>
-
-                        <div class="worker-card draggable" data-worker-id="5" data-morning="true" data-afternoon="true">
-                            <span class="worker-name">Tomasz Dąbrowski</span>
-                            <div class="worker-availability-badges">
-                                <span class="badge badge-morning">R</span>
-                                <span class="badge badge-afternoon">P</span>
-                            </div>
-                        </div>
-
-                        <div class="worker-card draggable" data-worker-id="6" data-morning="true" data-afternoon="true">
-                            <span class="worker-name">Katarzyna Lewandowska</span>
-                            <div class="worker-availability-badges">
-                                <span class="badge badge-morning">R</span>
-                                <span class="badge badge-afternoon">P</span>
-                            </div>
-                        </div>
+                        @include('admin.planner.partials.workeravailability')
                     </div>
                 </div>
 
@@ -133,12 +88,6 @@
             </div>
 
             <div class="day-summary">
-                <div class="summary-item">
-                    <i class="fas fa-user-check"></i>
-                    <span>Dostępnych pracowników rano: <strong id="available-workers">5</strong></span>
-                    <i class="fas fa-user-check"></i>
-                    <span>Dostępnych pracowników popułudniu: <strong id="available-workers">5</strong></span>
-                </div>
                 <a href="{{ route('planner.day.end-day', $date) }}" id="settle-day" class="btn btn-change">
                     <i class="fas fa-calculator"></i> Rozlicz dzień
                 </a>

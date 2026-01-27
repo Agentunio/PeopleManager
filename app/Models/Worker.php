@@ -37,4 +37,9 @@ class Worker extends Model
     {
         return $this->hasMany(WorkerAvailability::class);
     }
+
+    public function shifts(): HasMany
+    {
+        return $this->hasMany(WorkerShift::class);
+    }
 }

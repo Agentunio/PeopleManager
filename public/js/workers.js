@@ -79,7 +79,6 @@ $(document).ready(function () {
         });
     }
 
-    // Delete worker handling
     $(document).on('submit', '.delete-form', function(e) {
         e.preventDefault();
         const form = $(this);
@@ -88,7 +87,7 @@ $(document).ready(function () {
 
         Swal.fire({
             title: 'Czy na pewno?',
-            text: `Chcesz usunąć pracownika: ${name}?`,
+            text: `Chcesz usunąć pracownika (usuwając pracownika usuniesz wszystkie dane z nim związane): ${name}?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#e50914',
