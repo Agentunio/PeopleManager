@@ -3,21 +3,38 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\WorkerShiftRequest;
+use App\Http\Requests\Admin\WorkerShiftStoreRequest;
 use App\Http\Requests\Admin\WorkerStoreAvailabilityRequest;
 use App\Models\Worker;
 use App\Models\WorkerAvailability;
+use App\Models\WorkerShift;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class DayController extends Controller
 {
-    public function index(): View{
+    public function index(): View
+    {
         $day = request()->route('date');
-        $workers = Worker::with(['availabilities' => function($query) use ($day){
+        $workers = Worker::with(['availabilities' => function($query) use ($day) {
             $query->where('day', $day);
         }])->get();
-        return view('admin.planner.day.index', ['date' => request()->route('date'), 'workers' => $workers]);
+        $workers_on_shift = WorkerShift::with('worker')->where('day', $day)->get();
+
+        $workersJson = $workers->map(fn($w) => [
+            'id' => $w->id,
+            'name' => $w->first_name . ' ' . $w->last_name,
+            'morning' => $w->availabilities->first()?->morning_shift ?? false,
+            'afternoon' => $w->availabilities->first()?->afternoon_shift ?? false,
+        ]);
+
+        return view('admin.planner.day.index', [
+            'date' => $day,
+            'workers' => $workers,
+            'workers_on_shift' => $workers_on_shift,
+            'workersJson' => $workersJson
+        ]);
     }
 
     public function storeAvailability(WorkerStoreAvailabilityRequest $request, $date): JsonResponse
@@ -47,13 +64,20 @@ class DayController extends Controller
             'html' => view('admin.planner.partials.workeravailability', [
                 'workers' => Worker::with(['availabilities' => function($query) use ($date) {
                     $query->where('day', $date);
-                }])->get()
-            ])->render()
+                }])->get(),
+                'workers_on_shift' => WorkerShift::where('day', $date)->get()
+            ])->render(),
         ]);
     }
 
-    public function storeShift(WorkerShiftRequest $request, $date): JsonResponse
+    public function storeShift(WorkerShiftStoreRequest $request, $date): RedirectResponse
     {
-        return false;
+        foreach ($request->validated()['workers'] as $data) {
+            WorkerShift::updateOrCreate(
+                ['worker_id' => $data['worker_id'], 'day' => $date, 'shift_type' => $data['shift_type']]
+            );
+        }
+
+        return back()->with('success', 'Grafik został zapisany');
     }
 }

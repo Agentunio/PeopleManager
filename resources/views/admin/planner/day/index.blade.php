@@ -54,12 +54,26 @@
                             </div>
                         </div>
                         <div class="shift-dropzone" id="morning-shift" data-shift="morning">
-                            <div class="dropzone-placeholder">
+                            <div class="dropzone-placeholder" @if($workers_on_shift->where('shift_type', 'morning')->count() > 0) style="display: none;" @endif>
                                 <i class="fas fa-user-plus"></i>
                                 <span>Przeciągnij pracownika tutaj</span>
                             </div>
-                            <div class="assigned-workers"></div>
-                            <div class="hidden-inputs"></div>
+                            <div class="assigned-workers">
+                                @foreach($workers_on_shift->where('shift_type', 'morning') as $shift)
+                                    <div class="assigned-worker draggable" data-worker-id="{{ $shift->worker_id }}">
+                                        <span class="worker-name">{{ $shift->worker->first_name }} {{ $shift->worker->last_name }}</span>
+                                        <button type="button" class="remove-worker" data-worker-id="{{ $shift->worker_id }}">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div class="hidden-inputs">
+                                @foreach($workers_on_shift->where('shift_type', 'morning') as $shift)
+                                    <input type="hidden" name="workers[{{ $shift->worker_id }}][worker_id]" value="{{ $shift->worker_id }}" data-worker-id="{{ $shift->worker_id }}">
+                                    <input type="hidden" name="workers[{{ $shift->worker_id }}][shift_type]" value="morning" data-worker-id="{{ $shift->worker_id }}">
+                                @endforeach
+                            </div>
                         </div>
                     </div>
 
@@ -75,13 +89,30 @@
                                 Liczba pracowników aktualnie przypisanych <span id="afternoon-count">0</span>
                             </div>
                         </div>
+
                         <div class="shift-dropzone" id="afternoon-shift" data-shift="afternoon">
-                            <div class="dropzone-placeholder">
+                            <div class="dropzone-placeholder" @if($workers_on_shift->where('shift_type', 'afternoon')->count() > 0) style="display: none;" @endif>
                                 <i class="fas fa-user-plus"></i>
                                 <span>Przeciągnij pracownika tutaj</span>
                             </div>
-                            <div class="assigned-workers"></div>
-                            <div class="hidden-inputs"></div>
+
+                            <div class="assigned-workers">
+                                @foreach($workers_on_shift->where('shift_type', 'afternoon') as $shift)
+                                    <div class="assigned-worker draggable" data-worker-id="{{ $shift->worker_id }}">
+                                        <span class="worker-name">{{ $shift->worker->first_name }} {{ $shift->worker->last_name }}</span>
+                                        <button type="button" class="remove-worker" data-worker-id="{{ $shift->worker_id }}">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div class="hidden-inputs">
+                                @foreach($workers_on_shift->where('shift_type', 'afternoon') as $shift)
+                                    <input type="hidden" name="workers[{{ $shift->worker_id }}][worker_id]" value="{{ $shift->worker_id }}" data-worker-id="{{ $shift->worker_id }}">
+                                    <input type="hidden" name="workers[{{ $shift->worker_id }}][shift_type]" value="afternoon" data-worker-id="{{ $shift->worker_id }}">
+                                @endforeach
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -149,5 +180,8 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/planner-day.js') }}"></script>
+    <script>
+        const workersData = @json($workersJson);
+    </script>
+    <script src="{{ asset('js/planner-day.js') }}"></script>
 @endpush

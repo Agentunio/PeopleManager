@@ -1,14 +1,18 @@
 $(document).ready(function() {
     const $dropzones = $('.shift-dropzone');
 
+    function getWorkerFromData(workerId) {
+        return workersData.find(w => w.id == workerId);
+    }
+
     function getWorkerAvailability(workerId) {
-        const $workerCard = $(`.worker-card[data-worker-id="${workerId}"]`);
-        if ($workerCard.length === 0) {
+        const worker = getWorkerFromData(workerId);
+        if (!worker) {
             return { morning: false, afternoon: false };
         }
         return {
-            morning: $workerCard.data('morning') === true || $workerCard.data('morning') === 'true',
-            afternoon: $workerCard.data('afternoon') === true || $workerCard.data('afternoon') === 'true'
+            morning: worker.morning === true,
+            afternoon: worker.afternoon === true
         };
     }
 
@@ -27,28 +31,69 @@ $(document).ready(function() {
         return $(dropzoneId).find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0;
     }
 
+    function restoreWorkerCard(workerId) {
+        const worker = getWorkerFromData(workerId);
+        if (!worker) return;
+
+        const assignedMorning = isWorkerAssignedToShift(workerId, 'morning');
+        const assignedAfternoon = isWorkerAssignedToShift(workerId, 'afternoon');
+
+        const freeMorning = worker.morning && !assignedMorning;
+        const freeAfternoon = worker.afternoon && !assignedAfternoon;
+
+        if (!freeMorning && !freeAfternoon) return;
+
+        let $workerCard = $(`.worker-card[data-worker-id="${workerId}"]`);
+
+        if ($workerCard.length === 0) {
+            let badges = '';
+            if (freeMorning) badges += '<span class="badge badge-morning">R</span>';
+            if (freeAfternoon) badges += '<span class="badge badge-afternoon">P</span>';
+
+            const cardHtml = `
+            <div class="worker-card draggable" data-worker-id="${workerId}" data-morning="${freeMorning}" data-afternoon="${freeAfternoon}">
+                <span class="worker-name">${worker.name}</span>
+                <div class="worker-availability-badges">
+                    ${badges}
+                </div>
+            </div>
+        `;
+            $('#workers-list').append(cardHtml);
+            initDragAndDrop();
+        } else {
+            $workerCard.show();
+            $workerCard.attr('data-morning', freeMorning);
+            $workerCard.attr('data-afternoon', freeAfternoon);
+
+            const $badges = $workerCard.find('.worker-availability-badges');
+            $badges.empty();
+            if (freeMorning) $badges.append('<span class="badge badge-morning">R</span>');
+            if (freeAfternoon) $badges.append('<span class="badge badge-afternoon">P</span>');
+        }
+    }
+
     function updateWorkerCardVisibility(workerId) {
         const $workerCard = $(`.worker-card[data-worker-id="${workerId}"]`);
-        if ($workerCard.length === 0) return;
-
         const availability = getWorkerAvailability(workerId);
         const assignedMorning = isWorkerAssignedToShift(workerId, 'morning');
         const assignedAfternoon = isWorkerAssignedToShift(workerId, 'afternoon');
 
-        if (availability.morning && availability.afternoon) {
-            if (assignedMorning && assignedAfternoon) {
-                $workerCard.hide();
-            } else {
-                $workerCard.show();
-                $workerCard.find('.badge-morning').toggle(!assignedMorning);
-                $workerCard.find('.badge-afternoon').toggle(!assignedAfternoon);
-            }
+        const freeMorning = availability.morning && !assignedMorning;
+        const freeAfternoon = availability.afternoon && !assignedAfternoon;
+
+        if (!freeMorning && !freeAfternoon) {
+            $workerCard.hide();
+            return;
+        }
+
+        if ($workerCard.length === 0) {
+            restoreWorkerCard(workerId);
         } else {
-            if (assignedMorning || assignedAfternoon) {
-                $workerCard.hide();
-            } else {
-                $workerCard.show();
-            }
+            $workerCard.show();
+            $workerCard.attr('data-morning', freeMorning);
+            $workerCard.attr('data-afternoon', freeAfternoon);
+            $workerCard.find('.badge-morning').toggle(freeMorning);
+            $workerCard.find('.badge-afternoon').toggle(freeAfternoon);
         }
     }
 
@@ -209,7 +254,7 @@ $(document).ready(function() {
 
         updatePlaceholder($dropzone);
         updateCounts();
-        updateWorkerCardVisibility(workerId);
+        restoreWorkerCard(workerId);
     });
 
     $('#change-availability-btn').on('click', function() {
@@ -228,6 +273,7 @@ $(document).ready(function() {
     });
 
     initDragAndDrop();
+    updateCounts();
 
     $('#availability-form').on('submit', function(e) {
         e.preventDefault();
@@ -244,6 +290,7 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
+                    workersData = response.workers;
                     showToast.success(response.message);
                     $('#availability-modal').fadeOut(200);
                     $('#workers-list').html(response.html);
