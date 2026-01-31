@@ -30,14 +30,10 @@
                 </div>
                 <div class="calendar-legend">
                     <div class="legend-section">
-                        <span class="legend-section-title">Rozliczenie:</span>
+                        <span class="legend-section-title">Legenda:</span>
                         <div class="legend-item">
-                            <span class="legend-icon legend-settled"><i class="fas fa-check"></i></span>
+                            <span class="legend-icon legend-settled"></span>
                             <span>Rozliczony</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-icon legend-unsettled"><i class="fas fa-clock"></i></span>
-                            <span>Nierozliczony</span>
                         </div>
                     </div>
                 </div>

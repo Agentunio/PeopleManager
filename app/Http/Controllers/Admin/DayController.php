@@ -58,24 +58,47 @@ class DayController extends Controller
             }
         }
 
+        $workers = Worker::with(['availabilities' => function($query) use ($date) {
+            $query->where('day', $date);
+        }])->get();
+
         return response()->json([
             'success' => true,
             'message' => 'Zaktualizowano poprawnie dostępności pracowników',
             'html' => view('admin.planner.partials.workeravailability', [
-                'workers' => Worker::with(['availabilities' => function($query) use ($date) {
-                    $query->where('day', $date);
-                }])->get(),
+                'workers' => $workers,
                 'workers_on_shift' => WorkerShift::where('day', $date)->get()
             ])->render(),
+            'workers' => $workers->map(fn($w) => [
+                'id' => $w->id,
+                'name' => $w->first_name . ' ' . $w->last_name,
+                'morning' => $w->availabilities->first()?->morning_shift ?? false,
+                'afternoon' => $w->availabilities->first()?->afternoon_shift ?? false,
+            ])
         ]);
     }
 
     public function storeShift(WorkerShiftStoreRequest $request, $date): RedirectResponse
     {
-        foreach ($request->validated()['workers'] as $data) {
-            WorkerShift::updateOrCreate(
-                ['worker_id' => $data['worker_id'], 'day' => $date, 'shift_type' => $data['shift_type']]
+        $submitted = collect($request->validated()['workers'] ?? []);
+
+        $existing = WorkerShift::where('day', $date)->get();
+
+        $toDelete = $existing->filter(function($shift) use ($submitted) {
+            return !$submitted->contains(fn($s) =>
+                $s['worker_id'] == $shift->worker_id &&
+                $s['shift_type'] == $shift->shift_type
             );
+        });
+
+        WorkerShift::whereIn('id', $toDelete->pluck('id'))->delete();
+
+        foreach ($submitted as $data) {
+            WorkerShift::firstOrCreate([
+                'worker_id' => $data['worker_id'],
+                'day' => $date,
+                'shift_type' => $data['shift_type']
+            ]);
         }
 
         return back()->with('success', 'Grafik został zapisany');

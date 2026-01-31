@@ -344,7 +344,7 @@
 /* Settlement Fields */
 .worker-settlement-fields {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 2fr;
     gap: 20px;
     align-items: end;
 }
@@ -355,7 +355,7 @@
     gap: 8px;
 }
 
-.field-group label {
+.field-group span {
     color: #888;
     font-size: 0.85rem;
     font-weight: 500;
@@ -411,6 +411,90 @@
     color: #666;
     font-size: 0.9rem;
     font-weight: 500;
+}
+
+/* Time Range Inputs (Od - Do) */
+.time-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.time-from,
+.time-to {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #252525;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.time-from:focus-within,
+.time-to:focus-within {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.1);
+}
+
+.time-label {
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.time-range-inputs input[type="number"] {
+    width: 45px;
+    text-align: center;
+    padding: 6px 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.time-range-inputs input[type="number"]:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.time-range-inputs input[type="number"]::placeholder {
+    color: #555;
+}
+
+.time-colon {
+    color: var(--text-color);
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.time-range-separator {
+    color: #666;
+    font-size: 1.2rem;
+    font-weight: 300;
+}
+
+.time-calculated {
+    margin-left: auto;
+    padding: 8px 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.calculated-hours {
+    color: #666;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.calculated-hours.has-value {
+    color: #4CAF50;
+    font-weight: 600;
 }
 
 /* Field Updated Animation */
@@ -481,6 +565,17 @@
     .global-shifts-grid {
         grid-template-columns: 1fr;
     }
+
+    .time-range-inputs {
+        gap: 8px;
+    }
+
+    .time-calculated {
+        margin-left: 0;
+        margin-top: 10px;
+        width: 100%;
+        text-align: center;
+    }
 }
 
 @media (max-width: 768px) {
@@ -533,5 +628,11 @@
 
     .global-shift-group {
         padding: 15px;
+    }
+
+    .time-from,
+    .time-to {
+        flex: 1;
+        justify-content: center;
     }
 }

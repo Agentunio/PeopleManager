@@ -10,7 +10,7 @@ class WorkerShiftStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'workers' => ['required', 'array'],
+            'workers' => 'array',
             'workers.*.worker_id' => [
                 'required',
                 'exists:workers,id',

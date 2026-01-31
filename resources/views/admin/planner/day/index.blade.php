@@ -70,8 +70,8 @@
                             </div>
                             <div class="hidden-inputs">
                                 @foreach($workers_on_shift->where('shift_type', 'morning') as $shift)
-                                    <input type="hidden" name="workers[{{ $shift->worker_id }}][worker_id]" value="{{ $shift->worker_id }}" data-worker-id="{{ $shift->worker_id }}">
-                                    <input type="hidden" name="workers[{{ $shift->worker_id }}][shift_type]" value="morning" data-worker-id="{{ $shift->worker_id }}">
+                                    <input type="hidden" name="workers[{{ $shift->worker_id }}_morning][worker_id]" value="{{ $shift->worker_id }}" data-worker-id="{{ $shift->worker_id }}">
+                                    <input type="hidden" name="workers[{{ $shift->worker_id }}_morning][shift_type]" value="morning" data-worker-id="{{ $shift->worker_id }}">
                                 @endforeach
                             </div>
                         </div>
@@ -108,8 +108,8 @@
                             </div>
                             <div class="hidden-inputs">
                                 @foreach($workers_on_shift->where('shift_type', 'afternoon') as $shift)
-                                    <input type="hidden" name="workers[{{ $shift->worker_id }}][worker_id]" value="{{ $shift->worker_id }}" data-worker-id="{{ $shift->worker_id }}">
-                                    <input type="hidden" name="workers[{{ $shift->worker_id }}][shift_type]" value="afternoon" data-worker-id="{{ $shift->worker_id }}">
+                                    <input type="hidden" name="workers[{{ $shift->worker_id }}_afternoon][worker_id]" value="{{ $shift->worker_id }}" data-worker-id="{{ $shift->worker_id }}">
+                                    <input type="hidden" name="workers[{{ $shift->worker_id }}_afternoon][shift_type]" value="afternoon" data-worker-id="{{ $shift->worker_id }}">
                                 @endforeach
                             </div>
 
@@ -181,7 +181,7 @@
 
 @push('scripts')
     <script>
-        const workersData = @json($workersJson);
+        let workersData = @json($workersJson);
     </script>
     <script src="{{ asset('js/planner-day.js') }}"></script>
 @endpush

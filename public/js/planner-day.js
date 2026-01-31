@@ -1,4 +1,11 @@
 $(document).ready(function() {
+
+    console.log('=== PAGE LOADED ===');
+    console.log('workersData:', workersData);
+    console.log('typeof workersData:', typeof workersData);
+    console.log('Array.isArray:', Array.isArray(workersData));
+
+
     const $dropzones = $('.shift-dropzone');
 
     function getWorkerFromData(workerId) {
@@ -11,8 +18,8 @@ $(document).ready(function() {
             return { morning: false, afternoon: false };
         }
         return {
-            morning: worker.morning === true,
-            afternoon: worker.afternoon === true
+            morning: !!worker.morning,
+            afternoon: !!worker.afternoon
         };
     }
 
@@ -211,17 +218,18 @@ $(document).ready(function() {
 
     function addWorkerToShift(workerId, workerName, shiftType, $dropzone) {
         const $workerElement = $(`
-            <div class="assigned-worker draggable" data-worker-id="${workerId}">
-                <span class="worker-name">${workerName}</span>
-                <button type="button" class="remove-worker" data-worker-id="${workerId}">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `);
+        <div class="assigned-worker draggable" data-worker-id="${workerId}">
+            <span class="worker-name">${workerName}</span>
+            <button type="button" class="remove-worker" data-worker-id="${workerId}">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `);
 
+        const index = `${workerId}_${shiftType}`;
         const hiddenInput =
-            `<input type="hidden" name="workers[${workerId}][worker_id]" value="${workerId}" data-worker-id="${workerId}">` +
-            `<input type="hidden" name="workers[${workerId}][shift_type]" value="${shiftType}" data-worker-id="${workerId}">`;
+            `<input type="hidden" name="workers[${index}][worker_id]" value="${workerId}" data-worker-id="${workerId}">` +
+            `<input type="hidden" name="workers[${index}][shift_type]" value="${shiftType}" data-worker-id="${workerId}">`;
 
         $dropzone.find('.assigned-workers').append($workerElement);
         $dropzone.find('.hidden-inputs').append(hiddenInput);
