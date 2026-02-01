@@ -17,8 +17,6 @@ class WorkerShiftStoreRequest extends FormRequest
                 new WorkerAvailableForShift(request()->route('date'), 'shift_type')
             ],
             'workers.*.shift_type' => 'in:morning,afternoon',
-            'workers.*.package_id' => 'exists:settings,id',
-            'workers.*.hours' => ['nullable', 'numeric'],
         ];
     }
 

@@ -50,6 +50,7 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
             Route::get('/rozliczenie', [EndDayController::class, 'index'])->name('end-day');
             Route::post('/dostepnosc-pracownika', [DayController::class, 'storeAvailability'])->name('availability');
             Route::post('zapisz-zmiane', [DayController::class, 'storeShift'])->name('shift');
+            Route::patch('/rozliczenie', [EndDayController::class, 'update'])->name('update');
         });
     });
 });

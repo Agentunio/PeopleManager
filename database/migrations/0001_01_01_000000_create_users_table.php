@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('username')->unique();
             $table->string('password');
             $table->enum('role', ['admin', 'worker'])->default('worker');
+            $table->timestamps();
         });
 
         Schema::create('login_attempts', function (Blueprint $table) {

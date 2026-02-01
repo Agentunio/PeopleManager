@@ -578,6 +578,12 @@
     }
 }
 
+.saved-hours{
+    color: #4CAF50 !important;
+    font-weight: 600 !important;
+    margin-right: 20px;
+}
+
 @media (max-width: 768px) {
     .worker-settlement-fields {
         grid-template-columns: 1fr;

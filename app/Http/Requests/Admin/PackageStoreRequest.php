@@ -14,7 +14,7 @@ class PackageStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:settings,name'],
+            'name' => ['required', 'string', 'unique:packages,name'],
             'price' => ['required', 'numeric'],
         ];
     }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Package extends Model
 {
-    protected $table = 'settings';
+    protected $table = 'packages';
 
     public $timestamps = false;
 
@@ -19,5 +19,10 @@ class Package extends Model
     public function shifts(): HasMany
     {
         return $this->hasMany(WorkerShift::class);
+    }
+
+    public function shift_package(): HasMany
+    {
+        return $this->hasMany(PackageShift::class);
     }
 }

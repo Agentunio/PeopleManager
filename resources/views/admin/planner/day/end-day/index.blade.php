@@ -52,14 +52,14 @@
                                         <span class="time-label">Od</span>
                                         <input type="number" id="default-morning-from-hour" placeholder="00" min="0" max="23">
                                         <span class="time-colon">:</span>
-                                        <input type="number" id="default-morning-from-minute" placeholder="00" min="0" max="59" step="5">
+                                        <input type="number" id="default-morning-from-minute" placeholder="00" min="0" max="59">
                                     </div>
                                     <span class="time-range-separator">—</span>
                                     <div class="time-to">
                                         <span class="time-label">Do</span>
                                         <input type="number" id="default-morning-to-hour" placeholder="00" min="0" max="23">
                                         <span class="time-colon">:</span>
-                                        <input type="number" id="default-morning-to-minute" placeholder="00" min="0" max="59" step="5">
+                                        <input type="number" id="default-morning-to-minute" placeholder="00" min="0" max="59">
                                     </div>
                                 </div>
                             </div>
@@ -89,14 +89,14 @@
                                         <span class="time-label">Od</span>
                                         <input type="number" id="default-afternoon-from-hour" placeholder="00" min="0" max="23">
                                         <span class="time-colon">:</span>
-                                        <input type="number" id="default-afternoon-from-minute" placeholder="00" min="0" max="59" step="5">
+                                        <input type="number" id="default-afternoon-from-minute" placeholder="00" min="0" max="59">
                                     </div>
                                     <span class="time-range-separator">—</span>
                                     <div class="time-to">
                                         <span class="time-label">Do</span>
                                         <input type="number" id="default-afternoon-to-hour" placeholder="00" min="0" max="23">
                                         <span class="time-colon">:</span>
-                                        <input type="number" id="default-afternoon-to-minute" placeholder="00" min="0" max="59" step="5">
+                                        <input type="number" id="default-afternoon-to-minute" placeholder="00" min="0" max="59">
                                     </div>
                                 </div>
                             </div>
@@ -108,8 +108,9 @@
                 </div>
             </div>
 
-            <form id="settlement-form" action="#" method="POST">
+            <form id="settlement-form" action="{{ route('planner.day.update', $date) }}" method="POST">
                 @csrf
+                @method('PATCH')
 
                 <div class="settlement-container">
                     <div class="settlement-shift">
@@ -122,44 +123,65 @@
                         </div>
 
                         <div class="settlement-workers" data-shift="morning">
+                            @forelse($workers_morning as $worker_morning)
                             <div class="settlement-worker-card">
+                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}][id]" value="{{ $worker_morning->worker->id }}"/>
+                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}][shift_type]" value="{{ $worker_morning->shift_type }}">
                                 <div class="worker-info">
-                                    <span class="worker-name">Jan Kowalski</span>
+                                    <span class="worker-name">{{ $worker_morning->worker->first_name }} {{ $worker_morning->worker->last_name }}</span>
                                 </div>
                                 <div class="worker-settlement-fields">
                                     <div class="field-group">
                                         <span>Stawka</span>
-                                        <select name="morning[1][rate_id]" class="worker-rate">
+                                        <select name="workers[{{ $worker_morning->worker->id }}][package]" class="worker-rate">
                                             <option value="">Wybierz stawkę</option>
-                                            <option value="1">Podstawowa - 25 zł/h</option>
-                                            <option value="2">Weekendowa - 30 zł/h</option>
-                                            <option value="3">Świąteczna - 40 zł/h</option>
+                                            @foreach($packages as $package)
+                                                <option value="{{ $package->id }}" @selected($worker_morning->package_id == $package->id)>
+                                                    {{ $package->name }}
+                                                </option>
+                                            @endforeach
                                         </select>
                                     </div>
+
                                     <div class="field-group field-time">
                                         <span>Czas pracy</span>
-                                        <div class="time-range-inputs">
-                                            <div class="time-from">
+
+                                        @if($worker_morning->minutes)
+                                            <div class="time-saved">
+                                                <span class="saved-hours">
+                                                    Zapisano: {{ floor($worker_morning->minutes / 60) }}h {{ $worker_morning->minutes % 60 }}min
+                                                </span>
+                                                <button type="button" class="btn btn-small btn-change-time">
+                                                    <i class="fas fa-edit"></i> Zmień
+                                                </button>
+                                            </div>
+                                        @endif
+
+                                        <div class="time-range-inputs" @if($worker_morning->minutes) style="display: none;" @endif>
+                                        <div class="time-from">
                                                 <span class="time-label">Od</span>
-                                                <input type="number" name="morning[1][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
                                                 <span class="time-colon">:</span>
-                                                <input type="number" name="morning[1][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59" step="5">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
                                             </div>
                                             <span class="time-range-separator">—</span>
                                             <div class="time-to">
                                                 <span class="time-label">Do</span>
-                                                <input type="number" name="morning[1][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
                                                 <span class="time-colon">:</span>
-                                                <input type="number" name="morning[1][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59" step="5">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
                                             </div>
                                             <div class="time-calculated">
                                                 <span class="calculated-hours">0h 0min</span>
                                             </div>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
-
+                            @empty
+                                <p>Brak pracowników</p>
+                            @endforelse
                         </div>
                     </div>
 
@@ -173,81 +195,65 @@
                         </div>
 
                         <div class="settlement-workers" data-shift="afternoon">
-                            <div class="settlement-worker-card" data-worker-id="5">
-                                <div class="worker-info">
-                                    <span class="worker-name">Tomasz Dąbrowski</span>
-                                </div>
-                                <div class="worker-settlement-fields">
-                                    <div class="field-group">
-                                        <span>Stawka</span>
-                                        <select name="afternoon[5][rate_id]" class="worker-rate">
-                                            <option value="">Wybierz stawkę</option>
-                                            <option value="1">Podstawowa - 25 zł/h</option>
-                                            <option value="2">Weekendowa - 30 zł/h</option>
-                                            <option value="3">Świąteczna - 40 zł/h</option>
-                                        </select>
+                            @forelse($workers_afternoon as $worker_afternoon)
+                                <div class="settlement-worker-card">
+                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}][id]" value="{{ $worker_afternoon->worker->id }}"/>
+                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}][shift_type]" value="{{ $worker_afternoon->shift_type }}">
+                                    <div class="worker-info">
+                                        <span class="worker-name">{{ $worker_afternoon->worker->first_name }} {{ $worker_afternoon->worker->last_name }}</span>
                                     </div>
-                                    <div class="field-group field-time">
-                                        <span>Czas pracy</span>
-                                        <div class="time-range-inputs">
-                                            <div class="time-from">
-                                                <span class="time-label">Od</span>
-                                                <input type="number" name="afternoon[5][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
-                                                <span class="time-colon">:</span>
-                                                <input type="number" name="afternoon[5][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59" step="5">
-                                            </div>
-                                            <span class="time-range-separator">—</span>
-                                            <div class="time-to">
-                                                <span class="time-label">Do</span>
-                                                <input type="number" name="afternoon[5][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
-                                                <span class="time-colon">:</span>
-                                                <input type="number" name="afternoon[5][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59" step="5">
-                                            </div>
-                                            <div class="time-calculated">
-                                                <span class="calculated-hours">0h 0min</span>
-                                            </div>
+                                    <div class="worker-settlement-fields">
+                                        <div class="field-group">
+                                            <span>Stawka</span>
+                                            <select name="workers[{{ $worker_afternoon->worker->id }}][package]" class="worker-rate">
+                                                <option value="">Wybierz stawkę</option>
+                                                @foreach($packages as $package)
+                                                    <option value="{{ $package->id }}" @selected($worker_afternoon->package_id == $package->id)>
+                                                        {{ $package->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div class="settlement-worker-card" data-worker-id="6">
-                                <div class="worker-info">
-                                    <span class="worker-name">Katarzyna Lewandowska</span>
-                                </div>
-                                <div class="worker-settlement-fields">
-                                    <div class="field-group">
-                                        <span>Stawka</span>
-                                        <select name="afternoon[6][rate_id]" class="worker-rate">
-                                            <option value="">Wybierz stawkę</option>
-                                            <option value="1">Podstawowa - 25 zł/h</option>
-                                            <option value="2">Weekendowa - 30 zł/h</option>
-                                            <option value="3">Świąteczna - 40 zł/h</option>
-                                        </select>
-                                    </div>
-                                    <div class="field-group field-time">
-                                        <span>Czas pracy</span>
-                                        <div class="time-range-inputs">
-                                            <div class="time-from">
-                                                <span class="time-label">Od</span>
-                                                <input type="number" name="afternoon[6][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
-                                                <span class="time-colon">:</span>
-                                                <input type="number" name="afternoon[6][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59" step="5">
-                                            </div>
-                                            <span class="time-range-separator">—</span>
-                                            <div class="time-to">
-                                                <span class="time-label">Do</span>
-                                                <input type="number" name="afternoon[6][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
-                                                <span class="time-colon">:</span>
-                                                <input type="number" name="afternoon[6][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59" step="5">
-                                            </div>
-                                            <div class="time-calculated">
-                                                <span class="calculated-hours">0h 0min</span>
+                                        <div class="field-group field-time">
+                                            <span>Czas pracy</span>
+
+                                            @if($worker_afternoon->minutes)
+                                                <div class="time-saved">
+                                                    <span class="saved-hours">
+                                                        Zapisano: {{ floor($worker_afternoon->minutes / 60) }}h {{ $worker_afternoon->minutes % 60 }}min
+                                                    </span>
+                                                    <button type="button" class="btn btn-small btn-change-time">
+                                                        <i class="fas fa-edit"></i> Zmień
+                                                    </button>
+                                                </div>
+                                            @endif
+
+                                            <div class="time-range-inputs" @if($worker_afternoon->minutes) style="display: none;" @endif>
+                                                <div class="time-from">
+                                                    <span class="time-label">Od</span>
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
+                                                    <span class="time-colon">:</span>
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
+                                                </div>
+                                                <span class="time-range-separator">—</span>
+                                                <div class="time-to">
+                                                    <span class="time-label">Do</span>
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
+                                                    <span class="time-colon">:</span>
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
+                                                </div>
+                                                <div class="time-calculated">
+                                                    <span class="calculated-hours">0h 0min</span>
+                                                </div>
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
-                            </div>
+                            @empty
+                                <p>Brak pracowników</p>
+                            @endforelse
                         </div>
                     </div>
 
@@ -258,9 +264,9 @@
                             </div>
                             <h2>Paczki i stawki za paczki</h2>
                         </div>
+
                         <div class="global-section-content">
                             <div class="global-shifts-grid">
-                                <!-- Zmiana ranna -->
                                 <div class="global-shift-group">
                                     <div class="global-shift-label shift-morning-label">
                                         <i class="fas fa-sun"></i>
@@ -269,21 +275,20 @@
                                     <div class="global-shift-fields">
                                         <div class="field-group">
                                             <label>Liczba paczek</label>
-                                            <input type="number" name="morning_packages" id="morning-packages" placeholder="0" min="0">
+                                            <input type="number" name="morning_packages" id="morning-packages"
+                                                   value="{{ $shift_packages_morning->packages_count ?? '' }}"
+                                                   placeholder="0" min="0">
                                         </div>
                                         <div class="field-group">
                                             <label>Stawka za paczkę</label>
                                             <select name="morning_package_rate" id="morning-package-rate">
                                                 <option value="">Wybierz stawkę</option>
-                                                <option value="1">Podstawowa - 0.50 zł</option>
-                                                <option value="2">Weekendowa - 0.60 zł</option>
-                                                <option value="3">Świąteczna - 0.80 zł</option>
+                                                @include('admin.planner.partials.allpackage')
                                             </select>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Zmiana popołudniowa -->
                                 <div class="global-shift-group">
                                     <div class="global-shift-label shift-afternoon-label">
                                         <i class="fas fa-cloud-sun"></i>
@@ -292,19 +297,20 @@
                                     <div class="global-shift-fields">
                                         <div class="field-group">
                                             <label>Liczba paczek</label>
-                                            <input type="number" name="afternoon_packages" id="afternoon-packages" placeholder="0" min="0">
+                                            <input type="number" name="afternoon_packages" id="afternoon-packages"
+                                                   value="{{ $shift_packages_afternoon->packages_count ?? '' }}"
+                                                   placeholder="0" min="0">
                                         </div>
                                         <div class="field-group">
                                             <label>Stawka za paczkę</label>
                                             <select name="afternoon_package_rate" id="afternoon-package-rate">
                                                 <option value="">Wybierz stawkę</option>
-                                                <option value="1">Podstawowa - 0.50 zł</option>
-                                                <option value="2">Weekendowa - 0.60 zł</option>
-                                                <option value="3">Świąteczna - 0.80 zł</option>
+                                                @include('admin.planner.partials.allpackage')
                                             </select>
                                         </div>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>

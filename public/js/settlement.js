@@ -125,4 +125,9 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast.success(`Domyślne wartości zastosowane dla zmiany ${shiftName}`);
         }
     }
+
+    $(document).on('click', '.btn-change-time', function() {
+        $(this).closest('.field-time').find('.time-saved').hide();
+        $(this).closest('.field-time').find('.time-range-inputs').show();
+    });
 });

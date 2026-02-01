@@ -16,8 +16,8 @@ return new class extends Migration
             $table->foreignId('worker_id')->constrained()->onDelete('cascade');
             $table->date('day');
             $table->enum('shift_type',['morning','afternoon']);
-            $table->foreignId('package_id')->nullable()->constrained('settings')->onDelete('cascade');
-            $table->decimal('hours')->nullable();
+            $table->foreignId('package_id')->nullable()->constrained('packages')->onDelete('cascade');
+            $table->integer('minutes')->nullable();
             $table->timestamps();
             $table->unique(['worker_id', 'day', 'shift_type']);
         });
