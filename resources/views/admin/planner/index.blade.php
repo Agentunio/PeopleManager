@@ -44,5 +44,8 @@
 @endsection
 
 @push('scripts')
+<script>
+    window.settledDays = @json($settledDays);
+</script>
 <script src="{{ asset('js/planner.js') }}"></script>
 @endpush

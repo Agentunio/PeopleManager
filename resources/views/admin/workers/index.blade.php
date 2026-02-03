@@ -123,6 +123,10 @@
         <div id="workers-list">
             @include('admin.workers.partials.list', ['workers' => $workers])
         </div>
+
+        <div id="pagination-links">
+            {{ $workers->withQueryString()->links() }}
+        </div>
     </main>
 </div>
 @endsection

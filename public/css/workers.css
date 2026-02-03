@@ -1,44 +1,25 @@
-/*
- * Plik: workers.css
- * Wersja FINALNA - zawiera poprawki i nowe sekcje wyszukiwania.
- */
-
-/* ---------------------------------- */
-/* 0. POPRAWKA MECHANIZMU POKAZYWANIA FORMULARZY */
-/* ---------------------------------- */
-/* Ukrywamy checkbox dla formularza dodawania */
 #toggle-worker-form {
     display: none;
 }
 
-/* Pokazujemy formularz dodawania */
 #toggle-worker-form:checked + .edit-form {
     display: block;
 }
 
-/* Nadpisujemy chciwą regułę z settings.css (z ~), aby nie pokazywała WSZYSTKICH formularzy */
 .settings-section input[type="checkbox"]:checked ~ .edit-form {
     display: none;
 }
 
-/* Pokazujemy TYLKO ten .edit-form, który jest BEZPOŚREDNIO po zaznaczonym checkboxie (selektor +) */
 .settings-section input[type="checkbox"]:checked + .edit-form {
     display: block;
 }
 
-
-/* ---------------------------------- */
-/* 1. Grid dla formularzy (dodawania/edycji) */
-/* ---------------------------------- */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 15px 25px;
 }
 
-/* ---------------------------------- */
-/* 2. Wyświetlanie danych pracownika (worker-info-grid) */
-/* ---------------------------------- */
 .worker-info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -178,11 +159,82 @@
 }
 
 
-/* ---------------------------------- */
-/* 5. Poprawki responsywne */
-/* ---------------------------------- */
+#pagination-links {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+#pagination-links nav {
+    display: flex;
+    justify-content: center;
+}
+
+#pagination-links .flex {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#pagination-links .flex-1 {
+    display: none;
+}
+
+#pagination-links span,
+#pagination-links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    gap: 15px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+#pagination-links a {
+    background-color: rgba(0, 0, 0, 0.3);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+#pagination-links a:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(229, 9, 20, 0.3);
+}
+
+#pagination-links span[aria-current="page"] span {
+    background-color: var(--accent-color);
+    color: white;
+    border: 1px solid var(--accent-color);
+}
+
+#pagination-links span[aria-disabled="true"] span {
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #555;
+    border: 1px solid var(--border-color);
+    cursor: not-allowed;
+}
+
+#pagination-links p {
+    display: none;
+}
+
+#pagination-links a[rel="prev"],
+#pagination-links a[rel="next"] {
+    display: none;
+}
+
+nav[role="navigation"] > div:first-child {
+    display: none !important;
+}
 @media (max-width: 768px) {
-    /* Wyszukiwanie */
     .worker-search-bar {
         flex-direction: column;
         align-items: stretch;
@@ -217,5 +269,12 @@
     .date-range-form-inner .form-group,
     .date-range-form-inner .form-actions {
         width: 100%;
+    }
+    #pagination-links span,
+    #pagination-links a {
+        min-width: 35px;
+        height: 35px;
+        padding: 0 8px;
+        font-size: 0.85rem;
     }
 }

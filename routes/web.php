@@ -27,6 +27,7 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
         Route::post('/', [WorkerController::class, 'store'])->name('store');
         Route::put('/{worker}', [WorkerController::class, 'update'])->name('update');
         Route::delete('/{worker}', [WorkerController::class, 'destroy'])->name('destroy');
+        Route::get('/{worker}/stats', [WorkerController::class, 'stats'])->name('stats');
     });
 
     Route::prefix('ustawienia')->name('settings.')->group(function () {

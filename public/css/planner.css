@@ -1008,9 +1008,23 @@ a{
     }
 }
 
-/* jQuery UI Draggable Helper */
 .ui-draggable-dragging {
     z-index: 1000 !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     transform: rotate(3deg);
+}
+
+.flatpickr-calendar .flatpickr-day.day-settled {
+    background: rgba(76, 175, 80, 0.3) !important;
+    border-color: #4caf50;
+}
+
+.flatpickr-calendar .flatpickr-day.day-settled:hover {
+    background: rgba(76, 175, 80, 0.5) !important;
+    border-color: #4caf50;
+}
+
+.flatpickr-calendar .flatpickr-day.day-settled.today {
+    border: 2px solid #4caf50;
+    background: rgba(76, 175, 80, 0.4) !important;
 }

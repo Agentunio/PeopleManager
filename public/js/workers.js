@@ -1,40 +1,134 @@
 $(document).ready(function () {
-    // Flatpickr date range configuration
-    const formatDate = (date) => {
+    const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    function formatDate(date) {
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
         const d = String(date.getDate()).padStart(2, '0');
         return `${y}-${m}-${d}`;
     }
 
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    function ajaxRequest(options) {
+        const defaults = {
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        };
 
-    const todayString = formatDate(today);
-    const firstDayString = formatDate(firstDay);
+        return $.ajax($.extend(true, defaults, options));
+    }
 
-    const rangeInputs = document.querySelectorAll('.flatpickr-range-input');
+    function handleAjaxError(xhr, defaultMessage) {
+        const errors = xhr.responseJSON?.errors;
+        if (errors) {
+            showToast.error(Object.values(errors).flat()[0]);
+        } else {
+            showToast.error(defaultMessage);
+        }
+    }
 
-    rangeInputs.forEach(input => {
+    function initFlatpickr(input) {
         flatpickr(input, {
             theme: "dark",
             mode: "range",
             dateFormat: "Y-m-d",
-            defaultDate: [firstDayString, todayString],
+            defaultDate: [formatDate(firstDayOfMonth), formatDate(today)],
             onChange: function(selectedDates, dateStr, instance) {
-                const form = instance.element.closest('.date-range-form-inner');
-                if (!form) return;
-                const fromInput = form.querySelector('input[name="dateFrom"]');
-                const toInput = form.querySelector('input[name="dateTo"]');
-                if (selectedDates.length === 2 && fromInput && toInput) {
-                    fromInput.value = formatDate(selectedDates[0]);
-                    toInput.value = formatDate(selectedDates[1]);
+                const $form = $(instance.element).closest('.date-range-form-inner');
+                if (selectedDates.length === 2) {
+                    $form.find('input[name="dateFrom"]').val(formatDate(selectedDates[0]));
+                    $form.find('input[name="dateTo"]').val(formatDate(selectedDates[1]));
                 }
             }
         });
+    }
+
+    function initFlatpickrIn($container) {
+        $container.find('.flatpickr-range-input').each(function() {
+            initFlatpickr(this);
+        });
+    }
+
+    $('.flatpickr-range-input').each(function() {
+        initFlatpickr(this);
     });
 
-    // Search form handling
+    $(document).on('submit', '.date-range-form-inner', function(e) {
+        e.preventDefault();
+
+        const $form = $(this);
+        const workerId = $form.data('worker-id');
+        const dateFrom = $form.find('input[name="dateFrom"]').val();
+        const dateTo = $form.find('input[name="dateTo"]').val();
+
+        if (!dateFrom || !dateTo) {
+            showToast.error('Wybierz zakres dat');
+            return;
+        }
+
+        const $hours = $(`#hours-value-${workerId}`);
+        const $salary = $(`#salary-value-${workerId}`);
+
+        $hours.text('...');
+        $salary.text('...');
+
+        ajaxRequest({
+            type: "GET",
+            url: $form.data('stats-url'),
+            data: { dateFrom, dateTo }
+        })
+        .done(function(response) {
+            $hours.text(response.hours);
+            $salary.text(response.salary);
+            showToast.success('Dane załadowane');
+        })
+        .fail(function(xhr) {
+            $hours.text('--');
+            $salary.text('--');
+            handleAjaxError(xhr, 'Wystąpił błąd podczas pobierania danych');
+        })
+        .always(function() {
+                $submitBtn.prop('disabled', false);
+        });
+    });
+
+
+    function performSearch() {
+        const searchWorker = $('#searchWorker').val();
+        const filterStatus = $('#filterStatus').val();
+
+        ajaxRequest({
+            type: "GET",
+            url: window.workersIndexUrl,
+            data: { searchWorker, filterStatus }
+        })
+            .done(function(response) {
+                $('#workers-list').html(response.html);
+                $('#pagination-links').html(response.pagination);
+                initFlatpickrIn($('#workers-list'));
+                updateUrlParams({ searchWorker, filterStatus });
+            })
+            .fail(function() {
+                showToast.error('Wystąpił błąd podczas wyszukiwania');
+            });
+    }
+
+    function updateUrlParams(params) {
+        const urlParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value) urlParams.set(key, value);
+        });
+
+        const newUrl = urlParams.toString()
+            ? `${window.location.pathname}?${urlParams.toString()}`
+            : window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+    }
+
     $("#searchForm").on("submit", function(e) {
         e.preventDefault();
         performSearch();
@@ -46,44 +140,11 @@ $(document).ready(function () {
         performSearch();
     });
 
-    function performSearch() {
-        const searchWorker = $('#searchWorker').val();
-        const filterStatus = $('#filterStatus').val();
-
-        $.ajax({
-            type: "GET",
-            url: window.workersIndexUrl,
-            data: {
-                searchWorker: searchWorker,
-                filterStatus: filterStatus
-            },
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            success: function(response) {
-                if (response.status === 'success') {
-                    $('#workers-list').html(response.html);
-
-                    const params = new URLSearchParams();
-                    if (searchWorker) params.set('searchWorker', searchWorker);
-                    if (filterStatus) params.set('filterStatus', filterStatus);
-                    const newUrl = params.toString()
-                        ? `${window.location.pathname}?${params.toString()}`
-                        : window.location.pathname;
-                    window.history.replaceState({}, '', newUrl);
-                }
-            },
-            error: function(xhr) {
-                showToast.error('Wystąpił błąd podczas wyszukiwania');
-            }
-        });
-    }
-
     $(document).on('submit', '.delete-form', function(e) {
         e.preventDefault();
-        const form = $(this);
-        const name = form.data('name');
-        const url = form.attr('action');
+
+        const $form = $(this);
+        const name = $form.data('name');
 
         Swal.fire({
             title: 'Czy na pewno?',
@@ -98,94 +159,69 @@ $(document).ready(function () {
             color: '#f0f0f0'
         }).then((result) => {
             if (result.isConfirmed) {
-                $.ajax({
+                ajaxRequest({
                     type: "DELETE",
-                    url: url,
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function (response) {
-                        if (response.status === 'success') {
-                            showToast.success(response.message);
-                            form.closest('.settings-container').fadeOut(300, function() {
-                                $(this).remove();
-                            });
-                        }
-                    },
-                    error: function (xhr) {
+                    url: $form.attr('action')
+                })
+                    .done(function(response) {
+                        showToast.success(response.message);
+                        $form.closest('.settings-container').fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    })
+                    .fail(function() {
                         showToast.error('Wystąpił błąd podczas usuwania pracownika');
-                    }
-                });
+                    });
             }
         });
     });
 
-    // Add worker form handling
-    $("#addWorkerForm").on("submit", function (e) {
+    $("#addWorkerForm").on("submit", function(e) {
         e.preventDefault();
-        const form = $(this);
 
-        $.ajax({
+        const $form = $(this);
+
+        ajaxRequest({
             type: "POST",
-            url: form.attr('action'),
-            data: form.serialize(),
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (response) {
-                if (response.status === 'success') {
-                    showToast.success(response.message);
+            url: $form.attr('action'),
+            data: $form.serialize()
+        })
+            .done(function(response) {
+                showToast.success(response.message);
+                $('.empty-state').remove();
 
-                    $('.empty-state').remove();
+                const $newCard = $(response.html);
+                $('#workers-list').append($newCard);
+                initFlatpickrIn($newCard);
 
-                    $('#workers-list').append(response.html);
-
-                    const count = $('.settings-container[data-worker-id]').length;
-                    $('#workers-count').text('(' + count + ')');
-
-                    $('#toggle-worker-form').prop('checked', false);
-                    form[0].reset();
-                }
-            },
-            error: function (xhr) {
-                let errors = xhr.responseJSON?.errors;
-                if (errors) {
-                    showToast.error(Object.values(errors).flat()[0]);
-                } else {
-                    showToast.error('Wystąpił błąd podczas dodawania pracownika');
-                }
-            }
-        });
+                $('#workers-count').text('(' + $('.settings-container[data-worker-id]').length + ')');
+                $('#toggle-worker-form').prop('checked', false);
+                $form[0].reset();
+            })
+            .fail(function(xhr) {
+                handleAjaxError(xhr, 'Wystąpił błąd podczas dodawania pracownika');
+            });
     });
 
-    // Edit worker form handling
     $(document).on('submit', '.edit-worker-form', function(e) {
         e.preventDefault();
-        const form = $(this);
-        const card = form.closest('.settings-container');
-        const url = form.attr('action');
 
-        $.ajax({
+        const $form = $(this);
+        const $card = $form.closest('.settings-container');
+
+        ajaxRequest({
             type: "POST",
-            url: url,
-            data: form.serialize(),
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                if (response.status === 'success') {
-                    showToast.success(response.message);
-                    card.replaceWith(response.html);
-                }
-            },
-            error: function(xhr) {
-                let errors = xhr.responseJSON?.errors;
-                if (errors) {
-                    showToast.error(Object.values(errors).flat()[0]);
-                } else {
-                    showToast.error('Wystąpił błąd podczas edycji');
-                }
-            }
-        });
+            url: $form.attr('action'),
+            data: $form.serialize()
+        })
+            .done(function(response) {
+                showToast.success(response.message);
+                const $newCard = $(response.html);
+                $card.replaceWith($newCard);
+                initFlatpickrIn($newCard);
+            })
+            .fail(function(xhr) {
+                handleAjaxError(xhr, 'Wystąpił błąd podczas edycji');
+            });
     });
 });
