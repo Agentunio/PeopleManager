@@ -11,12 +11,14 @@ class CheckUserRole
 
     public function handle(Request $request, Closure $next, $roleuser): Response
     {
-        $role = auth()->user()->role;
-
-        if ($role == $roleuser) {
-            return $next($request);
-        }else{
-            return redirect()->back();
+        if (!auth()->check()) {
+            return redirect()->route('login');
         }
+
+        if (auth()->user()->role !== $roleuser) {
+            abort(403, 'Brak dostępu');
+        }
+
+        return $next($request);
     }
 }
