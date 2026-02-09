@@ -163,7 +163,6 @@
     font-size: 0.75rem;
 }
 
-/* Day Shifts */
 .day-shifts {
     display: flex;
     flex-direction: column;
@@ -283,10 +282,6 @@
     color: #4caf50;
 }
 
-/* ========================================
-   BACK LINK
-   ======================================== */
-
 .settings-back-link {
     display: inline-flex;
     align-items: center;
@@ -301,10 +296,6 @@
 .settings-back-link:hover {
     color: var(--accent-color);
 }
-
-/* ========================================
-   DAY VIEW
-   ======================================== */
 
 .day-view-header {
     display: flex;
@@ -331,10 +322,6 @@
     gap: 25px;
     min-height: 500px;
 }
-
-/* ========================================
-   WORKERS PANEL
-   ======================================== */
 
 .workers-panel {
     background: #1f1f1f;
@@ -393,7 +380,6 @@
     background: var(--accent-color);
 }
 
-/* Worker Card */
 .worker-card {
     display: flex;
     align-items: center;
@@ -430,7 +416,6 @@
     background: rgba(0, 0, 0, 0.3);
 }
 
-/* Worker Availability Badges */
 .worker-availability-badges {
     display: flex;
     gap: 5px;
@@ -457,7 +442,6 @@
     background: linear-gradient(135deg, #9c27b0, #673ab7);
 }
 
-/* Day view worker name */
 .workers-panel .worker-name,
 .assigned-worker .worker-name {
     color: var(--text-color);
@@ -467,10 +451,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-/* ========================================
-   SHIFTS PANEL
-   ======================================== */
 
 .shifts-panel {
     display: flex;
@@ -549,7 +529,6 @@
     color: var(--accent-color);
 }
 
-/* Dropzone */
 .shift-dropzone {
     min-height: 120px;
     padding: 20px;
@@ -593,7 +572,6 @@
     display: none;
 }
 
-/* Assigned Workers */
 .assigned-workers {
     display: flex;
     flex-wrap: wrap;
@@ -630,10 +608,6 @@
     color: white;
 }
 
-/* ========================================
-   DAY SUMMARY
-   ======================================== */
-
 .day-summary {
     display: flex;
     align-items: center;
@@ -666,10 +640,6 @@
     margin-left: auto;
 }
 
-/* ========================================
-   MODAL
-   ======================================== */
-
 .modal-overlay {
     display: none;
     position: fixed;
@@ -693,7 +663,7 @@
     border: 1px solid var(--border-color);
     border-radius: 12px;
     width: 100%;
-    max-width: 450px;
+    max-width: 650px;
     max-height: 80vh;
     overflow: hidden;
     animation: modalSlideIn 0.3s ease;
@@ -753,7 +723,6 @@
     background: rgba(0, 0, 0, 0.2);
 }
 
-/* Availability List */
 .availability-list {
     display: flex;
     flex-direction: column;
@@ -800,7 +769,6 @@
     white-space: nowrap;
 }
 
-/* Toggle Switch */
 .toggle-switch {
     position: relative;
     width: 50px;
@@ -845,21 +813,148 @@
     transform: translateX(24px);
 }
 
-/* ========================================
-   UI DRAGGABLE
-   ======================================== */
-
 .ui-draggable-dragging {
     z-index: 1000 !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     transform: rotate(3deg);
 }
 
-/* ========================================
-   RESPONSIVE - CALENDAR
-   ======================================== */
+.tap-mode-active .worker-card {
+    cursor: pointer;
+}
 
-@media (max-width: 1400px) {
+.tap-mode-active .worker-card.selected {
+    background: rgba(229, 9, 20, 0.25);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.3);
+}
+
+.tap-mode-active .worker-card.selected::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+}
+
+.tap-mode-active .worker-card {
+    position: relative;
+}
+
+.tap-mode-active .shift-dropzone {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tap-mode-active .shift-dropzone:hover,
+.tap-mode-active .shift-dropzone.tap-highlight {
+    background: rgba(229, 9, 20, 0.1);
+    border: 2px dashed var(--accent-color);
+    margin: -2px;
+}
+
+.selection-info-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #1f1f1f, #2a2a2a);
+    border-top: 2px solid var(--accent-color);
+    padding: 15px 20px;
+    z-index: 100;
+    animation: slideUp 0.3s ease;
+}
+
+.selection-info-bar.show {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.selection-info-bar .selection-count {
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.selection-info-bar .selection-count strong {
+    color: var(--accent-color);
+    font-size: 1.1rem;
+}
+
+.selection-info-bar .selection-hint {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.selection-info-bar .btn-clear-selection {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.selection-info-bar .btn-clear-selection:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.tap-mode-instruction {
+    display: none;
+    background: rgba(229, 9, 20, 0.9);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-bottom: 15px;
+    animation: fadeIn 0.3s ease;
+}
+
+.tap-mode-instruction i {
+    margin-right: 8px;
+}
+
+.tap-mode-active .tap-mode-instruction {
+    display: block;
+}
+
+.selection-active .day-summary {
+    margin-bottom: 80px;
+}
+
+@media (max-width: 1300px) {
+    .main-content {
+        padding: 20px;
+        padding-top: 80px;
+    }
+
     .calendar-grid {
         grid-template-columns: repeat(7, 1fr);
         gap: 8px;
@@ -872,9 +967,14 @@
     .shift-workers {
         max-height: 60px;
     }
+
+    .day-view-content {
+        grid-template-columns: 280px 1fr;
+        gap: 20px;
+    }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
     .calendar-weekdays {
         display: none;
     }
@@ -886,6 +986,29 @@
     .calendar-day-empty {
         display: none;
     }
+
+    .day-view-content {
+        grid-template-columns: 1fr;
+    }
+
+    .workers-panel {
+        order: 1;
+    }
+
+    .shifts-panel {
+        order: 0;
+    }
+
+    .workers-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 10px;
+        max-height: none;
+    }
+
+    .worker-card {
+        margin-bottom: 0;
+    }
 }
 
 @media (max-width: 900px) {
@@ -894,7 +1017,12 @@
     }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 768px) {
+    .main-content {
+        padding: 15px;
+        padding-top: 75px;
+    }
+
     .calendar-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -908,9 +1036,92 @@
         font-size: 1.3rem;
         min-width: auto;
     }
+
+    .day-view-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .day-view-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .day-summary {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .day-summary .btn-submit,
+    .day-summary .btn-change {
+        margin-left: 0;
+    }
+
+    .shifts-panel {
+        gap: 15px;
+    }
+
+    .shift-box .shift-header {
+        flex-wrap: wrap;
+        padding: 15px;
+        gap: 10px;
+    }
+
+    .shift-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .shift-icon i {
+        font-size: 1.2rem;
+    }
+
+    .shift-title h3 {
+        font-size: 1rem;
+    }
+
+    .shift-count {
+        width: 100%;
+        text-align: center;
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+
+    .workers-list {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+
+    .modal-content {
+        margin: 15px;
+        max-width: calc(100% - 30px);
+    }
+
+    .availability-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .availability-toggles {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+    }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 480px) {
+    .main-content {
+        padding: 10px;
+        padding-top: 65px;
+    }
+
     .calendar-grid {
         grid-template-columns: 1fr;
     }
@@ -927,83 +1138,38 @@
         flex-direction: column;
         gap: 10px;
     }
-}
-
-/* ========================================
-   RESPONSIVE - DAY VIEW
-   ======================================== */
-
-@media (max-width: 1024px) {
-    .day-view-content {
-        grid-template-columns: 1fr;
-    }
-
-    .workers-panel {
-        order: 1;
-    }
-
-    .shifts-panel {
-        order: 0;
-    }
 
     .workers-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 10px;
-        max-height: none;
+        grid-template-columns: 1fr;
     }
 
     .worker-card {
-        margin-bottom: 0;
-    }
-}
-
-@media (max-width: 768px) {
-    .day-view-header {
-        flex-direction: column;
-        align-items: flex-start;
+        padding: 10px 12px;
     }
 
-    .day-summary {
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
+    .workers-panel-header {
+        padding: 15px;
     }
 
-    .day-summary .btn-submit,
-    .day-summary .btn-change {
-        margin-left: 0;
-        width: 100%;
+    .workers-panel-header h3 {
+        font-size: 1rem;
+        margin-bottom: 12px;
     }
 
-    .shifts-panel {
-        gap: 15px;
+    .shift-dropzone {
+        padding: 15px;
     }
 
-    .shift-box .shift-header {
-        flex-wrap: wrap;
+    .dropzone-placeholder {
+        padding: 20px;
     }
 
-    .shift-count {
-        width: 100%;
-        text-align: center;
-        margin-top: 10px;
+    .dropzone-placeholder i {
+        font-size: 1.5rem;
     }
 
-    .availability-toggles {
-        flex-direction: column;
-        gap: 10px;
-    }
-}
-
-@media (max-width: 480px) {
-    .workers-list {
-        grid-template-columns: 1fr;
-    }
-
-    .modal-content {
-        margin: 10px;
-        max-height: 90vh;
+    .dropzone-placeholder span {
+        font-size: 0.85rem;
     }
 
     .assigned-workers {
@@ -1011,6 +1177,37 @@
     }
 
     .assigned-worker {
-        width: 100%;
+        justify-content: space-between;
+    }
+
+    .day-summary {
+        padding: 15px;
+    }
+
+    .modal-content {
+        margin: 10px;
+        max-height: 90vh;
+    }
+
+    .modal-header {
+        padding: 15px 20px;
+    }
+
+    .modal-header h3 {
+        font-size: 1rem;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+    .modal-footer {
+        padding: 15px;
+    }
+
+    .toggle-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
     }
 }

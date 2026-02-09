@@ -105,25 +105,131 @@ body {
     cursor: pointer;
 }
 
-/* Legacy alert styles - obecnie używamy SweetAlert2 toasts */
-/* Można usunąć po pełnej migracji
-.alert {
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    line-height: 1.5;
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1001;
+    background-color: var(--accent-color);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.3s;
 }
 
-.alert-error {
-    background-color: #fee;
-    border: 1px solid #fcc;
-    color: #c33;
+.mobile-menu-toggle:hover {
+    background-color: #ff1a1a;
 }
 
-.alert-success {
-    background-color: #efe;
-    border: 1px solid #cfc;
-    color: #3c3;
+.mobile-menu-toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background-color: #fff;
+    margin: 5px 0;
+    transition: transform 0.3s, opacity 0.3s;
 }
-*/
+
+.mobile-menu-toggle.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.mobile-menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-menu-toggle.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+@media screen and (max-width: 1300px) {
+    .mobile-menu-toggle {
+        display: block;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        height: 100vh;
+        width: 280px;
+        z-index: 1000;
+        transition: left 0.3s ease;
+        box-shadow: none;
+    }
+
+    .sidebar.active {
+        left: 0;
+        box-shadow: 5px 0 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .sidebar-header {
+        padding: 20px;
+        padding-top: 60px;
+    }
+
+    .nav-links li a {
+        padding: 18px 25px;
+        font-size: 1rem;
+    }
+
+    .nav-links li:last-child {
+        padding: 18px 25px;
+    }
+
+    .main-content {
+        padding: 20px;
+        padding-top: 70px;
+    }
+
+    .admin-panel {
+        flex-direction: column;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .mobile-menu-toggle.active span:nth-child(1){
+        transform: rotate(45deg) translate(3px, 4px);
+    }
+
+    .sidebar {
+        width: 100%;
+        left: -100%;
+    }
+
+    .mobile-menu-toggle {
+        top: 10px;
+        left: 10px;
+        padding: 10px 12px;
+    }
+
+    .mobile-menu-toggle span {
+        width: 20px;
+        margin: 4px 0;
+    }
+
+    .main-content {
+        padding: 15px;
+        padding-top: 60px;
+    }
+}

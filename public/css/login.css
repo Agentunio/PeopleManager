@@ -123,3 +123,10 @@ input[type="password"]:focus {
     background-color: #c40812;
     transform: translateY(-2px);
 }
+
+@media (max-width: 400px) {
+    .login-container {
+        padding: 50px 20px;
+        width: 90%;
+    }
+}

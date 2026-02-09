@@ -1,16 +1,8 @@
-/* ========================================
-   SETTLEMENT STYLES
-   ======================================== */
-
 .settlement-container {
     display: flex;
     flex-direction: column;
     gap: 25px;
 }
-
-/* ========================================
-   DEFAULTS SECTION (POZA FORMULARZEM)
-   ======================================== */
 
 .settlement-defaults-section {
     background: #1f1f1f;
@@ -51,6 +43,7 @@
     font-size: 1.3rem;
     font-weight: 600;
     margin: 0;
+    flex: 1;
 }
 
 .defaults-header .defaults-hint {
@@ -110,8 +103,12 @@
 }
 
 .defaults-fields .field-group {
-    flex: 1;
-    min-width: 200px;
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+.defaults-fields .field-group.field-time {
+    flex: 2 1 350px;
 }
 
 .defaults-fields .btn-apply-defaults {
@@ -128,6 +125,7 @@
     align-items: center;
     gap: 8px;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .defaults-fields .btn-apply-defaults:hover {
@@ -139,10 +137,6 @@
 .defaults-fields .btn-apply-defaults:active {
     transform: translateY(0);
 }
-
-/* ========================================
-   GLOBAL PACKAGES SECTION
-   ======================================== */
 
 .settlement-global-section {
     background: #1f1f1f;
@@ -189,7 +183,7 @@
 
 .global-shifts-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 25px;
 }
 
@@ -239,10 +233,6 @@
     font-weight: 600;
 }
 
-/* ========================================
-   SHIFT SECTION
-   ======================================== */
-
 .settlement-shift {
     background: #1f1f1f;
     border: 1px solid var(--border-color);
@@ -256,6 +246,7 @@
     gap: 15px;
     padding: 20px 25px;
     border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
 }
 
 .settlement-shift-header.shift-morning {
@@ -305,10 +296,6 @@
     color: #888;
 }
 
-/* ========================================
-   WORKERS LIST
-   ======================================== */
-
 .settlement-workers {
     padding: 20px;
     display: flex;
@@ -316,7 +303,12 @@
     gap: 15px;
 }
 
-/* Worker Card */
+.settlement-workers > p {
+    color: #666;
+    text-align: center;
+    padding: 20px;
+}
+
 .settlement-worker-card {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-color);
@@ -341,12 +333,11 @@
     font-weight: 600;
 }
 
-/* Settlement Fields */
 .worker-settlement-fields {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: minmax(200px, 1fr) minmax(300px, 2fr);
     gap: 20px;
-    align-items: end;
+    align-items: start;
 }
 
 .field-group {
@@ -355,7 +346,8 @@
     gap: 8px;
 }
 
-.field-group span {
+.field-group > span,
+.field-group > label {
     color: #888;
     font-size: 0.85rem;
     font-weight: 500;
@@ -369,6 +361,7 @@
     border-radius: 8px;
     color: var(--text-color);
     font-size: 1rem;
+    font-family: 'Open Sans', sans-serif;
     transition: all 0.2s;
 }
 
@@ -394,26 +387,6 @@
     padding: 10px;
 }
 
-/* Time Inputs */
-.time-inputs {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.time-inputs input {
-    width: 70px;
-    text-align: center;
-    padding: 12px 10px;
-}
-
-.time-separator {
-    color: #666;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-/* Time Range Inputs (Od - Do) */
 .time-range-inputs {
     display: flex;
     align-items: center;
@@ -430,6 +403,8 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 8px 12px;
+    flex: 1 1 auto;
+    min-width: 140px;
 }
 
 .time-from:focus-within,
@@ -444,10 +419,11 @@
     text-transform: uppercase;
     font-weight: 600;
     margin-right: 5px;
+    flex-shrink: 0;
 }
 
 .time-range-inputs input[type="number"] {
-    width: 45px;
+    width: 40px;
     text-align: center;
     padding: 6px 4px;
     background: transparent;
@@ -470,26 +446,29 @@
     color: var(--text-color);
     font-size: 1.2rem;
     font-weight: bold;
+    flex-shrink: 0;
 }
 
 .time-range-separator {
     color: #666;
     font-size: 1.2rem;
     font-weight: 300;
+    flex-shrink: 0;
 }
 
 .time-calculated {
-    margin-left: auto;
     padding: 8px 15px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-color);
     border-radius: 8px;
+    flex-shrink: 0;
 }
 
 .calculated-hours {
     color: #666;
     font-size: 0.95rem;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .calculated-hours.has-value {
@@ -497,7 +476,40 @@
     font-weight: 600;
 }
 
-/* Field Updated Animation */
+.time-saved {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.saved-hours {
+    color: #4CAF50 !important;
+    font-weight: 600 !important;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.btn-change-time {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-change-time:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
 .field-updated {
     animation: fieldPulse 0.5s ease;
 }
@@ -517,20 +529,18 @@
     }
 }
 
-/* Remove spinner from number inputs */
 .field-group input[type="number"]::-webkit-outer-spin-button,
-.field-group input[type="number"]::-webkit-inner-spin-button {
+.field-group input[type="number"]::-webkit-inner-spin-button,
+.time-range-inputs input[type="number"]::-webkit-outer-spin-button,
+.time-range-inputs input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
-.field-group input[type="number"] {
+.field-group input[type="number"],
+.time-range-inputs input[type="number"] {
     -moz-appearance: textfield;
 }
-
-/* ========================================
-   ACTIONS
-   ======================================== */
 
 .settlement-actions {
     display: flex;
@@ -544,9 +554,25 @@
     font-size: 1rem;
 }
 
-/* ========================================
-   RESPONSIVE
-   ======================================== */
+@media (max-width: 1300px) {
+    .main-content {
+        padding: 20px;
+        padding-top: 80px;
+    }
+
+    .worker-settlement-fields {
+        grid-template-columns: minmax(180px, 1fr) minmax(250px, 2fr);
+        gap: 15px;
+    }
+
+    .defaults-fields .field-group {
+        flex: 1 1 180px;
+    }
+
+    .defaults-fields .field-group.field-time {
+        flex: 1 1 100%;
+    }
+}
 
 @media (max-width: 1024px) {
     .defaults-fields {
@@ -554,8 +580,9 @@
         align-items: stretch;
     }
 
-    .defaults-fields .field-group {
-        min-width: auto;
+    .defaults-fields .field-group,
+    .defaults-fields .field-group.field-time {
+        flex: 1 1 auto;
     }
 
     .defaults-fields .btn-apply-defaults {
@@ -566,61 +593,48 @@
         grid-template-columns: 1fr;
     }
 
-    .time-range-inputs {
-        gap: 8px;
-    }
-
-    .time-calculated {
-        margin-left: 0;
-        margin-top: 10px;
-        width: 100%;
-        text-align: center;
-    }
-}
-
-.saved-hours{
-    color: #4CAF50 !important;
-    font-weight: 600 !important;
-    margin-right: 20px;
-}
-
-@media (max-width: 768px) {
     .worker-settlement-fields {
         grid-template-columns: 1fr;
     }
 
-    .defaults-header .defaults-hint {
-        padding-left: 0;
+    .time-calculated {
+        width: 90%;
+        text-align: center;
+        margin: 0 auto;
     }
 }
 
-@media (max-width: 600px) {
-    .time-inputs {
-        justify-content: flex-start;
+@media (max-width: 768px) {
+    .main-content {
+        padding: 15px;
+        padding-top: 75px;
     }
 
-    .time-inputs input {
-        flex: 1;
-        max-width: 80px;
+    .defaults-header {
+        padding: 15px 20px;
     }
 
-    .settlement-actions {
-        flex-direction: column;
+    .defaults-header .defaults-icon {
+        width: 45px;
+        height: 45px;
     }
 
-    .settlement-actions .btn {
-        width: 100%;
-        justify-content: center;
+    .defaults-header .defaults-icon i {
+        font-size: 1.3rem;
     }
 
-    .settlement-shift-header {
-        flex-wrap: wrap;
+    .defaults-header h2 {
+        font-size: 1.1rem;
     }
 
-    .settlement-shift-header .workers-count {
-        width: 100%;
-        margin-top: 10px;
-        text-align: center;
+    .defaults-header .defaults-hint {
+        padding-left: 0;
+        font-size: 0.8rem;
+    }
+
+    .defaults-content {
+        padding: 15px;
+        gap: 20px;
     }
 
     .defaults-shift-group {
@@ -632,13 +646,211 @@
         justify-content: center;
     }
 
+    .settlement-shift-header {
+        padding: 15px 20px;
+        gap: 12px;
+    }
+
+    .settlement-shift-header .shift-icon {
+        width: 45px;
+        height: 45px;
+    }
+
+    .settlement-shift-header .shift-icon i {
+        font-size: 1.3rem;
+    }
+
+    .settlement-shift-header h2 {
+        font-size: 1.1rem;
+        flex: 1 1 auto;
+    }
+
+    .settlement-shift-header .workers-count {
+        width: 100%;
+        text-align: center;
+        order: 3;
+    }
+
+    .settlement-workers {
+        padding: 15px;
+        gap: 12px;
+    }
+
+    .settlement-worker-card {
+        padding: 15px;
+    }
+
+    .worker-info {
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+    }
+
+    .worker-info .worker-name {
+        font-size: 1rem;
+    }
+
+    .global-section-header {
+        padding: 15px 20px;
+    }
+
+    .global-section-header .global-icon {
+        width: 45px;
+        height: 45px;
+    }
+
+    .global-section-header .global-icon i {
+        font-size: 1.3rem;
+    }
+
+    .global-section-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .global-section-content {
+        padding: 15px;
+    }
+
     .global-shift-group {
         padding: 15px;
     }
 
+    .time-range-inputs {
+        gap: 8px;
+    }
+
     .time-from,
     .time-to {
-        flex: 1;
+        min-width: 0;
+        flex: 1 1 calc(50% - 20px);
+        padding: 6px 10px;
+    }
+
+    .time-range-separator {
+        display: none;
+    }
+
+    .time-saved {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .btn-change-time {
+        width: 100%;
         justify-content: center;
+    }
+
+    .settlement-actions {
+        flex-direction: column;
+    }
+
+    .settlement-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 10px;
+        padding-top: 65px;
+    }
+
+    .settlement-defaults-section,
+    .settlement-shift,
+    .settlement-global-section {
+        border-radius: 10px;
+    }
+
+    .defaults-header,
+    .settlement-shift-header,
+    .global-section-header {
+        padding: 12px 15px;
+    }
+
+    .defaults-header .defaults-icon,
+    .settlement-shift-header .shift-icon,
+    .global-section-header .global-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .defaults-header .defaults-icon i,
+    .settlement-shift-header .shift-icon i,
+    .global-section-header .global-icon i {
+        font-size: 1.1rem;
+    }
+
+    .defaults-header h2,
+    .settlement-shift-header h2,
+    .global-section-header h2 {
+        font-size: 1rem;
+    }
+
+    .defaults-content,
+    .settlement-workers,
+    .global-section-content {
+        padding: 12px;
+    }
+
+    .defaults-shift-group,
+    .settlement-worker-card,
+    .global-shift-group {
+        padding: 12px;
+    }
+
+    .defaults-shift-label,
+    .global-shift-label {
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+    }
+
+    .defaults-shift-label span,
+    .global-shift-label span {
+        font-size: 0.9rem;
+    }
+
+    .field-group > span,
+    .field-group > label {
+        font-size: 0.8rem;
+    }
+
+    .field-group select,
+    .field-group input {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+    }
+
+    .time-from,
+    .time-to {
+        flex: 1 1 100%;
+    }
+
+    .time-range-separator {
+        width: 100%;
+        text-align: center;
+        padding: 5px 0;
+    }
+
+    .time-range-inputs input[type="number"] {
+        width: 35px;
+        font-size: 1rem;
+    }
+
+    .time-label {
+        font-size: 0.7rem;
+    }
+
+    .time-calculated {
+        padding: 6px 12px;
+    }
+
+    .calculated-hours {
+        font-size: 0.85rem;
+    }
+
+    .settlement-actions .btn {
+        padding: 12px 20px;
+        font-size: 0.95rem;
     }
 }

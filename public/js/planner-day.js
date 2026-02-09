@@ -1,12 +1,80 @@
 $(document).ready(function() {
-
-    console.log('=== PAGE LOADED ===');
-    console.log('workersData:', workersData);
-    console.log('typeof workersData:', typeof workersData);
-    console.log('Array.isArray:', Array.isArray(workersData));
-
-
     const $dropzones = $('.shift-dropzone');
+    let isTapMode = false;
+    let selectedWorkers = [];
+
+    function isTouchDevice() {
+        return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    }
+
+    function shouldUseTapMode() {
+        return window.innerWidth <= 1100 || isTouchDevice();
+    }
+
+    function initMode() {
+        const newTapMode = shouldUseTapMode();
+
+        if (newTapMode !== isTapMode) {
+            isTapMode = newTapMode;
+
+            if (isTapMode) {
+                enableTapMode();
+            } else {
+                disableTapMode();
+            }
+        }
+    }
+
+    function enableTapMode() {
+        console.log('Enabling tap mode');
+        $('body').addClass('tap-mode-active');
+
+        $('.worker-card.draggable').each(function() {
+            if ($(this).data('ui-draggable')) {
+                $(this).draggable('disable');
+            }
+        });
+
+        if ($('.selection-info-bar').length === 0) {
+            const infoBar = `
+                <div class="selection-info-bar">
+                    <div>
+                        <span class="selection-count">Zaznaczono: <strong id="selected-count">0</strong> pracowników</span>
+                        <span class="selection-hint">Kliknij na zmianę, aby przypisać</span>
+                    </div>
+                    <button type="button" class="btn-clear-selection">
+                        <i class="fas fa-times"></i> Wyczyść
+                    </button>
+                </div>
+            `;
+            $('body').append(infoBar);
+        }
+
+        if ($('.tap-mode-instruction').length === 0) {
+            const instruction = `
+                <div class="tap-mode-instruction">
+                    <i class="fas fa-hand-pointer"></i>
+                    Zaznacz pracowników, następnie kliknij na zmianę
+                </div>
+            `;
+            $('.workers-panel-header').after(instruction);
+        }
+    }
+
+    function disableTapMode() {
+        console.log('Disabling tap mode');
+        $('body').removeClass('tap-mode-active selection-active');
+
+        $('.worker-card.draggable').each(function() {
+            if ($(this).data('ui-draggable')) {
+                $(this).draggable('enable');
+            }
+        });
+
+        clearSelection();
+
+        $('.selection-info-bar').removeClass('show');
+    }
 
     function getWorkerFromData(workerId) {
         return workersData.find(w => w.id == workerId);
@@ -36,6 +104,90 @@ $(document).ready(function() {
     function isWorkerAssignedToShift(workerId, shiftType) {
         const dropzoneId = shiftType === 'morning' ? '#morning-shift' : '#afternoon-shift';
         return $(dropzoneId).find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0;
+    }
+
+    function toggleWorkerSelection(workerId) {
+        const index = selectedWorkers.indexOf(workerId);
+
+        if (index > -1) {
+            selectedWorkers.splice(index, 1);
+            $(`.worker-card[data-worker-id="${workerId}"]`).removeClass('selected');
+        } else {
+            selectedWorkers.push(workerId);
+            $(`.worker-card[data-worker-id="${workerId}"]`).addClass('selected');
+        }
+
+        updateSelectionUI();
+    }
+
+    function clearSelection() {
+        selectedWorkers = [];
+        $('.worker-card').removeClass('selected');
+        updateSelectionUI();
+    }
+
+    function updateSelectionUI() {
+        const count = selectedWorkers.length;
+        $('#selected-count').text(count);
+
+        if (count > 0) {
+            $('.selection-info-bar').addClass('show');
+            $('body').addClass('selection-active');
+        } else {
+            $('.selection-info-bar').removeClass('show');
+            $('body').removeClass('selection-active');
+        }
+    }
+
+    function assignSelectedWorkersToShift(shiftType) {
+        if (selectedWorkers.length === 0) {
+            showToast.warning('Najpierw zaznacz pracowników');
+            return;
+        }
+
+        const $dropzone = $(`#${shiftType}-shift`);
+        let assignedCount = 0;
+        let errors = [];
+
+        selectedWorkers.forEach(workerId => {
+            const worker = getWorkerFromData(workerId);
+            if (!worker) return;
+
+            if (!isWorkerAvailableForShift(workerId, shiftType)) {
+                errors.push(`${worker.name} - niedostępny na tę zmianę`);
+                return;
+            }
+
+            if ($dropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0) {
+                errors.push(`${worker.name} - już przypisany`);
+                return;
+            }
+
+            if (!canWorkerBeOnBothShifts(workerId)) {
+                const $otherDropzone = $dropzones.not($dropzone);
+                $otherDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).remove();
+                $otherDropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
+                updatePlaceholder($otherDropzone);
+            }
+
+            addWorkerToShift(workerId, worker.name, shiftType, $dropzone);
+            updateWorkerCardVisibility(workerId);
+            assignedCount++;
+        });
+
+        updatePlaceholder($dropzone);
+        updateCounts();
+        clearSelection();
+
+        if (assignedCount > 0) {
+            showToast.success(`Przypisano ${assignedCount} pracowników`);
+        }
+
+        if (errors.length > 0) {
+            setTimeout(() => {
+                showToast.warning(errors[0]);
+            }, 500);
+        }
     }
 
     function restoreWorkerCard(workerId) {
@@ -90,6 +242,12 @@ $(document).ready(function() {
 
         if (!freeMorning && !freeAfternoon) {
             $workerCard.hide();
+            // Remove from selection if hidden
+            const index = selectedWorkers.indexOf(workerId);
+            if (index > -1) {
+                selectedWorkers.splice(index, 1);
+                updateSelectionUI();
+            }
             return;
         }
 
@@ -128,6 +286,7 @@ $(document).ready(function() {
             cursor: "grabbing",
             zIndex: 1000,
             opacity: 0.9,
+            disabled: isTapMode,
             start: function(event, ui) {
                 $(this).addClass('dragging');
                 $dropzones.addClass('highlight');
@@ -147,6 +306,8 @@ $(document).ready(function() {
             hoverClass: "dropzone-hover",
             tolerance: "pointer",
             drop: function(event, ui) {
+                if (isTapMode) return;
+
                 const $dragged = ui.draggable;
                 const $currentDropzone = $(this);
                 const shiftType = $currentDropzone.data('shift');
@@ -205,6 +366,7 @@ $(document).ready(function() {
             cursor: "grabbing",
             zIndex: 1000,
             opacity: 0.9,
+            disabled: isTapMode,
             start: function(event, ui) {
                 $(this).addClass('dragging');
                 $dropzones.addClass('highlight');
@@ -234,7 +396,9 @@ $(document).ready(function() {
         $dropzone.find('.assigned-workers').append($workerElement);
         $dropzone.find('.hidden-inputs').append(hiddenInput);
 
-        makeAssignedWorkerDraggable($workerElement);
+        if (!isTapMode) {
+            makeAssignedWorkerDraggable($workerElement);
+        }
     }
 
     function updatePlaceholder($dropzone) {
@@ -250,6 +414,29 @@ $(document).ready(function() {
         $('#afternoon-count').text(afternoonCount);
         $('#total-assigned').text(morningCount + afternoonCount);
     }
+
+    $(document).on('click', '.worker-card', function(e) {
+        if (!isTapMode) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const workerId = $(this).data('worker-id');
+        toggleWorkerSelection(workerId);
+    });
+
+    $(document).on('click', '.shift-dropzone', function(e) {
+        if (!isTapMode) return;
+        if ($(e.target).closest('.remove-worker').length) return;
+        if ($(e.target).closest('.assigned-worker').length) return;
+
+        const shiftType = $(this).data('shift');
+        assignSelectedWorkersToShift(shiftType);
+    });
+
+    $(document).on('click', '.btn-clear-selection', function() {
+        clearSelection();
+    });
 
     $(document).on('click', '.remove-worker', function(e) {
         e.stopPropagation();
@@ -280,9 +467,6 @@ $(document).ready(function() {
         }
     });
 
-    initDragAndDrop();
-    updateCounts();
-
     $('#availability-form').on('submit', function(e) {
         e.preventDefault();
 
@@ -302,8 +486,11 @@ $(document).ready(function() {
                     showToast.success(response.message);
                     $('#availability-modal').fadeOut(200);
                     $('#workers-list').html(response.html);
+                    clearSelection();
                     initDragAndDrop();
                     removeUnavailableWorkers();
+
+                    initMode();
                 }
             },
             error: function(xhr) {
@@ -317,4 +504,17 @@ $(document).ready(function() {
             }
         });
     });
+
+    let resizeTimeout;
+    $(window).on('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            initMode();
+        }, 250);
+    });
+
+    initDragAndDrop();
+    updateCounts();
+    initMode();
+
 });

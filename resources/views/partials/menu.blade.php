@@ -1,4 +1,12 @@
-<nav class="sidebar">
+<button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+    <span></span>
+    <span></span>
+    <span></span>
+</button>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <h3>Panel Admina</h3>
     </div>
