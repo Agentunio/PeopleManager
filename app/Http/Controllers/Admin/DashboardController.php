@@ -10,12 +10,6 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $workers = Worker::orderBy('last_name')
-            ->take(5)
-            ->get();
-
-        return view('dashboard.index', [
-            'workers' => $workers,
-        ]);
+        return view('admin.dashboard.index');
     }
 }

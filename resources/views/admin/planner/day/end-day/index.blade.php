@@ -3,9 +3,7 @@
 @section('title', 'Rozliczenie dnia - Panel administratora')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/settings.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/planner.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/settlement.css') }}">
+    @vite(['resources/css/settings.css', 'resources/css/planner.css', 'resources/css/settlement.css'])
 @endpush
 
 @section('content')
@@ -283,7 +281,9 @@
                                             <label>Stawka za paczkę</label>
                                             <select name="morning_package_rate" id="morning-package-rate">
                                                 <option value="">Wybierz stawkę</option>
-                                                @include('admin.planner.partials.allpackage')
+                                                @include('admin.planner.partials.allpackage',  [
+                                                    'selected_id' => $shift_packages_morning->package_id ?? null
+                                                ])
                                             </select>
                                         </div>
                                     </div>
@@ -305,7 +305,9 @@
                                             <label>Stawka za paczkę</label>
                                             <select name="afternoon_package_rate" id="afternoon-package-rate">
                                                 <option value="">Wybierz stawkę</option>
-                                                @include('admin.planner.partials.allpackage')
+                                                @include('admin.planner.partials.allpackage', [
+                                                    'selected_id' => $shift_packages_afternoon->package_id ?? null
+                                                ])
                                             </select>
                                         </div>
                                     </div>
@@ -327,5 +329,5 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/settlement.js') }}"></script>
+    @vite(['resources/js/settlement.js'])
 @endpush

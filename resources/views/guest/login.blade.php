@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Logowania</title>
-    <link rel="stylesheet" href="{{ asset('css/login.css') }}">
+    @push('styles')
+        @vite('resources/css/login.css')
+    @endpush
     <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -33,12 +35,13 @@
     </form>
 </div>
 
-<script src="{{ asset('js/login.js') }}"></script>
-@if($errors->any())
-<script>
-    showLoginError('{{ $errors->first() }}');
-</script>
-@endif
-
+@push('scripts')
+    @if($errors->any())
+        <script>
+            showLoginError('{{ $errors->first() }}');
+        </script>
+    @endif
+    @vite(['resources/js/login.js'])
+@endpush
 </body>
 </html>

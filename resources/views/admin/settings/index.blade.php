@@ -3,7 +3,7 @@
 @section('title', 'Stawki - Panel administratora')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/settings.css') }}">
+    @vite(['resources/css/settings.css'])
 @endpush
 
 @section('content')
@@ -145,5 +145,5 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/settings.js') }}"></script>
+    @vite(['resources/js/settings.js'])
 @endpush

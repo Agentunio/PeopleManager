@@ -16,13 +16,13 @@ class WorkerStoreRequest extends FormRequest
         return [
             'first_name' => ['required', 'string'],
             'last_name' => ['required', 'string'],
-            'phone' => ['required', 'string'],
-            'address' => ['required', 'string'],
-            'date_of_birth' => ['required', 'date', 'before:today'],
-            'is_student' => ['required', 'boolean'],
-            'is_employed' => ['required', 'boolean'],
-            'contract_from' => ['required', 'date'],
-            'contract_to' => ['required', 'date', 'after:contract_from'],
+            'phone' => 'string',
+            'address' => 'string',
+            'date_of_birth' => ['date', 'before:today'],
+            'is_student' => 'boolean',
+            'is_employed' => 'boolean',
+            'contract_from' => 'date',
+            'contract_to' => ['date', 'after:contract_from'],
         ];
     }
 

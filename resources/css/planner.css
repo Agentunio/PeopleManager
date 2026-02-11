@@ -950,11 +950,6 @@
 }
 
 @media (max-width: 1300px) {
-    .main-content {
-        padding: 20px;
-        padding-top: 80px;
-    }
-
     .calendar-grid {
         grid-template-columns: repeat(7, 1fr);
         gap: 8px;
@@ -1018,11 +1013,6 @@
 }
 
 @media (max-width: 768px) {
-    .main-content {
-        padding: 15px;
-        padding-top: 75px;
-    }
-
     .calendar-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -1117,11 +1107,6 @@
 }
 
 @media (max-width: 480px) {
-    .main-content {
-        padding: 10px;
-        padding-top: 65px;
-    }
-
     .calendar-grid {
         grid-template-columns: 1fr;
     }

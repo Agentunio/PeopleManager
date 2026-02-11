@@ -3,8 +3,7 @@
 @section('title', 'Ustawienia grafiku - Panel administratora')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/settings.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/planner-settings.css') }}">
+    @vite(['resources/css/settings.css', 'resources/css/planner-settings.css'])
 @endpush
 
 @section('content')
@@ -169,5 +168,5 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/planner-settings.js') }}"></script>
+    @vite(['resources/js/planner-settings.js'])
 @endpush

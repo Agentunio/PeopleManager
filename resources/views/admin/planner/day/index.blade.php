@@ -3,8 +3,7 @@
 @section('title', 'Plan dnia - Panel administratora')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/settings.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/planner.css') }}">
+    @vite(['resources/css/settings.css', 'resources/css/planner.css'])
 @endpush
 
 @section('content')
@@ -145,7 +144,7 @@
                                 @php $availability = $worker->availabilities->first(); @endphp
                                 <div class="availability-item">
                                     <input type="hidden" name="workers[{{ $worker->id }}][worker_id]" value="{{ $worker->id }}">
-                                    <span class="worker-name">{{ $worker->first_name . $worker->last_name }}</span>
+                                    <span class="worker-name">{{ $worker->first_name }} {{ $worker->last_name }}</span>
                                     <div class="availability-toggles">
                                         <div class="toggle-group">
                                             <span class="toggle-label">Ranna</span>
@@ -183,5 +182,5 @@
     <script>
         let workersData = @json($workersJson);
     </script>
-    <script src="{{ asset('js/planner-day.js') }}"></script>
+    @vite(['resources/js/planner-day.js'])
 @endpush

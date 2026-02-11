@@ -3,8 +3,7 @@
 @section('title', 'Grafik - Panel administratora')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/settings.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/planner.css') }}">
+    @vite(['resources/css/settings.css', 'resources/css/planner.css'])
 @endpush
 
 @section('content')

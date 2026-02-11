@@ -605,11 +605,6 @@
 }
 
 @media (max-width: 768px) {
-    .main-content {
-        padding: 15px;
-        padding-top: 75px;
-    }
-
     .defaults-header {
         padding: 15px 20px;
     }
@@ -751,11 +746,6 @@
 }
 
 @media (max-width: 480px) {
-    .main-content {
-        padding: 10px;
-        padding-top: 65px;
-    }
-
     .settlement-defaults-section,
     .settlement-shift,
     .settlement-global-section {

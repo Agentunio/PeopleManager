@@ -3,8 +3,7 @@
 @section('title', 'Pracownicy - Panel administratora')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/settings.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/workers.css') }}">
+    @vite(['resources/css/settings.css', 'resources/css/workers.css'])
 @endpush
 
 @section('content')
@@ -132,8 +131,8 @@
 @endsection
 
 @push('scripts')
-<script>
-    window.workersIndexUrl = "{{ route('workers.index') }}";
-</script>
-<script src="{{ asset('js/workers.js') }}"></script>
+    <script>
+        window.workersIndexUrl = "{{ route('workers.index') }}";
+    </script>
+    @vite(['resources/js/workers.js'])
 @endpush

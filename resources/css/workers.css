@@ -260,11 +260,6 @@ nav[role="navigation"] > div:first-child {
 }
 
 @media (max-width: 1300px) {
-    .main-content {
-        padding: 20px;
-        padding-top: 80px;
-    }
-
     .worker-info-grid {
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
@@ -315,11 +310,6 @@ nav[role="navigation"] > div:first-child {
 }
 
 @media (max-width: 768px) {
-    .main-content {
-        padding: 15px;
-        padding-top: 75px;
-    }
-
     .worker-info-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
@@ -399,11 +389,6 @@ nav[role="navigation"] > div:first-child {
 }
 
 @media (max-width: 480px) {
-    .main-content {
-        padding: 10px;
-        padding-top: 65px;
-    }
-
     .worker-info-grid {
         grid-template-columns: 1fr;
     }
