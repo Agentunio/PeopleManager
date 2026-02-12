@@ -196,48 +196,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="dashboard-section profit-breakdown">
-                <div class="section-header">
-                    <div class="section-icon">
-                        <i class="fas fa-chart-pie"></i>
-                    </div>
-                    <h2>Podsumowanie</h2>
-                </div>
-                <div class="section-content">
-                    <div class="breakdown-grid">
-                        <div class="breakdown-item">
-                            <div class="breakdown-label">
-                                <span class="dot revenue"></span>
-                                Przychód z paczek
-                            </div>
-                            <div class="breakdown-bar">
-                                <div class="bar-fill revenue" style="width: 85%"></div>
-                            </div>
-                            <div class="breakdown-value">21 032,50 PLN</div>
-                        </div>
-
-                        <div class="breakdown-item">
-                            <div class="breakdown-label">
-                                <span class="dot cost"></span>
-                                Koszty pracowników
-                            </div>
-                            <div class="breakdown-bar">
-                                <div class="bar-fill cost" style="width: 73%"></div>
-                            </div>
-                            <div class="breakdown-value">-23 400,00 PLN</div>
-                        </div>
-                    </div>
-
-                    <div class="profit-final">
-                        <div class="profit-label">
-                            <i class="fas fa-equals"></i>
-                            Zysk netto
-                        </div>
-                        <div class="profit-value positive">+16 070,00 PLN</div>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
 @endsection

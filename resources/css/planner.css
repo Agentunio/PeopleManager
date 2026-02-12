@@ -949,6 +949,53 @@
     margin-bottom: 80px;
 }
 
+.export-hint {
+    color: #888;
+    font-size: 0.85rem;
+    margin-top: 15px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-color);
+}
+
+.export-hint i {
+    color: var(--accent-color);
+    margin-right: 8px;
+}
+
+#export-modal .form-group {
+    margin-bottom: 20px;
+}
+
+#export-modal .form-label {
+    display: block;
+    color: var(--text-color);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+#export-modal .form-input {
+    width: 100%;
+    padding: 12px 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+#export-modal .form-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+#export-modal .form-input option {
+    background: #1f1f1f;
+    color: var(--text-color);
+}
+
 @media (max-width: 1300px) {
     .calendar-grid {
         grid-template-columns: repeat(7, 1fr);

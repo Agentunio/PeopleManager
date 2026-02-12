@@ -39,9 +39,12 @@ class PlannerController extends Controller
             ->map(fn($d) => Carbon::parse($d)->toDateString())
             ->toArray();
 
+        $weeks = $this->getWeeksForMonth($date);
+
         return view('admin.planner.index', [
             'shifts' => $shifts,
             'settled' => $settled,
+            'weeks' => $weeks,
             'calendar' => [
                 'month' => self::MONTHS[$date->month],
                 'year' => $date->year,
@@ -62,5 +65,29 @@ class PlannerController extends Controller
         } catch (\Exception) {
             return Carbon::now();
         }
+    }
+
+    private function getWeeksForMonth(Carbon $date): array
+    {
+        $weeks = [];
+        $start = $date->copy()->startOfMonth();
+        $end = $date->copy()->endOfMonth();
+
+        $currentWeekStart = $start->copy()->startOfWeek();
+
+        while ($currentWeekStart <= $end) {
+            $weekEnd = $currentWeekStart->copy()->endOfWeek();
+
+            $weeks[] = [
+                'start' => $currentWeekStart->copy(),
+                'end' => $weekEnd->copy(),
+                'label' => $currentWeekStart->format('d.m') . ' - ' . $weekEnd->format('d.m.Y'),
+                'value' => $currentWeekStart->format('Y-m-d'),
+            ];
+
+            $currentWeekStart->addWeek();
+        }
+
+        return $weeks;
     }
 }

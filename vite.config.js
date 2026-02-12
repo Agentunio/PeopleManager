@@ -20,6 +20,7 @@ export default defineConfig({
                     'resources/js/workers.js',
                     'resources/js/settings.js',
                     'resources/js/dashboard.js',
+                    'resources/js/login.js',
                 ],
             refresh: true,
         }),

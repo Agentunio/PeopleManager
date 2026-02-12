@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\PlannerAvailableController;
 use App\Http\Controllers\Admin\PlannerController;
 use App\Http\Controllers\Admin\EndDayController;
+use App\Http\Controllers\Admin\WeeklyExportController;
 use App\Http\Controllers\Admin\WorkerController;
 use App\Http\Controllers\Guest\AuthController;
 use Illuminate\Support\Facades\Route;
@@ -38,7 +39,8 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
     });
 
     Route::prefix('grafik')->name('planner.')->group(function () {
-       Route::get('/', [PlannerController::class, 'index'])->name('index');
+        Route::get('/', [PlannerController::class, 'index'])->name('index');
+        Route::post('/eksport-tygodnia', [WeeklyExportController::class, 'export'])->name('export.week');
 
         Route::prefix('dostepnosc')->name('schedule.')->group(function () {
             Route::get('/', [PlannerAvailableController::class, 'index'])->name('index');
