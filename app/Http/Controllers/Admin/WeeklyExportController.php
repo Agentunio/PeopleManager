@@ -41,7 +41,6 @@ class WeeklyExportController extends Controller
         $pngPath = $tempDir . '/' . $filename . '.png';
 
         Browsershot::html($htmlForPdf)
-            ->setChromePath(env('BROWSERSHOT_CHROME_PATH', '/usr/bin/chromium-browser'))
             ->setOption('landscape', true)
             ->format('A4')
             ->margins(0, 0, 0, 0)
