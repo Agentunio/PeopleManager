@@ -382,20 +382,6 @@
     color: var(--text-color);
 }
 
-.worker-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, var(--accent-color), #b40710);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    flex-shrink: 0;
-}
-
 .worker-hours {
     color: #888;
     font-size: 0.95rem;
@@ -424,11 +410,6 @@
 
 .summary-row:not(:last-child) {
     border-bottom: 1px solid var(--border-color);
-}
-
-.summary-row.highlight {
-    padding-top: 12px;
-    margin-top: 5px;
 }
 
 .summary-label {
@@ -754,12 +735,6 @@
 
     .summary-value {
         font-size: 1.1rem;
-    }
-
-    .worker-avatar {
-        width: 32px;
-        height: 32px;
-        font-size: 0.7rem;
     }
 
     .workers-table tr {

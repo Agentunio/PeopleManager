@@ -75,9 +75,9 @@ class WeeklyScheduleExportService
     private function generateSinglePageHtml(array $weekData, string $weekLabel): string
     {
         $html = $this->getHtmlHead($weekLabel);
-        $html .= $this->generateShiftTable($weekData, 'morning', 'Ranna');
+        $html .= $this->generateShiftTable($weekData, 'morning', 'Rano');
         $html .= '<div class="spacer"></div>';
-        $html .= $this->generateShiftTable($weekData, 'afternoon', 'Popołudniowa');
+        $html .= $this->generateShiftTable($weekData, 'afternoon', 'Popołudnie');
         $html .= '</body></html>';
 
         return $html;
@@ -86,10 +86,10 @@ class WeeklyScheduleExportService
     private function generateTwoPageHtml(array $weekData, string $weekLabel): string
     {
         $html = $this->getHtmlHead($weekLabel);
-        $html .= $this->generateShiftTable($weekData, 'morning', 'Ranna');
+        $html .= $this->generateShiftTable($weekData, 'morning', 'Rano');
         $html .= '<div class="page-break"></div>';
         $html .= '<div class="title">Grafik: ' . $weekLabel . '</div>';
-        $html .= $this->generateShiftTable($weekData, 'afternoon', 'Popołudniowa');
+        $html .= $this->generateShiftTable($weekData, 'afternoon', 'Popołudnie');
         $html .= '</body></html>';
 
         return $html;

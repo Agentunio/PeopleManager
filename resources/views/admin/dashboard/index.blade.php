@@ -5,7 +5,6 @@
 @push('styles')
     @vite(['resources/css/dashboard.css'])
 @endpush
-
 @section('content')
     <div class="admin-panel">
         @include('partials.menu')
@@ -34,13 +33,15 @@
                     </div>
                     <div class="stat-content">
                         <span class="stat-label">Przychód</span>
-                        <span class="stat-value" id="revenueValue">48 250,00</span>
+                        <span class="stat-value">{{ number_format($totalRevenue, 2, ',', ' ') }}</span>
                         <span class="stat-currency">PLN</span>
                     </div>
-                    <div class="stat-indicator positive">
-                        <i class="fas fa-caret-up"></i>
-                        <span>+12.5%</span>
-                    </div>
+                    @if($changes['revenue'])
+                        <div class="stat-indicator {{ $changes['revenue']['isPositive'] ? 'positive' : 'negative' }}">
+                            <i class="fas fa-caret-{{ $changes['revenue']['isPositive'] ? 'up' : 'down' }}"></i>
+                            <span>{{ $changes['revenue']['isPositive'] ? '+' : '-' }}{{ $changes['revenue']['percent'] }}%</span>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="stat-card stat-cost">
@@ -49,13 +50,15 @@
                     </div>
                     <div class="stat-content">
                         <span class="stat-label">Koszty</span>
-                        <span class="stat-value" id="costValue">32 180,00</span>
+                        <span class="stat-value">{{ number_format($totalCost, 2, ',', ' ') }}</span>
                         <span class="stat-currency">PLN</span>
                     </div>
-                    <div class="stat-indicator negative">
-                        <i class="fas fa-caret-up"></i>
-                        <span>+8.2%</span>
-                    </div>
+                    @if($changes['cost'])
+                        <div class="stat-indicator {{ $changes['cost']['isPositive'] ? 'negative' : 'positive' }}">
+                            <i class="fas fa-caret-{{ $changes['cost']['isPositive'] ? 'up' : 'down' }}"></i>
+                            <span>{{ $changes['cost']['isPositive'] ? '+' : '-' }}{{ $changes['cost']['percent'] }}%</span>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="stat-card stat-profit">
@@ -64,13 +67,15 @@
                     </div>
                     <div class="stat-content">
                         <span class="stat-label">Zysk</span>
-                        <span class="stat-value" id="profitValue">16 070,00</span>
+                        <span class="stat-value">{{ number_format($totalProfit, 2, ',', ' ') }}</span>
                         <span class="stat-currency">PLN</span>
                     </div>
-                    <div class="stat-indicator positive">
-                        <i class="fas fa-caret-up"></i>
-                        <span>+18.3%</span>
-                    </div>
+                    @if($changes['profit'])
+                        <div class="stat-indicator {{ $changes['profit']['isPositive'] ? 'positive' : 'negative' }}">
+                            <i class="fas fa-caret-{{ $changes['profit']['isPositive'] ? 'up' : 'down' }}"></i>
+                            <span>{{ $changes['profit']['isPositive'] ? '+' : '-' }}{{ $changes['profit']['percent'] }}%</span>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -90,7 +95,7 @@
                                     <span>Zmiana ranna</span>
                                 </div>
                                 <div class="package-stat-value">
-                                    <span class="value" id="morningPackages">4 521</span>
+                                    <span class="value" id="morningPackages">{{ number_format($packageStats['morning']['packages'], 0, ',', ' ') }}</span>
                                     <span class="label">paczek</span>
                                 </div>
                             </div>
@@ -101,7 +106,7 @@
                                     <span>Zmiana popołudniowa</span>
                                 </div>
                                 <div class="package-stat-value">
-                                    <span class="value" id="afternoonPackages">3 892</span>
+                                    <span class="value" id="afternoonPackages">{{ number_format($packageStats['afternoon']['packages'], 0, ',', ' ') }}</span>
                                     <span class="label">paczek</span>
                                 </div>
                             </div>
@@ -110,7 +115,7 @@
                         <div class="packages-summary">
                             <div class="summary-row highlight">
                                 <span class="summary-label">Łącznie paczek:</span>
-                                <span class="summary-value" id="totalPackages">8 413</span>
+                                <span class="summary-value" id="totalPackages">{{ number_format($packageStats['total']['packages'], 0, ',', ' ') }}</span>
                             </div>
                         </div>
                     </div>
@@ -122,7 +127,7 @@
                             <i class="fas fa-users"></i>
                         </div>
                         <h2>Koszty pracowników</h2>
-                        <span class="workers-count">12 pracowników</span>
+                        <span class="workers-count">{{ count($workers) }} pracowników</span>
                     </div>
                     <div class="section-content">
                         <div class="workers-list-container">
@@ -135,54 +140,17 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr>
-                                    <td class="worker-name">
-                                        <span class="worker-avatar">JK</span>
-                                        Jan Kowalski
-                                    </td>
-                                    <td class="worker-hours">168h</td>
-                                    <td class="worker-cost">4 200,00 PLN</td>
-                                </tr>
-                                <tr>
-                                    <td class="worker-name">
-                                        <span class="worker-avatar">AN</span>
-                                        Anna Nowak
-                                    </td>
-                                    <td class="worker-hours">152h</td>
-                                    <td class="worker-cost">3 800,00 PLN</td>
-                                </tr>
-                                <tr>
-                                    <td class="worker-name">
-                                        <span class="worker-avatar">PW</span>
-                                        Piotr Wiśniewski
-                                    </td>
-                                    <td class="worker-hours">160h</td>
-                                    <td class="worker-cost">4 000,00 PLN</td>
-                                </tr>
-                                <tr>
-                                    <td class="worker-name">
-                                        <span class="worker-avatar">MK</span>
-                                        Maria Kamińska
-                                    </td>
-                                    <td class="worker-hours">144h</td>
-                                    <td class="worker-cost">3 600,00 PLN</td>
-                                </tr>
-                                <tr>
-                                    <td class="worker-name">
-                                        <span class="worker-avatar">TZ</span>
-                                        Tomasz Zieliński
-                                    </td>
-                                    <td class="worker-hours">176h</td>
-                                    <td class="worker-cost">4 400,00 PLN</td>
-                                </tr>
-                                <tr>
-                                    <td class="worker-name">
-                                        <span class="worker-avatar">KL</span>
-                                        Katarzyna Lewandowska
-                                    </td>
-                                    <td class="worker-hours">136h</td>
-                                    <td class="worker-cost">3 400,00 PLN</td>
-                                </tr>
+                                @forelse($workers as $worker)
+                                    <tr>
+                                        <td class="worker-name">
+                                            {{ $worker->first_name }} {{ $worker->last_name  }}
+                                        </td>
+                                        <td class="worker-hours">{{ $worker->stats['hours'] }}</td>
+                                        <td class="worker-cost">{{ number_format($worker->stats['salary'] ?? 0, 2, ',', '') }} zł</td>
+                                    </tr>
+                                @empty
+                                    <p>Brak pracowników</p>
+                                @endforelse
                                 </tbody>
                             </table>
                         </div>
@@ -190,7 +158,7 @@
                         <div class="workers-summary">
                             <div class="summary-row highlight">
                                 <span class="summary-label">Łączny koszt:</span>
-                                <span class="summary-value" id="totalWorkersCost">23 400,00 PLN</span>
+                                <span class="summary-value" id="totalWorkersCost">{{ number_format($totalCost ?? 0, 2, ',', '') }} zł</span>
                             </div>
                         </div>
                     </div>

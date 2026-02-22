@@ -60,7 +60,7 @@
                 </div>
                 <div class="amount-info">
                     <span class="amount-label">Wynagrodzenie (w zakresie):</span>
-                    <span class="amount-value" id="salary-value-{{ $worker->id }}">{{ number_format($worker->stats['salary'] ?? 0, 2, '.', '') }}</span>
+                    <span class="amount-value" id="salary-value-{{ $worker->id }}">{{ number_format($worker->stats['salary'] ?? 0, 2, ',', '') }}</span>
                     <span class="currency">PLN</span>
                 </div>
             </div>
