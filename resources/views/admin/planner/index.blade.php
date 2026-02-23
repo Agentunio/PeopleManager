@@ -14,12 +14,14 @@
             <div class="header">
                 <h1>Grafik pracy</h1>
                 <p>Zarządzaj harmonogramem pracy. Wybierz datę, aby przypisać pracowników do zmian.</p>
-                <button type="button" id="export-week-btn" class="btn btn-submit">
-                    <i class="fas fa-file-export"></i> Eksportuj tydzień
-                </button>
-                <a href="{{ route('planner.schedule.index') }}" class="btn btn-change">
-                    <i class="fas fa-calendar-check"></i> Włącz grafik
-                </a>
+                <div class="header-actions">
+                    <button type="button" id="export-week-btn" class="btn btn-submit">
+                        <i class="fas fa-file-export"></i> Eksportuj tydzień
+                    </button>
+                    <a href="{{ route('planner.schedule.index') }}" class="btn btn-change">
+                        <i class="fas fa-calendar-check"></i> Włącz grafik
+                    </a>
+                </div>
             </div>
 
             <div class="planner-calendar">

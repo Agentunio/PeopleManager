@@ -31,13 +31,22 @@ class PlannerController extends Controller
                 ->map(fn($typeShifts) => $typeShifts->pluck('worker')->map(fn($w) => "$w->first_name $w->last_name")->toArray())
             )->toArray();
 
-        $settled = PackageShift::whereBetween('day', [$start, $end])
+        $daysWithPackages = PackageShift::whereBetween('day', [$start, $end])
             ->selectRaw('day')
             ->groupBy('day')
             ->havingRaw('COUNT(DISTINCT shift_type) = 2')
             ->pluck('day')
             ->map(fn($d) => Carbon::parse($d)->toDateString())
             ->toArray();
+
+        $daysWithUnsetHours = WorkerShift::whereBetween('day', [$start, $end])
+            ->whereNull('minutes')
+            ->pluck('day')
+            ->map(fn($d) => Carbon::parse($d)->toDateString())
+            ->unique()
+            ->toArray();
+
+        $settled = array_values(array_diff($daysWithPackages, $daysWithUnsetHours));
 
         $weeks = $this->getWeeksForMonth($date);
 

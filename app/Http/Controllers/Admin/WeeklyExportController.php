@@ -41,7 +41,7 @@ class WeeklyExportController extends Controller
         $pngPath = $tempDir . '/' . $filename . '.png';
 
         Browsershot::html($htmlForPdf)
-            ->setChromePath(env('CHROME_PATH'))
+            ->setChromePath(config('services.chrome.path'))
             ->noSandbox()
             ->setOption('landscape', true)
             ->format('A4')
@@ -49,7 +49,7 @@ class WeeklyExportController extends Controller
             ->save($pdfPath);
 
         Browsershot::html($htmlForPng)
-            ->setChromePath(env('CHROME_PATH'))
+            ->setChromePath(config('services.chrome.path'))
             ->noSandbox()
             ->windowSize(1600, 900)
             ->fullPage()

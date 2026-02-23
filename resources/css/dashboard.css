@@ -29,6 +29,7 @@
     border-radius: 10px;
     padding: 8px 15px;
     transition: border-color 0.2s;
+    box-sizing: border-box;
 }
 
 .date-range-picker:focus-within {
@@ -577,6 +578,7 @@
 
     .date-input {
         flex: 1;
+        min-width: 0;
     }
 
     .stats-grid {
@@ -717,6 +719,11 @@
 }
 
 @media (max-width: 480px) {
+    .date-input {
+        font-size: 0.85rem;
+        min-width: 0;
+    }
+
     .stat-card {
         flex-direction: column;
         text-align: center;
