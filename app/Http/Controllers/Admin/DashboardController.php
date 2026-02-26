@@ -7,6 +7,9 @@ use App\Models\PackageShift;
 use App\Models\Worker;
 use App\Services\PackageStatsService;
 use App\Services\WorkerStatsService;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -16,13 +19,48 @@ class DashboardController extends Controller
         private WorkerStatsService $workerStatsService,
         private PackageStatsService $packageStatsService
     ) {}
+
     public function index(): View
     {
         $startDate = now()->startOfMonth();
         $endDate = now();
 
-        $prevStartDate = now()->subMonth()->startOfMonth();
-        $prevEndDate = now()->subMonth()->endOfMonth();
+        $data = $this->getDashboardData($startDate, $endDate);
+
+        return view('admin.dashboard.index', $data);
+    }
+
+    public function data(Request $request): JsonResponse
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
+
+        $startDate = Carbon::parse($request->start_date)->startOfDay();
+        $endDate = Carbon::parse($request->end_date)->endOfDay();
+
+        $data = $this->getDashboardData($startDate, $endDate);
+
+        return response()->json([
+            'totalRevenue' => $data['totalRevenue'],
+            'totalCost' => $data['totalCost'],
+            'totalProfit' => $data['totalProfit'],
+            'packageStats' => $data['packageStats'],
+            'changes' => $data['changes'],
+            'workers' => $data['workers']->map(fn($worker) => [
+                'name' => $worker->first_name . ' ' . $worker->last_name,
+                'hours' => $worker->stats['hours'],
+                'salary' => $worker->stats['salary'],
+            ])->values(),
+        ]);
+    }
+
+    private function getDashboardData(Carbon $startDate, Carbon $endDate): array
+    {
+        $daysDiff = $startDate->diffInDays($endDate) + 1;
+        $prevEndDate = $startDate->copy()->subDay();
+        $prevStartDate = $prevEndDate->copy()->subDays($daysDiff - 1);
 
         $workers = Worker::select('id', 'first_name', 'last_name')
             ->whereHas('shifts', function ($query) use ($startDate, $endDate) {
@@ -61,7 +99,15 @@ class DashboardController extends Controller
             'profit' => $this->calculateChange($totalProfit, $prevTotalProfit),
         ];
 
-        return view('admin.dashboard.index', ['workers' => $workersWithStats, 'totalCost' => $totalCost, 'totalRevenue' => $totalRevenue, 'totalProfit' => $totalProfit, 'packageStats' => $packageStats, 'changes' => $changes,]);    }
+        return [
+            'workers' => $workersWithStats,
+            'totalCost' => $totalCost,
+            'totalRevenue' => $totalRevenue,
+            'totalProfit' => $totalProfit,
+            'packageStats' => $packageStats,
+            'changes' => $changes,
+        ];
+    }
 
     private function calculateChange(float $current, float $previous): ?array
     {

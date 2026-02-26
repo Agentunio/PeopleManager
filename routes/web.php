@@ -22,6 +22,7 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
     Route::get('/panel', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/panel/data', [DashboardController::class, 'data'])->name('dashboard.data');
 
     Route::prefix('pracownicy')->name('workers.')->group(function () {
         Route::get('/', [WorkerController::class, 'index'])->name('index');
