@@ -24,6 +24,19 @@
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
+                <div class="comparison-hint" id="comparisonHint" style="display: none;">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="comparisonHintText">Kliknij prawym przyciskiem myszy na dzień w kalendarzu, aby wybrać okres porównawczy</span>
+                </div>
+            </div>
+
+            <div class="comparison-badge" id="comparisonBadge" style="display: none;">
+                <i class="fas fa-balance-scale"></i>
+                <span>Porównanie z:</span>
+                <span class="comparison-badge-dates" id="comparisonBadgeDates"></span>
+                <button type="button" class="comparison-dismiss" id="comparisonDismiss" title="Usuń porównanie">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
             <div id="dashboardContent">
