@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         const shiftName = shift === 'morning' ? 'rannej' : 'popołudniowej';
-        if (typeof showToast !== 'undefined') {
+        if (window.showToast) {
             showToast.success(`Domyślne wartości zastosowane dla zmiany ${shiftName}`);
         }
     }
@@ -129,5 +129,55 @@ document.addEventListener('DOMContentLoaded', function() {
     $(document).on('click', '.btn-change-time', function() {
         $(this).closest('.field-time').find('.time-saved').hide();
         $(this).closest('.field-time').find('.time-range-inputs').show();
+    });
+
+    document.querySelectorAll('.btn-add-entry').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const shift = this.dataset.shift;
+            const list = document.querySelector(`.package-entries-list[data-shift="${shift}"]`);
+            if (!list) return;
+
+            const rows = list.querySelectorAll('.package-entry-row');
+            const newIndex = rows.length;
+            const prefix = shift + '_package_entries';
+
+            const firstRow = rows[0];
+            const newRow = firstRow.cloneNode(true);
+
+            const input = newRow.querySelector('input[type="number"]');
+            input.name = `${prefix}[${newIndex}][packages_count]`;
+            input.value = '';
+
+            const select = newRow.querySelector('select');
+            select.name = `${prefix}[${newIndex}][package_id]`;
+            select.selectedIndex = 0;
+
+            list.appendChild(newRow);
+        });
+    });
+
+    $(document).on('click', '.btn-remove-entry', function() {
+        const row = this.closest('.package-entry-row');
+        const list = row.closest('.package-entries-list');
+        const rows = list.querySelectorAll('.package-entry-row');
+
+        if (rows.length <= 1) {
+            const input = row.querySelector('input[type="number"]');
+            const select = row.querySelector('select');
+            if (input) input.value = '';
+            if (select) select.selectedIndex = 0;
+            return;
+        }
+
+        row.remove();
+
+        const shift = list.dataset.shift;
+        const prefix = shift + '_package_entries';
+        list.querySelectorAll('.package-entry-row').forEach(function(r, i) {
+            const input = r.querySelector('input[type="number"]');
+            const select = r.querySelector('select');
+            if (input) input.name = `${prefix}[${i}][packages_count]`;
+            if (select) select.name = `${prefix}[${i}][package_id]`;
+        });
     });
 });

@@ -542,6 +542,62 @@
     -moz-appearance: textfield;
 }
 
+.package-entries-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.package-entry-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 15px;
+}
+
+.package-entry-row .field-group {
+    flex: 1;
+}
+
+.btn-remove-entry {
+    padding: 12px 14px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-remove-entry:hover {
+    border-color: #e53935;
+    color: #e53935;
+    background: rgba(229, 57, 53, 0.1);
+}
+
+.btn-add-entry {
+    margin-top: 12px;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    color: #888;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-add-entry:hover {
+    border-color: #4caf50;
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.08);
+}
+
 .settlement-actions {
     display: flex;
     gap: 15px;
@@ -601,6 +657,14 @@
         width: 90%;
         text-align: center;
         margin: 0 auto;
+    }
+
+    .package-entry-row {
+        flex-wrap: wrap;
+    }
+
+    .package-entry-row .field-group {
+        flex: 1 1 calc(50% - 30px);
     }
 }
 
@@ -842,5 +906,18 @@
     .settlement-actions .btn {
         padding: 12px 20px;
         font-size: 0.95rem;
+    }
+
+    .package-entry-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .package-entry-row .field-group {
+        flex: 1 1 auto;
+    }
+
+    .btn-remove-entry {
+        align-self: flex-end;
     }
 }

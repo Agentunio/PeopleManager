@@ -17,10 +17,12 @@ class EndDayUpdateRequest extends FormRequest
             'workers.*.from_minute' => 'nullable|integer|min:0|max:59',
             'workers.*.to_hour' => 'nullable|integer|min:0|max:23',
             'workers.*.to_minute' => 'nullable|integer|min:0|max:59',
-            'morning_packages' => 'nullable|integer|min:0',
-            'morning_package_rate' => 'nullable|exists:packages,id',
-            'afternoon_packages' => 'nullable|integer|min:0',
-            'afternoon_package_rate' => 'nullable|exists:packages,id',
+            'morning_package_entries' => 'nullable|array|max:50',
+            'morning_package_entries.*.packages_count' => 'nullable|integer|min:0',
+            'morning_package_entries.*.package_id' => 'nullable|exists:packages,id',
+            'afternoon_package_entries' => 'nullable|array|max:50',
+            'afternoon_package_entries.*.packages_count' => 'nullable|integer|min:0',
+            'afternoon_package_entries.*.package_id' => 'nullable|exists:packages,id',
         ];
     }
 

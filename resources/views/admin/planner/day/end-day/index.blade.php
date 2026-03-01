@@ -260,7 +260,7 @@
                             <div class="global-icon">
                                 <i class="fas fa-box"></i>
                             </div>
-                            <h2>Paczki i stawki za paczki</h2>
+                            <h2>Paczki</h2>
                         </div>
 
                         <div class="global-section-content">
@@ -270,23 +270,51 @@
                                         <i class="fas fa-sun"></i>
                                         <span>Zmiana ranna</span>
                                     </div>
-                                    <div class="global-shift-fields">
-                                        <div class="field-group">
-                                            <label>Liczba paczek</label>
-                                            <input type="number" name="morning_packages" id="morning-packages"
-                                                   value="{{ $shift_packages_morning->packages_count ?? '' }}"
-                                                   placeholder="0" min="0">
-                                        </div>
-                                        <div class="field-group">
-                                            <label>Stawka za paczkę</label>
-                                            <select name="morning_package_rate" id="morning-package-rate">
-                                                <option value="">Wybierz stawkę</option>
-                                                @include('admin.planner.partials.allpackage',  [
-                                                    'selected_id' => $shift_packages_morning->package_id ?? null
-                                                ])
-                                            </select>
-                                        </div>
+                                    <div class="package-entries-list" data-shift="morning">
+                                        @forelse($shift_packages_morning as $index => $entry)
+                                            <div class="package-entry-row">
+                                                <div class="field-group">
+                                                    <label>Liczba paczek</label>
+                                                    <input type="number" name="morning_package_entries[{{ $index }}][packages_count]"
+                                                           value="{{ $entry->packages_count }}"
+                                                           placeholder="0" min="0">
+                                                </div>
+                                                <div class="field-group">
+                                                    <label>Stawka za paczkę</label>
+                                                    <select name="morning_package_entries[{{ $index }}][package_id]">
+                                                        <option value="">Wybierz stawkę</option>
+                                                        @include('admin.planner.partials.allpackage', [
+                                                            'selected_id' => $entry->package_id
+                                                        ])
+                                                    </select>
+                                                </div>
+                                                <button type="button" class="btn-remove-entry" title="Usuń">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        @empty
+                                            <div class="package-entry-row">
+                                                <div class="field-group">
+                                                    <label>Liczba paczek</label>
+                                                    <input type="number" name="morning_package_entries[0][packages_count]"
+                                                           placeholder="0" min="0">
+                                                </div>
+                                                <div class="field-group">
+                                                    <label>Stawka za paczkę</label>
+                                                    <select name="morning_package_entries[0][package_id]">
+                                                        <option value="">Wybierz stawkę</option>
+                                                        @include('admin.planner.partials.allpackage')
+                                                    </select>
+                                                </div>
+                                                <button type="button" class="btn-remove-entry" title="Usuń wpis">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        @endforelse
                                     </div>
+                                    <button type="button" class="btn btn-add-entry" data-shift="morning">
+                                        <i class="fas fa-plus"></i> Dodaj więcej
+                                    </button>
                                 </div>
 
                                 <div class="global-shift-group">
@@ -294,23 +322,51 @@
                                         <i class="fas fa-cloud-sun"></i>
                                         <span>Zmiana popołudniowa</span>
                                     </div>
-                                    <div class="global-shift-fields">
-                                        <div class="field-group">
-                                            <label>Liczba paczek</label>
-                                            <input type="number" name="afternoon_packages" id="afternoon-packages"
-                                                   value="{{ $shift_packages_afternoon->packages_count ?? '' }}"
-                                                   placeholder="0" min="0">
-                                        </div>
-                                        <div class="field-group">
-                                            <label>Stawka za paczkę</label>
-                                            <select name="afternoon_package_rate" id="afternoon-package-rate">
-                                                <option value="">Wybierz stawkę</option>
-                                                @include('admin.planner.partials.allpackage', [
-                                                    'selected_id' => $shift_packages_afternoon->package_id ?? null
-                                                ])
-                                            </select>
-                                        </div>
+                                    <div class="package-entries-list" data-shift="afternoon">
+                                        @forelse($shift_packages_afternoon as $index => $entry)
+                                            <div class="package-entry-row">
+                                                <div class="field-group">
+                                                    <label>Liczba paczek</label>
+                                                    <input type="number" name="afternoon_package_entries[{{ $index }}][packages_count]"
+                                                           value="{{ $entry->packages_count }}"
+                                                           placeholder="0" min="0">
+                                                </div>
+                                                <div class="field-group">
+                                                    <label>Stawka za paczkę</label>
+                                                    <select name="afternoon_package_entries[{{ $index }}][package_id]">
+                                                        <option value="">Wybierz stawkę</option>
+                                                        @include('admin.planner.partials.allpackage', [
+                                                            'selected_id' => $entry->package_id
+                                                        ])
+                                                    </select>
+                                                </div>
+                                                <button type="button" class="btn-remove-entry" title="Usuń">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        @empty
+                                            <div class="package-entry-row">
+                                                <div class="field-group">
+                                                    <label>Liczba paczek</label>
+                                                    <input type="number" name="afternoon_package_entries[0][packages_count]"
+                                                           placeholder="0" min="0">
+                                                </div>
+                                                <div class="field-group">
+                                                    <label>Stawka za paczkę</label>
+                                                    <select name="afternoon_package_entries[0][package_id]">
+                                                        <option value="">Wybierz stawkę</option>
+                                                        @include('admin.planner.partials.allpackage')
+                                                    </select>
+                                                </div>
+                                                <button type="button" class="btn-remove-entry" title="Usuń wpis">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        @endforelse
                                     </div>
+                                    <button type="button" class="btn btn-add-entry" data-shift="afternoon">
+                                        <i class="fas fa-plus"></i> Dodaj więcej
+                                    </button>
                                 </div>
 
                             </div>

@@ -30,15 +30,15 @@
     @vite(['resources/js/app.js'])
 
     @if(session('success'))
-        <script>showToast.success('{{ session('success') }}');</script>
+        <script>document.addEventListener('DOMContentLoaded', function() { showToast.success(@json(session('success'))); });</script>
     @endif
 
     @if(session('error'))
-        <script>showToast.error('{{ session('error') }}');</script>
+        <script>document.addEventListener('DOMContentLoaded', function() { showToast.error(@json(session('error'))); });</script>
     @endif
 
     @if($errors->any() && !request()->routeIs('login'))
-        <script>showToast.error('{{ $errors->first() }}');</script>
+        <script>document.addEventListener('DOMContentLoaded', function() { showToast.error(@json($errors->first())); });</script>
     @endif
 
     @stack('scripts')
