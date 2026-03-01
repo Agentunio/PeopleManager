@@ -1158,6 +1158,10 @@
         grid-template-columns: 1fr;
     }
 
+    .tap-mode-instruction{
+        margin: 15px;
+    }
+
     .calendar-day {
         min-height: auto;
     }

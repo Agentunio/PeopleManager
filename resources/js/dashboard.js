@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const dataUrl = '/panel/data';
+    const exportUrl = '/panel/eksport-kosztow';
     const LONG_PRESS_MS = 500;
 
     const comparison = {
@@ -28,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 primarySelected = true;
                 clearComparison(false);
                 fetchDashboardData(selectedDates[0], selectedDates[1]);
-                showComparisonHint();
             }
         },
         onDayCreate: function(dObj, dStr, fp, dayElem) {
@@ -39,16 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    const refreshBtn = document.getElementById('refreshData');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
-            const dates = dateRangePicker.selectedDates;
-            if (dates.length === 2) {
-                fetchDashboardData(dates[0], dates[1]);
-            }
-        });
-    }
-
     const dismissBtn = document.getElementById('comparisonDismiss');
     if (dismissBtn) {
         dismissBtn.addEventListener('click', function() {
@@ -56,7 +46,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    updateComparisonHint();
+    const clearBtn = document.getElementById('clearDateRange');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            resetToDefault();
+        });
+    }
+
+    const exportBtn = document.getElementById('exportWorkerCosts');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            exportWorkerCostsPdf();
+        });
+    }
+
+    initComparisonTip();
 
 
     function paintComparisonDay(dayElem) {
@@ -160,6 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dateRangePicker.redraw();
         hideComparisonBadge();
         removeComparisonUI();
+        toggleExportButton(false);
 
         if (refetch) {
             const primaryDates = dateRangePicker.selectedDates;
@@ -176,19 +181,65 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    function showComparisonHint() {
-        const hint = document.getElementById('comparisonHint');
-        if (hint) hint.style.display = 'flex';
+    function resetToDefault() {
+        primarySelected = false;
+        clearComparison(false);
+
+        const defaultStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const defaultEnd = new Date();
+
+        dateRangePicker.setDate([defaultStart, defaultEnd], true);
+        window.location.reload();
     }
 
-    function updateComparisonHint() {
-        const hintText = document.getElementById('comparisonHintText');
-        if (!hintText) return;
+    function exportWorkerCostsPdf() {
+        const primaryDates = dateRangePicker.selectedDates;
+        if (primaryDates.length !== 2) return;
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = exportUrl;
+        form.style.display = 'none';
+
+        const csrf = document.querySelector('meta[name="csrf-token"]');
+        if (csrf) {
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '_token';
+            tokenInput.value = csrf.content;
+            form.appendChild(tokenInput);
+        }
+
+        const startInput = document.createElement('input');
+        startInput.type = 'hidden';
+        startInput.name = 'start_date';
+        startInput.value = formatDate(primaryDates[0]);
+        form.appendChild(startInput);
+
+        const endInput = document.createElement('input');
+        endInput.type = 'hidden';
+        endInput.name = 'end_date';
+        endInput.value = formatDate(primaryDates[1]);
+        form.appendChild(endInput);
+
+        document.body.appendChild(form);
+        form.submit();
+        form.remove();
+    }
+
+    function toggleExportButton(hasComparison) {
+        const btn = document.getElementById('exportWorkerCosts');
+        if (btn) btn.style.display = hasComparison ? 'none' : '';
+    }
+
+    function initComparisonTip() {
+        const tipText = document.getElementById('comparisonTipText');
+        if (!tipText) return;
 
         if (isTouchDevice) {
-            hintText.textContent = 'Przytrzymaj dzień w kalendarzu, aby wybrać okres porównawczy';
+            tipText.textContent = 'Wybierz okres w kalendarzu, a następnie przytrzymaj dzień aby wybrać okres porównawczy';
         } else {
-            hintText.textContent = 'Kliknij prawym przyciskiem myszy na dzień w kalendarzu, aby wybrać okres porównawczy';
+            tipText.textContent = 'Wybierz okres w kalendarzu, a następnie kliknij PPM na dzień aby wybrać okres porównawczy';
         }
     }
 
@@ -197,7 +248,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const datesEl = document.getElementById('comparisonBadgeDates');
 
         if (badge && datesEl && comparison.startDate && comparison.endDate) {
-            datesEl.textContent = formatDisplayDate(comparison.startDate) + ' — ' + formatDisplayDate(comparison.endDate);
+            const primaryDates = dateRangePicker.selectedDates;
+            const primaryLabel = primaryDates.length === 2
+                ? formatDisplayDate(primaryDates[0]) + ' - ' + formatDisplayDate(primaryDates[1])
+                : '...';
+            const compLabel = formatDisplayDate(comparison.startDate) + ' - ' + formatDisplayDate(comparison.endDate);
+            datesEl.textContent = primaryLabel + ' vs ' + compLabel;
             badge.style.display = 'flex';
         }
     }
@@ -247,11 +303,6 @@ document.addEventListener('DOMContentLoaded', function() {
             loader.style.display = 'none';
             content.classList.remove('is-loading');
         }
-
-        const icon = refreshBtn?.querySelector('i');
-        if (icon) {
-            icon.classList.toggle('fa-spin', isLoading);
-        }
     }
 
     function renderIndicator(change, type) {
@@ -295,27 +346,49 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderPackageComparison(compStats) {
         const morningEl = document.getElementById('morningPackages');
         const afternoonEl = document.getElementById('afternoonPackages');
-        const totalEl = document.getElementById('totalPackages');
 
         addComparisonSpan(morningEl, compStats.morning.packages);
         addComparisonSpan(afternoonEl, compStats.afternoon.packages);
-        addComparisonSpan(totalEl, compStats.total.packages);
+        renderTotalPackagesComparison(compStats.total.packages);
+    }
+
+    function renderTotalPackagesComparison(compValue) {
+        removeTotalPackagesComparison();
+
+        const summary = document.querySelector('.packages-summary');
+        if (!summary) return;
+
+        const row = document.createElement('div');
+        row.className = 'summary-row comparison-summary';
+        row.innerHTML = `
+            <span class="summary-label">vs Łącznie paczek:</span>
+            <span class="summary-value">${formatInteger(compValue)}</span>
+        `;
+        summary.appendChild(row);
+    }
+
+    function removeTotalPackagesComparison() {
+        const existing = document.querySelector('.packages-summary .comparison-summary');
+        if (existing) existing.remove();
     }
 
     function addComparisonSpan(el, compValue) {
         if (!el) return;
         removeComparisonSpan(el);
 
-        const span = document.createElement('span');
-        span.className = 'package-comparison-value';
-        span.textContent = `(vs ${formatInteger(compValue)})`;
-        el.parentElement.appendChild(span);
+        const row = document.createElement('div');
+        row.className = 'package-comparison-row';
+        row.innerHTML = `<span class="vs-label">vs</span> <span class="vs-value">${formatInteger(compValue)} paczek</span>`;
+        el.closest('.package-stat').appendChild(row);
     }
 
     function removeComparisonSpan(el) {
         if (!el) return;
-        const existing = el.parentElement.querySelector('.package-comparison-value');
-        if (existing) existing.remove();
+        const stat = el.closest('.package-stat');
+        if (stat) {
+            const existing = stat.querySelector('.package-comparison-row');
+            if (existing) existing.remove();
+        }
     }
 
     function renderWorkersSummaryComparison(compTotalCost) {
@@ -340,9 +413,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function removeComparisonUI() {
         document.querySelectorAll('.stat-comparison-row').forEach(el => el.remove());
+        document.querySelectorAll('.package-comparison-row').forEach(el => el.remove());
 
-        document.querySelectorAll('.package-comparison-value').forEach(el => el.remove());
-
+        removeTotalPackagesComparison();
         removeWorkersSummaryComparison();
     }
 
@@ -363,10 +436,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalCost = 0;
         tbody.innerHTML = workers.map(worker => {
             totalCost += worker.salary;
+            const hoursDisplay = (worker.hours === '0' || worker.hours === '0h 0min') ? 'Brak danych' : escapeHtml(worker.hours);
+            const costDisplay = worker.salary > 0 ? `${formatNumber(worker.salary)} zł` : 'Brak danych';
             return `<tr>
-                <td class="worker-name">${worker.name}</td>
-                <td class="worker-hours">${worker.hours}</td>
-                <td class="worker-cost">${formatNumber(worker.salary)} zł</td>
+                <td class="worker-name">${escapeHtml(worker.name)}</td>
+                <td class="worker-hours">${hoursDisplay}</td>
+                <td class="worker-cost">${costDisplay}</td>
             </tr>`;
         }).join('');
 
@@ -397,12 +472,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         removeComparisonUI();
 
+        const hasComparison = !!data.comparison;
+        toggleExportButton(hasComparison);
+
         if (data.comparison) {
             renderComparisonInCard('revenue', data.comparison.totalRevenue);
             renderComparisonInCard('cost', data.comparison.totalCost);
             renderComparisonInCard('profit', data.comparison.totalProfit);
             renderPackageComparison(data.comparison.packageStats);
-            renderWorkersSummaryComparison(data.comparison.totalCost);
         }
     }
 
@@ -448,6 +525,12 @@ document.addEventListener('DOMContentLoaded', function() {
         .finally(() => {
             setLoading(false);
         });
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     function capitalize(str) {

@@ -20,19 +20,22 @@
                         <i class="fas fa-calendar-alt"></i>
                     </div>
                     <input type="text" id="dateRangePicker" class="date-input" placeholder="Wybierz zakres dat" readonly>
-                    <button type="button" class="btn-refresh" id="refreshData" title="Odśwież dane">
-                        <i class="fas fa-sync-alt"></i>
+                    <button type="button" class="btn-clear" id="clearDateRange" title="Resetuj do domyślnego zakresu">
+                        <i class="fas fa-times"></i>
                     </button>
-                </div>
-                <div class="comparison-hint" id="comparisonHint" style="display: none;">
-                    <i class="fas fa-info-circle"></i>
-                    <span id="comparisonHintText">Kliknij prawym przyciskiem myszy na dzień w kalendarzu, aby wybrać okres porównawczy</span>
+                    <div class="comparison-tip" id="comparisonTip">
+                        <button type="button" class="btn-tip" aria-label="Informacja o porównywaniu">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                        <div class="tip-popover">
+                            <span id="comparisonTipText"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="comparison-badge" id="comparisonBadge" style="display: none;">
-                <i class="fas fa-balance-scale"></i>
-                <span>Porównanie z:</span>
+                <span>Porównanie okresu:</span>
                 <span class="comparison-badge-dates" id="comparisonBadgeDates"></span>
                 <button type="button" class="comparison-dismiss" id="comparisonDismiss" title="Usuń porównanie">
                     <i class="fas fa-times"></i>
@@ -155,6 +158,9 @@
                             </div>
                             <h2>Koszty pracowników</h2>
                             <span class="workers-count" id="workersCount">{{ count($workers) }} pracowników</span>
+                            <button type="button" class="btn-export" id="exportWorkerCosts" title="Eksportuj do PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
                         </div>
                         <div class="section-content">
                             <div class="workers-list-container">
@@ -172,8 +178,8 @@
                                             <td class="worker-name">
                                                 {{ $worker->first_name }} {{ $worker->last_name  }}
                                             </td>
-                                            <td class="worker-hours">{{ $worker->stats['hours'] }}</td>
-                                            <td class="worker-cost">{{ number_format($worker->stats['salary'] ?? 0, 2, ',', '') }} zł</td>
+                                            <td class="worker-hours">{{ $worker->stats['totalMinutes'] > 0 ? $worker->stats['hours'] : 'Brak danych' }}</td>
+                                            <td class="worker-cost">{{ $worker->stats['salary'] > 0 ? number_format($worker->stats['salary'], 2, ',', '') . ' zł' : 'Brak danych' }}</td>
                                         </tr>
                                     @empty
                                         <tr><td colspan="3" style="text-align: center; color: #888; padding: 20px;">Brak pracowników</td></tr>
