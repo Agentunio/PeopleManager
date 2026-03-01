@@ -28,7 +28,6 @@ class WorkerCostExportService
 
         $totalFormatted = number_format($totalCost, 2, ',', ' ');
         $count = $workers->count();
-        $generatedAt = now()->format('d.m.Y H:i');
 
         return "<!DOCTYPE html>
 <html lang=\"pl\">
@@ -99,17 +98,11 @@ class WorkerCostExportService
             font-size: 16px;
             font-weight: bold;
         }
-        .footer {
-            margin-top: 30px;
-            font-size: 10px;
-            color: #999;
-            text-align: right;
-        }
     </style>
 </head>
 <body>
     <div class=\"header\">
-        <h1>Koszty pracowników</h1>
+        <h1>Zakres pracowników</h1>
         <div class=\"period\">Okres: {$periodLabel} &middot; Liczba pracowników: {$count}</div>
     </div>
 
@@ -118,7 +111,7 @@ class WorkerCostExportService
             <tr>
                 <th>Pracownik</th>
                 <th class=\"center\">Godziny</th>
-                <th class=\"right\">Koszt</th>
+                <th class=\"right\">Wynagrodzenie</th>
             </tr>
         </thead>
         <tbody>
@@ -131,7 +124,6 @@ class WorkerCostExportService
         <span class=\"summary-value\">{$totalFormatted} zł</span>
     </div>
 
-    <div class=\"footer\">Wygenerowano: {$generatedAt}</div>
 </body>
 </html>";
     }
