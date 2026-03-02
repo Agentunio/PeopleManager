@@ -32,8 +32,10 @@ class EndDayController extends Controller
 
     public function update(EndDayUpdateRequest $request, string $date)
     {
-        DB::transaction(function () use ($request, $date) {
-            foreach ($request->workers as $workerData) {
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($validated, $date) {
+            foreach ($validated['workers'] ?? [] as $workerData) {
                 $updateData = [];
 
                 if (!empty($workerData['package'])) {
@@ -53,8 +55,8 @@ class EndDayController extends Controller
                 }
             }
 
-            $this->savePackageEntries($request->morning_package_entries, $date, 'morning');
-            $this->savePackageEntries($request->afternoon_package_entries, $date, 'afternoon');
+            $this->savePackageEntries($validated['morning_package_entries'] ?? null, $date, 'morning');
+            $this->savePackageEntries($validated['afternoon_package_entries'] ?? null, $date, 'afternoon');
         });
 
         return redirect()->back()->with('success', 'Rozliczenie zapisane');

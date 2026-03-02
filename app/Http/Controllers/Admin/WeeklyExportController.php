@@ -30,7 +30,8 @@ class WeeklyExportController extends Controller
 
         $htmlForPng = $this->exportService->generateHtmlTable($weekData, $weekLabel, false);
 
-        $filename = 'grafik_' . $weekStart->format('Y-m-d');
+        $uniqueSuffix = bin2hex(random_bytes(8));
+        $filename = 'grafik_' . $weekStart->format('Y-m-d') . '_' . $uniqueSuffix;
 
         $tempDir = storage_path('app/temp');
         if (!file_exists($tempDir)) {
@@ -39,34 +40,40 @@ class WeeklyExportController extends Controller
 
         $pdfPath = $tempDir . '/' . $filename . '.pdf';
         $pngPath = $tempDir . '/' . $filename . '.png';
-
-        Browsershot::html($htmlForPdf)
-            ->setChromePath(config('services.chrome.path'))
-            ->noSandbox()
-            ->setOption('landscape', true)
-            ->format('A4')
-            ->margins(0, 0, 0, 0)
-            ->save($pdfPath);
-
-        Browsershot::html($htmlForPng)
-            ->setChromePath(config('services.chrome.path'))
-            ->noSandbox()
-            ->windowSize(1600, 900)
-            ->fullPage()
-            ->save($pngPath);
-
         $zipPath = $tempDir . '/' . $filename . '.zip';
-        $zip = new \ZipArchive();
 
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
-            $zip->addFile($pdfPath, $filename . '.pdf');
-            $zip->addFile($pngPath, $filename . '.png');
-            $zip->close();
+        try {
+            Browsershot::html($htmlForPdf)
+                ->setChromePath(config('services.chrome.path'))
+                ->noSandbox()
+                ->setOption('landscape', true)
+                ->format('A4')
+                ->margins(0, 0, 0, 0)
+                ->save($pdfPath);
+
+            Browsershot::html($htmlForPng)
+                ->setChromePath(config('services.chrome.path'))
+                ->noSandbox()
+                ->windowSize(1600, 900)
+                ->fullPage()
+                ->save($pngPath);
+
+            $zip = new \ZipArchive();
+
+            if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                $zip->addFile($pdfPath, 'grafik_' . $weekStart->format('Y-m-d') . '.pdf');
+                $zip->addFile($pngPath, 'grafik_' . $weekStart->format('Y-m-d') . '.png');
+                $zip->close();
+            }
+
+            return response()->download($zipPath, 'grafik_' . $weekStart->format('Y-m-d') . '.zip')->deleteFileAfterSend(true);
+        } finally {
+            if (file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
+            if (file_exists($pngPath)) {
+                unlink($pngPath);
+            }
         }
-
-        @unlink($pdfPath);
-        @unlink($pngPath);
-
-        return response()->download($zipPath, $filename . '.zip')->deleteFileAfterSend(true);
     }
 }

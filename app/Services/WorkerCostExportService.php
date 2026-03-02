@@ -28,6 +28,7 @@ class WorkerCostExportService
 
         $totalFormatted = number_format($totalCost, 2, ',', ' ');
         $count = $workers->count();
+        $periodLabel = htmlspecialchars($periodLabel, ENT_QUOTES, 'UTF-8');
 
         return "<!DOCTYPE html>
 <html lang=\"pl\">

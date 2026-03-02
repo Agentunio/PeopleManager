@@ -3,6 +3,13 @@ $(document).ready(function() {
     let isTapMode = false;
     let selectedWorkers = [];
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
     function isTouchDevice() {
         return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     }
@@ -211,7 +218,7 @@ $(document).ready(function() {
 
             const cardHtml = `
             <div class="worker-card draggable" data-worker-id="${workerId}" data-morning="${freeMorning}" data-afternoon="${freeAfternoon}">
-                <span class="worker-name">${worker.name}</span>
+                <span class="worker-name">${escapeHtml(worker.name)}</span>
                 <div class="worker-availability-badges">
                     ${badges}
                 </div>
@@ -381,7 +388,7 @@ $(document).ready(function() {
     function addWorkerToShift(workerId, workerName, shiftType, $dropzone) {
         const $workerElement = $(`
         <div class="assigned-worker draggable" data-worker-id="${workerId}">
-            <span class="worker-name">${workerName}</span>
+            <span class="worker-name">${escapeHtml(workerName)}</span>
             <button type="button" class="remove-worker" data-worker-id="${workerId}">
                 <i class="fas fa-times"></i>
             </button>

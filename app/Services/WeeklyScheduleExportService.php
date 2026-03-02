@@ -88,7 +88,7 @@ class WeeklyScheduleExportService
         $html = $this->getHtmlHead($weekLabel);
         $html .= $this->generateShiftTable($weekData, 'morning', 'Rano');
         $html .= '<div class="page-break"></div>';
-        $html .= '<div class="title">Grafik: ' . $weekLabel . '</div>';
+        $html .= '<div class="title">Grafik: ' . htmlspecialchars($weekLabel, ENT_QUOTES, 'UTF-8') . '</div>';
         $html .= $this->generateShiftTable($weekData, 'afternoon', 'Popołudnie');
         $html .= '</body></html>';
 
@@ -118,7 +118,7 @@ class WeeklyScheduleExportService
         $html = '<thead><tr><th class="shift-label">Zmiana</th>';
 
         foreach ($weekData as $day) {
-            $html .= '<th>' . $day['dayName'] . '<br>' . $day['date'] . '</th>';
+            $html .= '<th>' . htmlspecialchars($day['dayName'], ENT_QUOTES, 'UTF-8') . '<br>' . htmlspecialchars($day['date'], ENT_QUOTES, 'UTF-8') . '</th>';
         }
 
         $html .= '</tr></thead>';
@@ -237,6 +237,6 @@ class WeeklyScheduleExportService
         </style>
     </head>
     <body>
-        <div class="title">Grafik: ' . $weekLabel . '</div>';
+        <div class="title">Grafik: ' . htmlspecialchars($weekLabel, ENT_QUOTES, 'UTF-8') . '</div>';
     }
 }

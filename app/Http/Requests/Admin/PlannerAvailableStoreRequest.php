@@ -16,8 +16,8 @@ class PlannerAvailableStoreRequest extends FormRequest
     {
         return [
             'type' => ['required', 'in:range,week,always,disabled'],
-            'start_date' => ['required_if:option,range', 'nullable', 'date'],
-            'end_date' => ['required_if:option,range', 'nullable', 'date', 'after_or_equal:start_date'],
+            'start_date' => ['required_if:type,range', 'nullable', 'date'],
+            'end_date' => ['required_if:type,range', 'nullable', 'date', 'after_or_equal:start_date'],
         ];
     }
 

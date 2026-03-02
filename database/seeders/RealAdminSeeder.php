@@ -18,12 +18,14 @@ class RealAdminSeeder extends Seeder
             return;
         }
 
-        User::updateOrCreate(
+        $user = User::updateOrCreate(
             ['username' => $username],
             [
-                'password' => Hash::make($password),
-                'role' => 'admin',
+                'password' => $password,
             ]
         );
+
+        $user->role = 'admin';
+        $user->save();
     }
 }

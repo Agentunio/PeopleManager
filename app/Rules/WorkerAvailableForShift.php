@@ -23,6 +23,11 @@ class WorkerAvailableForShift implements ValidationRule
         $index = explode('.', $attribute)[1];
         $shiftType = request()->input("workers.{$index}.shift_type");
 
+        if (!in_array($shiftType, ['morning', 'afternoon'], true)) {
+            $fail('Nieprawidłowy typ zmiany.');
+            return;
+        }
+
         $available = WorkerAvailability::where('worker_id', $value)
             ->where('day', $this->date)
             ->where($shiftType . '_shift', true)

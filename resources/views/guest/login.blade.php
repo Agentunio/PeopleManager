@@ -33,13 +33,20 @@
     </form>
 </div>
 
-@push('scripts')
-    @if($errors->any())
-        <script>
-            showLoginError('{{ $errors->first() }}');
-        </script>
-    @endif
-    @vite(['resources/js/login.js'])
-@endpush
+@if($errors->any())
+    <script>
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: @json($errors->first()),
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            background: '#1f1f1f',
+            color: '#f0f0f0'
+        });
+    </script>
+@endif
 </body>
 </html>

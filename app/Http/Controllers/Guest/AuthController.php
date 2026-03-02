@@ -39,7 +39,7 @@ class AuthController extends Controller
             'login' => 'Zły login lub hasło',
         ])->withInput($request->only('login'));
     }
-    
+
     public function logout(Request $request): RedirectResponse
     {
         Auth::logout();

@@ -41,7 +41,9 @@ class WorkerCostExportController extends Controller
 
         $html = $this->exportService->generateHtml($workersWithStats, $totalCost, $periodLabel);
 
-        $filename = 'pracownicy_' . $startDate->format('Y-m-d') . '_' . $endDate->format('Y-m-d');
+        $uniqueSuffix = bin2hex(random_bytes(8));
+        $downloadName = 'pracownicy_' . $startDate->format('Y-m-d') . '_' . $endDate->format('Y-m-d');
+        $filename = $downloadName . '_' . $uniqueSuffix;
 
         $tempDir = storage_path('app/temp');
         if (!file_exists($tempDir)) {
@@ -50,13 +52,20 @@ class WorkerCostExportController extends Controller
 
         $pdfPath = $tempDir . '/' . $filename . '.pdf';
 
-        Browsershot::html($html)
-            ->setChromePath(config('services.chrome.path'))
-            ->noSandbox()
-            ->format('A4')
-            ->margins(10, 10, 10, 10)
-            ->save($pdfPath);
+        try {
+            Browsershot::html($html)
+                ->setChromePath(config('services.chrome.path'))
+                ->noSandbox()
+                ->format('A4')
+                ->margins(10, 10, 10, 10)
+                ->save($pdfPath);
 
-        return response()->download($pdfPath, $filename . '.pdf')->deleteFileAfterSend(true);
+            return response()->download($pdfPath, $downloadName . '.pdf')->deleteFileAfterSend(true);
+        } catch (\Throwable $e) {
+            if (file_exists($pdfPath)) {
+                unlink($pdfPath);
+            }
+            throw $e;
+        }
     }
 }

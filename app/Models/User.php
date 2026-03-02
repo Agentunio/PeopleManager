@@ -12,10 +12,16 @@ class User extends Authenticatable
     protected $fillable = [
         'username',
         'password',
-        'role',
     ];
 
     protected $hidden = [
         'password',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'password' => 'hashed',
+        ];
+    }
 }
