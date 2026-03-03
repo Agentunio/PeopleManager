@@ -123,15 +123,15 @@
                         <div class="settlement-workers" data-shift="morning">
                             @forelse($workers_morning as $worker_morning)
                             <div class="settlement-worker-card">
-                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}][id]" value="{{ $worker_morning->worker->id }}"/>
-                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}][shift_type]" value="{{ $worker_morning->shift_type }}">
+                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][id]" value="{{ $worker_morning->worker->id }}"/>
+                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][shift_type]" value="{{ $worker_morning->shift_type }}">
                                 <div class="worker-info">
                                     <span class="worker-name">{{ $worker_morning->worker->first_name }} {{ $worker_morning->worker->last_name }}</span>
                                 </div>
                                 <div class="worker-settlement-fields">
                                     <div class="field-group">
                                         <span>Stawka</span>
-                                        <select name="workers[{{ $worker_morning->worker->id }}][package]" class="worker-rate">
+                                        <select name="workers[{{ $worker_morning->worker->id }}_morning][package]" class="worker-rate">
                                             <option value="">Wybierz stawkę</option>
                                             @foreach($packages as $package)
                                                 <option value="{{ $package->id }}" @selected($worker_morning->package_id == $package->id)>
@@ -158,16 +158,16 @@
                                         <div class="time-range-inputs" @if($worker_morning->minutes) style="display: none;" @endif>
                                         <div class="time-from">
                                                 <span class="time-label">Od</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
                                                 <span class="time-colon">:</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
                                             </div>
                                             <span class="time-range-separator">—</span>
                                             <div class="time-to">
                                                 <span class="time-label">Do</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
                                                 <span class="time-colon">:</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
                                             </div>
                                             <div class="time-calculated">
                                                 <span class="calculated-hours">0h 0min</span>
@@ -195,15 +195,15 @@
                         <div class="settlement-workers" data-shift="afternoon">
                             @forelse($workers_afternoon as $worker_afternoon)
                                 <div class="settlement-worker-card">
-                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}][id]" value="{{ $worker_afternoon->worker->id }}"/>
-                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}][shift_type]" value="{{ $worker_afternoon->shift_type }}">
+                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][id]" value="{{ $worker_afternoon->worker->id }}"/>
+                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][shift_type]" value="{{ $worker_afternoon->shift_type }}">
                                     <div class="worker-info">
                                         <span class="worker-name">{{ $worker_afternoon->worker->first_name }} {{ $worker_afternoon->worker->last_name }}</span>
                                     </div>
                                     <div class="worker-settlement-fields">
                                         <div class="field-group">
                                             <span>Stawka</span>
-                                            <select name="workers[{{ $worker_afternoon->worker->id }}][package]" class="worker-rate">
+                                            <select name="workers[{{ $worker_afternoon->worker->id }}_afternoon][package]" class="worker-rate">
                                                 <option value="">Wybierz stawkę</option>
                                                 @foreach($packages as $package)
                                                     <option value="{{ $package->id }}" @selected($worker_afternoon->package_id == $package->id)>
@@ -230,16 +230,16 @@
                                             <div class="time-range-inputs" @if($worker_afternoon->minutes) style="display: none;" @endif>
                                                 <div class="time-from">
                                                     <span class="time-label">Od</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
                                                     <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
                                                 </div>
                                                 <span class="time-range-separator">—</span>
                                                 <div class="time-to">
                                                     <span class="time-label">Do</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
                                                     <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
                                                 </div>
                                                 <div class="time-calculated">
                                                     <span class="calculated-hours">0h 0min</span>
