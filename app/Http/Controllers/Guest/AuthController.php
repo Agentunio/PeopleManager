@@ -30,6 +30,10 @@ class AuthController extends Controller
             LoginAttempt::record($ip, true);
             $request->session()->regenerate();
 
+            if (Auth::user()->role === 'worker') {
+                return redirect()->route('worker.dashboard');
+            }
+
             return redirect()->route('dashboard');
         }
 

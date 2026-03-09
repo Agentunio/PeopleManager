@@ -1,0 +1,99 @@
+.bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--w-surface);
+    border-top: 1px solid var(--w-border);
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    height: 64px;
+}
+
+.bar-item-form {
+    display: flex;
+}
+
+.bar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 32px;
+    text-decoration: none;
+    color: #666;
+    font-size: 0.7rem;
+    font-weight: 600;
+    font-family: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s;
+    position: relative;
+    height: 64px;
+}
+
+.bar-item i {
+    font-size: 1.25rem;
+    transition: transform 0.15s;
+}
+
+.bar-item span {
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+}
+
+.bar-item:hover {
+    color: var(--w-accent);
+}
+
+.bar-item:hover i {
+    transform: scale(1.1);
+}
+
+.bar-item.active {
+    color: var(--w-accent);
+}
+
+.bar-item.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 3px;
+    background: var(--w-accent);
+    border-radius: 0 0 3px 3px;
+}
+
+@media screen and (max-width: 768px) {
+    .bar-item {
+        padding: 8px 24px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .bar-item {
+        padding: 8px 18px;
+        font-size: 0.65rem;
+    }
+
+    .bar-item i {
+        font-size: 1.1rem;
+    }
+
+    .bottom-bar {
+        height: 58px;
+    }
+
+    .bar-item {
+        height: 58px;
+    }
+}

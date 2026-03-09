@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\EndDayController;
 use App\Http\Controllers\Admin\WeeklyExportController;
 use App\Http\Controllers\Admin\WorkerCostExportController;
 use App\Http\Controllers\Admin\WorkerController;
+use App\Http\Controllers\Worker\DashboardController as WorkerDashboardController;
+use App\Http\Controllers\Worker\ScheduleController as WorkerScheduleController;
 use App\Http\Controllers\Guest\AuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,4 +61,9 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
             Route::patch('/rozliczenie', [EndDayController::class, 'update'])->name('update');
         });
     });
+});
+
+Route::middleware(['auth', 'check.user.role:worker'])->prefix('strefa-pracownika')->name('worker.')->group(function () {
+    Route::get('/', [WorkerDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/grafik', [WorkerScheduleController::class, 'index'])->name('schedule');
 });
