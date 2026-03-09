@@ -6,6 +6,38 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class EndDayUpdateRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $workers = $this->input('workers', []);
+
+        foreach ($workers as $key => $worker) {
+            foreach (['from_hour', 'to_hour'] as $field) {
+                $value = $worker[$field] ?? null;
+
+                if ($value !== null && is_string($value) && str_contains($value, ':')) {
+                    $parts = explode(':', $value);
+                    $workers[$key][$field] = (int) $parts[0];
+
+                    $minuteField = str_replace('_hour', '_minute', $field);
+                    if (empty($worker[$minuteField]) && isset($parts[1])) {
+                        $workers[$key][$minuteField] = (int) $parts[1];
+                    }
+                } elseif ($value !== null && $value !== '' && is_numeric($value)) {
+                    $workers[$key][$field] = (int) $value;
+                }
+            }
+
+            foreach (['from_minute', 'to_minute'] as $field) {
+                $value = $workers[$key][$field] ?? null;
+                if ($value !== null && $value !== '' && is_numeric($value)) {
+                    $workers[$key][$field] = (int) $value;
+                }
+            }
+        }
+
+        $this->merge(['workers' => $workers]);
+    }
+
     public function rules(): array
     {
         return [

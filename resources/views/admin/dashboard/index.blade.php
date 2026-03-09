@@ -119,32 +119,52 @@
                         </div>
                         <div class="section-content">
                             <div class="packages-stats">
-                                <div class="package-stat">
+                                <div class="package-stat" id="morningPackageStat">
                                     <div class="package-stat-header">
                                         <i class="fas fa-sun"></i>
                                         <span>Zmiana ranna</span>
                                     </div>
-                                    <div class="package-stat-value">
-                                        <span class="value" id="morningPackages">{{ number_format($packageStats['morning']['packages'], 0, ',', ' ') }}</span>
-                                        <span class="label">paczek</span>
+                                    <div class="package-breakdown" id="morningBreakdown">
+                                        @forelse($packageStats['morning']['breakdown'] as $item)
+                                            <div class="breakdown-row">
+                                                <span class="breakdown-name">{{ $item['name'] }}</span>
+                                                <span class="breakdown-value">{{ number_format($item['packages'], 0, ',', ' ') }}</span>
+                                            </div>
+                                        @empty
+                                            <div class="breakdown-empty">Brak danych</div>
+                                        @endforelse
+                                    </div>
+                                    <div class="package-stat-total">
+                                        <span class="total-label">Łącznie:</span>
+                                        <span class="total-value" id="morningPackages">{{ number_format($packageStats['morning']['packages'], 0, ',', ' ') }}</span>
                                     </div>
                                 </div>
 
-                                <div class="package-stat">
+                                <div class="package-stat" id="afternoonPackageStat">
                                     <div class="package-stat-header">
                                         <i class="fas fa-cloud-sun"></i>
                                         <span>Zmiana popołudniowa</span>
                                     </div>
-                                    <div class="package-stat-value">
-                                        <span class="value" id="afternoonPackages">{{ number_format($packageStats['afternoon']['packages'], 0, ',', ' ') }}</span>
-                                        <span class="label">paczek</span>
+                                    <div class="package-breakdown" id="afternoonBreakdown">
+                                        @forelse($packageStats['afternoon']['breakdown'] as $item)
+                                            <div class="breakdown-row">
+                                                <span class="breakdown-name">{{ $item['name'] }}</span>
+                                                <span class="breakdown-value">{{ number_format($item['packages'], 0, ',', ' ') }}</span>
+                                            </div>
+                                        @empty
+                                            <div class="breakdown-empty">Brak danych</div>
+                                        @endforelse
+                                    </div>
+                                    <div class="package-stat-total">
+                                        <span class="total-label">Łącznie:</span>
+                                        <span class="total-value" id="afternoonPackages">{{ number_format($packageStats['afternoon']['packages'], 0, ',', ' ') }}</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="packages-summary">
                                 <div class="summary-row highlight">
-                                    <span class="summary-label">Łącznie paczek:</span>
+                                    <span class="summary-label">Suma wszystkich paczek:</span>
                                     <span class="summary-value" id="totalPackages">{{ number_format($packageStats['total']['packages'], 0, ',', ' ') }}</span>
                                 </div>
                             </div>

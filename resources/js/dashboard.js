@@ -343,6 +343,23 @@ document.addEventListener('DOMContentLoaded', function() {
         contentEl.appendChild(row);
     }
 
+    function renderBreakdown(containerId, breakdown) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (!breakdown || breakdown.length === 0) {
+            container.innerHTML = '<div class="breakdown-empty">Brak danych</div>';
+            return;
+        }
+
+        container.innerHTML = breakdown.map(item =>
+            `<div class="breakdown-row">
+                <span class="breakdown-name">${escapeHtml(item.name)}</span>
+                <span class="breakdown-value">${formatInteger(item.packages)}</span>
+            </div>`
+        ).join('');
+    }
+
     function renderPackageComparison(compStats) {
         const morningEl = document.getElementById('morningPackages');
         const afternoonEl = document.getElementById('afternoonPackages');
@@ -464,7 +481,9 @@ document.addEventListener('DOMContentLoaded', function() {
             renderIndicator(null, 'profit');
         }
 
+        renderBreakdown('morningBreakdown', data.packageStats.morning.breakdown);
         document.getElementById('morningPackages').textContent = formatInteger(data.packageStats.morning.packages);
+        renderBreakdown('afternoonBreakdown', data.packageStats.afternoon.breakdown);
         document.getElementById('afternoonPackages').textContent = formatInteger(data.packageStats.afternoon.packages);
         document.getElementById('totalPackages').textContent = formatInteger(data.packageStats.total.packages);
 
