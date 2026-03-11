@@ -44,6 +44,7 @@ class EndDayUpdateRequest extends FormRequest
             'workers' => 'array',
             'workers.*.id' => 'required|exists:workers,id',
             'workers.*.shift_type' => 'required|in:morning,afternoon',
+            'workers.*.status' => 'nullable|in:worked,absent',
             'workers.*.package' => 'nullable|exists:packages,id',
             'workers.*.from_hour' => 'nullable|integer|min:0|max:23',
             'workers.*.from_minute' => 'nullable|integer|min:0|max:59',
@@ -62,6 +63,10 @@ class EndDayUpdateRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             foreach ($this->workers ?? [] as $index => $worker) {
+                if (($worker['status'] ?? '') === 'absent') {
+                    continue;
+                }
+
                 $fromMinutes = (($worker['from_hour'] ?? 0) * 60) + ($worker['from_minute'] ?? 0);
                 $toMinutes = (($worker['to_hour'] ?? 0) * 60) + ($worker['to_minute'] ?? 0);
 

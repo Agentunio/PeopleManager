@@ -17,6 +17,7 @@ class WorkerShift extends Model
         'shift_type',
         'package_id',
         'minutes',
+        'status',
     ];
 
     public function worker(): BelongsTo

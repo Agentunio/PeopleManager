@@ -41,6 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.querySelectorAll('.settlement-worker-card').forEach(function(card) {
+        if (card.classList.contains('worker-absent')) return;
+
         const timeInputs = card.querySelectorAll('.worker-from-hour, .worker-from-minute, .worker-to-hour, .worker-to-minute');
 
         timeInputs.forEach(function(input) {
@@ -50,6 +52,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         updateCalculatedTime(card);
+    });
+
+    $(document).on('click', '.btn-absent', function() {
+        const card = this.closest('.settlement-worker-card');
+        const statusInput = card.querySelector('.worker-status-input');
+        const isAbsent = card.classList.toggle('worker-absent');
+
+        this.classList.toggle('active', isAbsent);
+        statusInput.value = isAbsent ? 'absent' : 'worked';
     });
 
     document.querySelectorAll('.btn-apply-defaults').forEach(function(btn) {
@@ -72,6 +83,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const workerCards = workersContainer.querySelectorAll('.settlement-worker-card');
 
         workerCards.forEach(function(card) {
+            if (card.classList.contains('worker-absent')) return;
+
             if (defaultRate) {
                 const rateField = card.querySelector('.worker-rate');
                 if (rateField) {

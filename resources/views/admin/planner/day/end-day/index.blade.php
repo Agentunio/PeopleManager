@@ -122,11 +122,15 @@
 
                         <div class="settlement-workers" data-shift="morning">
                             @forelse($workers_morning as $worker_morning)
-                            <div class="settlement-worker-card">
+                            <div class="settlement-worker-card {{ $worker_morning->status === 'absent' ? 'worker-absent' : '' }}">
                                 <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][id]" value="{{ $worker_morning->worker->id }}"/>
                                 <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][shift_type]" value="{{ $worker_morning->shift_type }}">
+                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][status]" value="{{ $worker_morning->status === 'absent' ? 'absent' : 'worked' }}" class="worker-status-input">
                                 <div class="worker-info">
                                     <span class="worker-name">{{ $worker_morning->worker->first_name }} {{ $worker_morning->worker->last_name }}</span>
+                                    <button type="button" class="btn btn-absent {{ $worker_morning->status === 'absent' ? 'active' : '' }}">
+                                        <i class="fas fa-user-slash"></i> Nieobecny
+                                    </button>
                                 </div>
                                 <div class="worker-settlement-fields">
                                     <div class="field-group">
@@ -194,11 +198,15 @@
 
                         <div class="settlement-workers" data-shift="afternoon">
                             @forelse($workers_afternoon as $worker_afternoon)
-                                <div class="settlement-worker-card">
+                                <div class="settlement-worker-card {{ $worker_afternoon->status === 'absent' ? 'worker-absent' : '' }}">
                                     <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][id]" value="{{ $worker_afternoon->worker->id }}"/>
                                     <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][shift_type]" value="{{ $worker_afternoon->shift_type }}">
+                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][status]" value="{{ $worker_afternoon->status === 'absent' ? 'absent' : 'worked' }}" class="worker-status-input">
                                     <div class="worker-info">
                                         <span class="worker-name">{{ $worker_afternoon->worker->first_name }} {{ $worker_afternoon->worker->last_name }}</span>
+                                        <button type="button" class="btn btn-absent {{ $worker_afternoon->status === 'absent' ? 'active' : '' }}">
+                                            <i class="fas fa-user-slash"></i> Nieobecny
+                                        </button>
                                     </div>
                                     <div class="worker-settlement-fields">
                                         <div class="field-group">

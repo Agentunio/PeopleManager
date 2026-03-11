@@ -321,15 +321,70 @@
     border-color: #444;
 }
 
+.settlement-worker-card.worker-absent {
+    background: rgba(255, 50, 50, 0.06);
+    border-color: rgba(255, 82, 82, 0.3);
+    position: relative;
+}
+
+.settlement-worker-card.worker-absent .worker-settlement-fields {
+    display: none;
+}
+
+.settlement-worker-card.worker-absent .worker-info {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.settlement-worker-card.worker-absent .worker-info .worker-name {
+    opacity: 0.4;
+}
+
 .worker-info {
     margin-bottom: 15px;
     padding-bottom: 15px;
     border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 }
 
 .worker-info .worker-name {
     color: var(--secondary-color);
     font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.btn-absent {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: #888;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-absent:hover {
+    border-color: #ff5252;
+    color: #ff5252;
+    background: rgba(255, 82, 82, 0.08);
+}
+
+.btn-absent.active {
+    background: rgba(255, 82, 82, 0.15);
+    border-color: #ff5252;
+    color: #ff5252;
     font-weight: 600;
 }
 

@@ -36,7 +36,19 @@ class EndDayController extends Controller
 
         DB::transaction(function () use ($validated, $date) {
             foreach ($validated['workers'] ?? [] as $workerData) {
-                $updateData = [];
+                if (($workerData['status'] ?? '') === 'absent') {
+                    WorkerShift::where('worker_id', $workerData['id'])
+                        ->where('day', $date)
+                        ->where('shift_type', $workerData['shift_type'])
+                        ->update([
+                            'status' => 'absent',
+                            'minutes' => 0,
+                            'package_id' => null,
+                        ]);
+                    continue;
+                }
+
+                $updateData = ['status' => 'worked'];
 
                 if (!empty($workerData['package'])) {
                     $updateData['package_id'] = $workerData['package'];
@@ -47,12 +59,10 @@ class EndDayController extends Controller
                     $updateData['minutes'] = $minutes;
                 }
 
-                if (!empty($updateData)) {
-                    WorkerShift::where('worker_id', $workerData['id'])
-                        ->where('day', $date)
-                        ->where('shift_type', $workerData['shift_type'])
-                        ->update($updateData);
-                }
+                WorkerShift::where('worker_id', $workerData['id'])
+                    ->where('day', $date)
+                    ->where('shift_type', $workerData['shift_type'])
+                    ->update($updateData);
             }
 
             $this->savePackageEntries($validated['morning_package_entries'] ?? null, $date, 'morning');
