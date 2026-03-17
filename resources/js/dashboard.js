@@ -436,6 +436,14 @@ document.addEventListener('DOMContentLoaded', function() {
         removeWorkersSummaryComparison();
     }
 
+    function renderAbsenceCell(worker) {
+        if (!worker.absences || worker.absences === 0) {
+            return '<span class="no-absences">0</span>';
+        }
+        const daysJson = escapeHtml(JSON.stringify(worker.absentDays));
+        return `<span class="absence-badge" data-absent-days="${daysJson}">${worker.absences}</span>`;
+    }
+
     function renderWorkers(workers) {
         const tbody = document.getElementById('workersTableBody');
         const countEl = document.getElementById('workersCount');
@@ -444,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!tbody) return;
 
         if (workers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #888; padding: 20px;">Brak pracowników</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #888; padding: 20px;">Brak pracowników</td></tr>';
             if (countEl) countEl.textContent = '0 pracowników';
             if (totalCostEl) totalCostEl.textContent = '0,00 zł';
             return;
@@ -458,6 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return `<tr>
                 <td class="worker-name">${escapeHtml(worker.name)}</td>
                 <td class="worker-hours">${hoursDisplay}</td>
+                <td class="worker-absences">${renderAbsenceCell(worker)}</td>
                 <td class="worker-cost">${costDisplay}</td>
             </tr>`;
         }).join('');
@@ -555,4 +564,74 @@ document.addEventListener('DOMContentLoaded', function() {
     function capitalize(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
+
+    function formatAbsentDate(dateStr) {
+        const parts = dateStr.split('-');
+        return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    }
+
+    let activePopover = null;
+    let activeOverlay = null;
+
+    function closePopover() {
+        if (activePopover) {
+            activePopover.remove();
+            activePopover = null;
+        }
+        if (activeOverlay) {
+            activeOverlay.remove();
+            activeOverlay = null;
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        const badge = e.target.closest('.absence-badge');
+
+        if (activePopover && (!badge || badge !== activePopover._badge)) {
+            closePopover();
+        }
+
+        if (!badge) return;
+
+        if (activePopover && activePopover._badge === badge) {
+            closePopover();
+            return;
+        }
+
+        const days = JSON.parse(badge.dataset.absentDays);
+        const popover = document.createElement('div');
+        popover.className = 'absence-popover';
+        popover._badge = badge;
+
+        popover.innerHTML = `
+            <div class="absence-popover-header">Dni nieobecności</div>
+            <div class="absence-popover-list">
+                ${days.map(entry => {
+                    const dayStr = typeof entry === 'string' ? entry : entry.day;
+                    const substitute = typeof entry === 'object' ? entry.substitute : null;
+                    return `
+                    <a href="/grafik/${encodeURIComponent(dayStr)}/rozliczenie" class="absence-popover-item">
+                        <i class="fas fa-calendar-day"></i>
+                        <span>${escapeHtml(formatAbsentDate(dayStr))}</span>
+                        ${substitute ? `<span class="substitute-info"><i class="fas fa-user-check"></i> ${escapeHtml(substitute)}</span>` : ''}
+                        <i class="fas fa-arrow-right"></i>
+                    </a>`;
+                }).join('')}
+            </div>
+        `;
+
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            const overlay = document.createElement('div');
+            overlay.className = 'absence-overlay';
+            overlay.addEventListener('click', closePopover);
+            document.body.appendChild(overlay);
+            document.body.appendChild(popover);
+            activeOverlay = overlay;
+        } else {
+            badge.style.position = 'relative';
+            badge.appendChild(popover);
+        }
+        activePopover = popover;
+    });
 });

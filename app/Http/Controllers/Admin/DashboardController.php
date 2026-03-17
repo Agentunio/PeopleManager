@@ -52,6 +52,8 @@ class DashboardController extends Controller
                 'name' => $worker->first_name . ' ' . $worker->last_name,
                 'hours' => $worker->stats['hours'],
                 'salary' => $worker->stats['salary'],
+                'absences' => $worker->stats['absences'],
+                'absentDays' => $worker->stats['absentDays'],
             ])->values(),
         ];
 

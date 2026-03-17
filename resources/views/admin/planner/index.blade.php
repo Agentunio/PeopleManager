@@ -76,7 +76,7 @@
                                     </div>
                                     <div class="shift-workers">
                                         @forelse($dayShifts['morning'] ?? [] as $worker)
-                                            <div class="worker-name">{{ $worker }}</div>
+                                            <div class="worker-name {{ ($worker['status'] ?? '') === 'absent' ? 'worker-absent' : '' }} {{ ($worker['is_substitute'] ?? false) ? 'worker-substitute' : '' }}">{{ $worker['name'] }}</div>
                                         @empty
                                             <div class="no-workers">Brak przypisanych pracowników</div>
                                         @endforelse
@@ -90,7 +90,7 @@
                                     </div>
                                     <div class="shift-workers">
                                         @forelse($dayShifts['afternoon'] ?? [] as $worker)
-                                            <div class="worker-name">{{ $worker }}</div>
+                                            <div class="worker-name {{ ($worker['status'] ?? '') === 'absent' ? 'worker-absent' : '' }} {{ ($worker['is_substitute'] ?? false) ? 'worker-substitute' : '' }}">{{ $worker['name'] }}</div>
                                         @empty
                                             <div class="no-workers">Brak przypisanych pracowników</div>
                                         @endforelse
@@ -109,6 +109,12 @@
                     <div class="legend-item">
                         <span class="legend-icon legend-settled"></span>
                         <span>Rozliczony</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-text legend-absent-text">Nieobecny</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-text legend-substitute-text">Zastępstwo</span>
                     </div>
                 </div>
             </div>

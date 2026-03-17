@@ -122,15 +122,20 @@
 
                         <div class="settlement-workers" data-shift="morning">
                             @forelse($workers_morning as $worker_morning)
-                            <div class="settlement-worker-card {{ $worker_morning->status === 'absent' ? 'worker-absent' : '' }}">
+                            <div class="settlement-worker-card {{ $worker_morning->status === 'absent' ? 'worker-absent' : '' }}" data-shift-id="{{ $worker_morning->id }}" data-worker-id="{{ $worker_morning->worker->id }}">
                                 <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][id]" value="{{ $worker_morning->worker->id }}"/>
                                 <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][shift_type]" value="{{ $worker_morning->shift_type }}">
                                 <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][status]" value="{{ $worker_morning->status === 'absent' ? 'absent' : 'worked' }}" class="worker-status-input">
                                 <div class="worker-info">
                                     <span class="worker-name">{{ $worker_morning->worker->first_name }} {{ $worker_morning->worker->last_name }}</span>
-                                    <button type="button" class="btn btn-absent {{ $worker_morning->status === 'absent' ? 'active' : '' }}">
-                                        <i class="fas fa-user-slash"></i> Nieobecny
-                                    </button>
+                                    <div class="worker-actions">
+                                        <button type="button" class="btn btn-absent {{ $worker_morning->status === 'absent' ? 'active' : '' }}">
+                                            <i class="fas fa-user-slash"></i> Nieobecny
+                                        </button>
+                                        <button type="button" class="btn btn-add-substitute" data-shift="morning" data-shift-id="{{ $worker_morning->id }}">
+                                            <i class="fas fa-user-plus"></i> Zastępstwo
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="worker-settlement-fields">
                                     <div class="field-group">
@@ -184,6 +189,72 @@
                             @empty
                                 <p>Brak pracowników</p>
                             @endforelse
+
+                            @foreach($substitutes_morning as $sub)
+                                <div class="settlement-worker-card substitute-card" data-substitute-for-shift="{{ $sub->substituted_for_shift_id }}">
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][id]" value="{{ $sub->worker->id }}"/>
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][shift_type]" value="morning">
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][status]" value="worked" class="worker-status-input">
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][is_substitute]" value="1">
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][substituted_for_shift_id]" value="{{ $sub->substituted_for_shift_id }}">
+                                    <div class="worker-info">
+                                        <span class="worker-name">{{ $sub->worker->first_name }} {{ $sub->worker->last_name }}</span>
+                                        <div class="worker-actions">
+                                            <div class="substitute-label">
+                                                <i class="fas fa-user-check"></i>
+                                                Zastępstwo za {{ $sub->substitutedForShift->worker->first_name ?? '' }} {{ $sub->substitutedForShift->worker->last_name ?? '' }}
+                                            </div>
+                                            <button type="button" class="btn btn-remove-substitute">
+                                                <i class="fas fa-times"></i> Usuń zastępstwo
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="worker-settlement-fields">
+                                        <div class="field-group">
+                                            <span>Stawka</span>
+                                            <select name="workers[{{ $sub->worker->id }}_morning][package]" class="worker-rate">
+                                                <option value="">Wybierz stawkę</option>
+                                                @foreach($packages as $package)
+                                                    <option value="{{ $package->id }}" @selected($sub->package_id == $package->id)>
+                                                        {{ $package->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="field-group field-time">
+                                            <span>Czas pracy</span>
+                                            @if($sub->minutes)
+                                                <div class="time-saved">
+                                                    <span class="saved-hours">
+                                                        Zapisano: {{ floor($sub->minutes / 60) }}h {{ $sub->minutes % 60 }}min
+                                                    </span>
+                                                    <button type="button" class="btn btn-small btn-change-time">
+                                                        <i class="fas fa-edit"></i> Zmień
+                                                    </button>
+                                                </div>
+                                            @endif
+                                            <div class="time-range-inputs" @if($sub->minutes) style="display: none;" @endif>
+                                                <div class="time-from">
+                                                    <span class="time-label">Od</span>
+                                                    <input type="number" name="workers[{{ $sub->worker->id }}_morning][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
+                                                    <span class="time-colon">:</span>
+                                                    <input type="number" name="workers[{{ $sub->worker->id }}_morning][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
+                                                </div>
+                                                <span class="time-range-separator">—</span>
+                                                <div class="time-to">
+                                                    <span class="time-label">Do</span>
+                                                    <input type="number" name="workers[{{ $sub->worker->id }}_morning][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
+                                                    <span class="time-colon">:</span>
+                                                    <input type="number" name="workers[{{ $sub->worker->id }}_morning][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
+                                                </div>
+                                                <div class="time-calculated">
+                                                    <span class="calculated-hours">0h 0min</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
 
@@ -198,15 +269,20 @@
 
                         <div class="settlement-workers" data-shift="afternoon">
                             @forelse($workers_afternoon as $worker_afternoon)
-                                <div class="settlement-worker-card {{ $worker_afternoon->status === 'absent' ? 'worker-absent' : '' }}">
+                                <div class="settlement-worker-card {{ $worker_afternoon->status === 'absent' ? 'worker-absent' : '' }}" data-shift-id="{{ $worker_afternoon->id }}" data-worker-id="{{ $worker_afternoon->worker->id }}">
                                     <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][id]" value="{{ $worker_afternoon->worker->id }}"/>
                                     <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][shift_type]" value="{{ $worker_afternoon->shift_type }}">
                                     <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][status]" value="{{ $worker_afternoon->status === 'absent' ? 'absent' : 'worked' }}" class="worker-status-input">
                                     <div class="worker-info">
                                         <span class="worker-name">{{ $worker_afternoon->worker->first_name }} {{ $worker_afternoon->worker->last_name }}</span>
-                                        <button type="button" class="btn btn-absent {{ $worker_afternoon->status === 'absent' ? 'active' : '' }}">
-                                            <i class="fas fa-user-slash"></i> Nieobecny
-                                        </button>
+                                        <div class="worker-actions">
+                                            <button type="button" class="btn btn-absent {{ $worker_afternoon->status === 'absent' ? 'active' : '' }}">
+                                                <i class="fas fa-user-slash"></i> Nieobecny
+                                            </button>
+                                            <button type="button" class="btn btn-add-substitute" data-shift="afternoon" data-shift-id="{{ $worker_afternoon->id }}">
+                                                <i class="fas fa-user-plus"></i> Zastępstwo
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="worker-settlement-fields">
                                         <div class="field-group">
@@ -260,6 +336,72 @@
                             @empty
                                 <p>Brak pracowników</p>
                             @endforelse
+
+                            @foreach($substitutes_afternoon as $sub)
+                                <div class="settlement-worker-card substitute-card" data-substitute-for-shift="{{ $sub->substituted_for_shift_id }}">
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][id]" value="{{ $sub->worker->id }}"/>
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][shift_type]" value="afternoon">
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][status]" value="worked" class="worker-status-input">
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][is_substitute]" value="1">
+                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][substituted_for_shift_id]" value="{{ $sub->substituted_for_shift_id }}">
+                                    <div class="worker-info">
+                                        <span class="worker-name">{{ $sub->worker->first_name }} {{ $sub->worker->last_name }}</span>
+                                        <div class="worker-actions">
+                                            <div class="substitute-label">
+                                                <i class="fas fa-user-check"></i>
+                                                Zastępstwo za {{ $sub->substitutedForShift->worker->first_name ?? '' }} {{ $sub->substitutedForShift->worker->last_name ?? '' }}
+                                            </div>
+                                            <button type="button" class="btn btn-remove-substitute">
+                                                <i class="fas fa-times"></i> Usuń zastępstwo
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="worker-settlement-fields">
+                                        <div class="field-group">
+                                            <span>Stawka</span>
+                                            <select name="workers[{{ $sub->worker->id }}_afternoon][package]" class="worker-rate">
+                                                <option value="">Wybierz stawkę</option>
+                                                @foreach($packages as $package)
+                                                    <option value="{{ $package->id }}" @selected($sub->package_id == $package->id)>
+                                                        {{ $package->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="field-group field-time">
+                                            <span>Czas pracy</span>
+                                            @if($sub->minutes)
+                                                <div class="time-saved">
+                                                    <span class="saved-hours">
+                                                        Zapisano: {{ floor($sub->minutes / 60) }}h {{ $sub->minutes % 60 }}min
+                                                    </span>
+                                                    <button type="button" class="btn btn-small btn-change-time">
+                                                        <i class="fas fa-edit"></i> Zmień
+                                                    </button>
+                                                </div>
+                                            @endif
+                                            <div class="time-range-inputs" @if($sub->minutes) style="display: none;" @endif>
+                                                <div class="time-from">
+                                                    <span class="time-label">Od</span>
+                                                    <input type="number" name="workers[{{ $sub->worker->id }}_afternoon][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
+                                                    <span class="time-colon">:</span>
+                                                    <input type="number" name="workers[{{ $sub->worker->id }}_afternoon][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
+                                                </div>
+                                                <span class="time-range-separator">—</span>
+                                                <div class="time-to">
+                                                    <span class="time-label">Do</span>
+                                                    <input type="number" name="workers[{{ $sub->worker->id }}_afternoon][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
+                                                    <span class="time-colon">:</span>
+                                                    <input type="number" name="workers[{{ $sub->worker->id }}_afternoon][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
+                                                </div>
+                                                <div class="time-calculated">
+                                                    <span class="calculated-hours">0h 0min</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
 
@@ -390,8 +532,32 @@
             </form>
         </main>
     </div>
+
+    <div class="substitute-modal-overlay" id="substituteModal" style="display: none;">
+        <div class="substitute-modal">
+            <div class="substitute-modal-header">
+                <h3><i class="fas fa-user-plus"></i> Wybierz zastępcę</h3>
+                <button type="button" class="btn-modal-close" id="closeSubstituteModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="substitute-modal-body">
+                <div class="substitute-modal-loading" id="substituteModalLoading">
+                    <i class="fas fa-circle-notch fa-spin"></i> Ładowanie...
+                </div>
+                <div class="substitute-modal-list" id="substituteModalList"></div>
+                <div class="substitute-modal-empty" id="substituteModalEmpty" style="display: none;">
+                    Brak dostępnych pracowników do zastępstwa
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
+    <script>
+        window.settlementPackages = @json($packages);
+        window.settlementDate = @json($date);
+    </script>
     @vite(['resources/js/settlement.js'])
 @endpush

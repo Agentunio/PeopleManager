@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\WorkerShift;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class EndDayUpdateRequest extends FormRequest
 {
@@ -45,6 +47,13 @@ class EndDayUpdateRequest extends FormRequest
             'workers.*.id' => 'required|exists:workers,id',
             'workers.*.shift_type' => 'required|in:morning,afternoon',
             'workers.*.status' => 'nullable|in:worked,absent',
+            'workers.*.is_substitute' => 'nullable|boolean',
+            'workers.*.substituted_for_shift_id' => [
+                'nullable', 'integer',
+                Rule::exists('worker_shifts', 'id')->where(function ($query) {
+                    $query->where('day', $this->route('date'));
+                }),
+            ],
             'workers.*.package' => 'nullable|exists:packages,id',
             'workers.*.from_hour' => 'nullable|integer|min:0|max:23',
             'workers.*.from_minute' => 'nullable|integer|min:0|max:59',
@@ -62,7 +71,55 @@ class EndDayUpdateRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            foreach ($this->workers ?? [] as $index => $worker) {
+            $usedSubstitutedShiftIds = [];
+            $allWorkers = $this->input('workers', []);
+
+            foreach ($allWorkers as $index => $worker) {
+                if (!empty($worker['is_substitute']) && !empty($worker['substituted_for_shift_id'])) {
+                    $absentShift = WorkerShift::find($worker['substituted_for_shift_id']);
+
+                    if ($absentShift) {
+                        if ($absentShift->worker_id == $worker['id']) {
+                            $validator->errors()->add(
+                                "workers.{$index}.id",
+                                'Pracownik nie może zastąpić samego siebie'
+                            );
+                        }
+
+                        $submittedKey = "{$absentShift->worker_id}_{$absentShift->shift_type}";
+                        $submittedStatus = $allWorkers[$submittedKey]['status'] ?? null;
+                        $dbIsAbsent = $absentShift->status === 'absent';
+
+                        if ($submittedStatus !== 'absent' && !$dbIsAbsent) {
+                            $validator->errors()->add(
+                                "workers.{$index}.substituted_for_shift_id",
+                                'Zastępstwo można przypisać tylko za nieobecnego pracownika'
+                            );
+                        }
+                    }
+
+                    $alreadyOnShift = WorkerShift::where('worker_id', $worker['id'])
+                        ->where('day', $this->route('date'))
+                        ->where('shift_type', $worker['shift_type'] ?? '')
+                        ->whereNull('substituted_for_shift_id')
+                        ->exists();
+
+                    if ($alreadyOnShift) {
+                        $validator->errors()->add(
+                            "workers.{$index}.id",
+                            'Ten pracownik jest już przypisany do tej zmiany'
+                        );
+                    }
+
+                    if (in_array($worker['substituted_for_shift_id'], $usedSubstitutedShiftIds)) {
+                        $validator->errors()->add(
+                            "workers.{$index}.substituted_for_shift_id",
+                            'Dla jednej nieobecności można przypisać tylko jedno zastępstwo'
+                        );
+                    }
+                    $usedSubstitutedShiftIds[] = $worker['substituted_for_shift_id'];
+                }
+
                 if (($worker['status'] ?? '') === 'absent') {
                     continue;
                 }

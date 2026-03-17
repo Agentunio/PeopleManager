@@ -433,6 +433,7 @@
 .workers-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .workers-table thead {
@@ -452,6 +453,11 @@
     border-bottom: 1px solid var(--border-color);
 }
 
+.workers-table th:nth-child(1) { width: 35%; }
+.workers-table th:nth-child(2) { width: 25%; }
+.workers-table th:nth-child(3) { width: 20%; text-align: center; }
+.workers-table th:last-child { width: 20%; }
+
 .workers-table th:last-child {
     text-align: right;
 }
@@ -467,9 +473,6 @@
 }
 
 .worker-name {
-    display: flex;
-    align-items: center;
-    gap: 12px;
     font-weight: 500;
     color: var(--text-color);
 }
@@ -484,6 +487,135 @@
     font-weight: 600;
     color: #f44336;
 }
+
+.worker-absences {
+    text-align: center;
+}
+
+.absence-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    background: rgba(255, 82, 82, 0.15);
+    color: #ff5252;
+    border: 1px solid rgba(255, 82, 82, 0.3);
+    border-radius: 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.absence-badge:hover {
+    background: rgba(255, 82, 82, 0.25);
+    border-color: #ff5252;
+    transform: scale(1.1);
+}
+
+.no-absences {
+    color: #555;
+    font-size: 0.85rem;
+}
+
+.absence-popover {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    background: #1f1f1f;
+    border: 1px solid rgba(255, 82, 82, 0.3);
+    border-radius: 10px;
+    min-width: 200px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    animation: fadeIn 0.2s ease;
+    overflow: hidden;
+}
+
+.absence-popover-header {
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.absence-popover-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.absence-popover-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.absence-popover-list::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+}
+
+.absence-popover-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 0.88rem;
+    transition: background 0.15s;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.absence-popover-item:last-child {
+    border-bottom: none;
+}
+
+.absence-popover-item:hover {
+    background: rgba(255, 82, 82, 0.1);
+}
+
+.absence-popover-item .fa-calendar-day {
+    color: #ff5252;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.absence-popover-item span {
+    flex: 1;
+}
+
+.absence-popover-item .fa-arrow-right {
+    color: #555;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+
+.absence-popover-item:hover .fa-arrow-right {
+    color: #ff5252;
+}
+
+.substitute-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: #2196f3;
+    background: rgba(33, 150, 243, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.substitute-info i {
+    font-size: 0.7rem;
+}
+
 
 .packages-summary,
 .workers-summary {
@@ -870,6 +1002,11 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes fadeInMobile {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
 @media (max-width: 1300px) {
     .stats-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -1020,6 +1157,7 @@
     }
 
     .workers-table td.worker-hours,
+    .workers-table td.worker-absences,
     .workers-table td.worker-cost {
         display: flex;
         justify-content: space-between;
@@ -1029,6 +1167,12 @@
 
     .workers-table td.worker-hours::before {
         content: 'Godziny:';
+        color: #888;
+        font-size: 0.85rem;
+    }
+
+    .workers-table td.worker-absences::before {
+        content: 'Nieobecności:';
         color: #888;
         font-size: 0.85rem;
     }
@@ -1045,6 +1189,28 @@
 
     .workers-table tr:hover td {
         background: transparent;
+    }
+
+    .absence-popover {
+        position: fixed;
+        bottom: auto;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: calc(100vw - 40px);
+        max-width: 320px;
+        z-index: 1001;
+        animation: fadeInMobile 0.2s ease;
+    }
+
+    .absence-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
     }
 }
 

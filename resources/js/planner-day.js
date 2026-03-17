@@ -448,15 +448,70 @@ $(document).ready(function() {
     $(document).on('click', '.remove-worker', function(e) {
         e.stopPropagation();
 
+        const $worker = $(this).closest('.assigned-worker');
         const $dropzone = $(this).closest('.shift-dropzone');
         const workerId = $(this).data('worker-id');
+        const shiftId = $worker.data('shift-id');
+        const isAbsent = $worker.hasClass('worker-absent');
+        const isSubstitute = $worker.hasClass('worker-substitute');
 
-        $(this).closest('.assigned-worker').remove();
-        $dropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
+        function removeWorker(alsoRemoveSubstitute) {
+            if (alsoRemoveSubstitute && shiftId) {
+                const $subCard = $dropzone.find(`.assigned-worker[data-substituted-for="${shiftId}"]`);
+                if ($subCard.length) {
+                    const subWorkerId = $subCard.data('worker-id');
+                    $subCard.remove();
+                    $dropzone.find(`.hidden-inputs input[data-worker-id="${subWorkerId}"]`).remove();
+                    restoreWorkerCard(subWorkerId);
+                }
+            }
 
-        updatePlaceholder($dropzone);
-        updateCounts();
-        restoreWorkerCard(workerId);
+            $worker.remove();
+            $dropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
+            updatePlaceholder($dropzone);
+            updateCounts();
+            restoreWorkerCard(workerId);
+        }
+
+        if (isAbsent) {
+            const $subCard = shiftId ? $dropzone.find(`.assigned-worker[data-substituted-for="${shiftId}"]`) : $();
+            const subName = $subCard.find('.worker-name').text().trim();
+
+            Swal.fire({
+                title: 'Usunąć nieobecnego?',
+                text: subName
+                    ? `Usunięcie tego pracownika usunie również zastępstwo: ${subName}`
+                    : 'Pracownik jest oznaczony jako nieobecny. Czy na pewno chcesz go usunąć z grafiku?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e50914',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Tak, usuń',
+                cancelButtonText: 'Anuluj',
+                background: '#1f1f1f',
+                color: '#f0f0f0'
+            }).then((result) => {
+                if (result.isConfirmed) removeWorker(true);
+            });
+        } else if (isSubstitute) {
+            const workerName = $worker.find('.worker-name').text().trim();
+            Swal.fire({
+                title: 'Usunąć zastępstwo?',
+                text: `Czy na pewno chcesz usunąć zastępstwo: ${workerName}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e50914',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Tak, usuń',
+                cancelButtonText: 'Anuluj',
+                background: '#1f1f1f',
+                color: '#f0f0f0'
+            }).then((result) => {
+                if (result.isConfirmed) removeWorker(false);
+            });
+        } else {
+            removeWorker(false);
+        }
     });
 
     $('#change-availability-btn').on('click', function() {

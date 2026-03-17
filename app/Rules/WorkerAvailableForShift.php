@@ -3,6 +3,7 @@
 namespace App\Rules;
 
 use App\Models\WorkerAvailability;
+use App\Models\WorkerShift;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
@@ -25,6 +26,15 @@ class WorkerAvailableForShift implements ValidationRule
 
         if (!in_array($shiftType, ['morning', 'afternoon'], true)) {
             $fail('Nieprawidłowy typ zmiany.');
+            return;
+        }
+
+        $alreadyAssigned = WorkerShift::where('worker_id', $value)
+            ->where('day', $this->date)
+            ->where('shift_type', $shiftType)
+            ->exists();
+
+        if ($alreadyAssigned) {
             return;
         }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class WorkerShift extends Model
 {
@@ -18,6 +19,7 @@ class WorkerShift extends Model
         'package_id',
         'minutes',
         'status',
+        'substituted_for_shift_id',
     ];
 
     public function worker(): BelongsTo
@@ -28,5 +30,15 @@ class WorkerShift extends Model
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
+    }
+
+    public function substitutedForShift(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'substituted_for_shift_id');
+    }
+
+    public function substitute(): HasOne
+    {
+        return $this->hasOne(self::class, 'substituted_for_shift_id');
     }
 }

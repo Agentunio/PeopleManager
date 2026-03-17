@@ -56,6 +56,7 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
         Route::prefix('/{date}')->name('day.')->group(function () {
             Route::get('/', [DayController::class, 'index'])->name('index');
             Route::get('/rozliczenie', [EndDayController::class, 'index'])->name('end-day');
+            Route::get('/zastepstwo-dostepni', [EndDayController::class, 'availableForSubstitution'])->name('substitution.available');
             Route::post('/dostepnosc-pracownika', [DayController::class, 'storeAvailability'])->name('availability');
             Route::post('zapisz-zmiane', [DayController::class, 'storeShift'])->name('shift');
             Route::patch('/rozliczenie', [EndDayController::class, 'update'])->name('update');

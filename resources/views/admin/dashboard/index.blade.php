@@ -189,6 +189,7 @@
                                     <tr>
                                         <th>Pracownik</th>
                                         <th>Godziny</th>
+                                        <th>Nieobecności</th>
                                         <th>Koszt</th>
                                     </tr>
                                     </thead>
@@ -199,10 +200,19 @@
                                                 {{ $worker->first_name }} {{ $worker->last_name  }}
                                             </td>
                                             <td class="worker-hours">{{ $worker->stats['totalMinutes'] > 0 ? $worker->stats['hours'] : 'Brak danych' }}</td>
+                                            <td class="worker-absences">
+                                                @if($worker->stats['absences'] > 0)
+                                                    <span class="absence-badge" data-absent-days="{{ json_encode($worker->stats['absentDays']) }}">
+                                                        {{ $worker->stats['absences'] }}
+                                                    </span>
+                                                @else
+                                                    <span class="no-absences">0</span>
+                                                @endif
+                                            </td>
                                             <td class="worker-cost">{{ $worker->stats['salary'] > 0 ? number_format($worker->stats['salary'], 2, ',', '') . ' zł' : 'Brak danych' }}</td>
                                         </tr>
                                     @empty
-                                        <tr><td colspan="3" style="text-align: center; color: #888; padding: 20px;">Brak pracowników</td></tr>
+                                        <tr><td colspan="4" style="text-align: center; color: #888; padding: 20px;">Brak pracowników</td></tr>
                                     @endforelse
                                     </tbody>
                                 </table>

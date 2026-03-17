@@ -28,7 +28,11 @@ class PlannerController extends Controller
             ->get()
             ->groupBy('day')
             ->map(fn($dayShifts) => $dayShifts->groupBy('shift_type')
-                ->map(fn($typeShifts) => $typeShifts->pluck('worker')->map(fn($w) => "$w->first_name $w->last_name")->toArray())
+                ->map(fn($typeShifts) => $typeShifts->map(fn($s) => [
+                    'name' => "{$s->worker->first_name} {$s->worker->last_name}",
+                    'status' => $s->status ?? 'worked',
+                    'is_substitute' => !is_null($s->substituted_for_shift_id),
+                ])->values()->toArray())
             )->toArray();
 
         $daysWithPackages = PackageShift::whereBetween('day', [$start, $end])

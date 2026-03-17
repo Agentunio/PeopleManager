@@ -10,18 +10,33 @@ class WorkerStatsService
 {
     public function calculateStats(Collection $shifts): array
     {
-        $totalMinutes = (int) $shifts->sum('minutes');
+        $absentShifts = $shifts->where('status', 'absent');
+        $workedShifts = $shifts->where('status', '!=', 'absent');
 
-        $totalSalary = $shifts->sum(function ($shift) {
+        $totalMinutes = (int) $workedShifts->sum('minutes');
+
+        $totalSalary = $workedShifts->sum(function ($shift) {
             $hours = $shift->minutes / 60;
             $hourlyRate = $shift->package?->price ?? 0;
             return $hours * $hourlyRate;
         });
 
+        $absentDays = $absentShifts->map(function ($shift) {
+            $substitute = $shift->substitute;
+            return [
+                'day' => $shift->day,
+                'substitute' => $substitute
+                    ? ($substitute->worker->first_name . ' ' . $substitute->worker->last_name)
+                    : null,
+            ];
+        })->unique('day')->sortBy('day')->values()->toArray();
+
         return [
             'hours' => $this->formatHours($totalMinutes),
             'salary' => round($totalSalary, 2),
             'totalMinutes' => $totalMinutes,
+            'absences' => count($absentDays),
+            'absentDays' => $absentDays,
         ];
     }
 
@@ -44,7 +59,7 @@ class WorkerStatsService
     public function getStatsForWorker(Worker $worker, string $dateFrom, string $dateTo): array
     {
         $shifts = $worker->shifts()
-            ->with('package')
+            ->with(['package', 'substitute.worker'])
             ->whereBetween('day', [$dateFrom, $dateTo])
             ->get();
 
@@ -55,7 +70,7 @@ class WorkerStatsService
     {
         $workerIds = $workers->pluck('id');
 
-        $shifts = WorkerShift::with('package')
+        $shifts = WorkerShift::with(['package', 'substitute.worker'])
             ->whereIn('worker_id', $workerIds)
             ->whereBetween('day', [$dateFrom, $dateTo])
             ->get()
