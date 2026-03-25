@@ -22,6 +22,7 @@
     align-items: center;
     justify-content: center;
     font-size: 0.9rem;
+    text-decoration: none;
     transition: color 0.2s, border-color 0.2s;
 }
 
@@ -36,6 +37,7 @@
     color: var(--w-text);
     min-width: 220px;
     text-align: center;
+    text-transform: capitalize;
 }
 
 .calendar-grid {
@@ -75,9 +77,13 @@
     height: 100%;
 }
 
-.cal-day:hover {
+.cal-day:not(.locked):hover {
     border-color: rgba(229, 9, 20, 0.3);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.cal-day.locked {
+    cursor: not-allowed;
 }
 
 .cal-day.today {
@@ -104,6 +110,34 @@
     color: var(--w-text-muted);
 }
 
+.shift-badges {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.shift-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.shift-badge.morning-badge {
+    background: rgba(255, 152, 0, 0.15);
+    color: #ff9800;
+}
+
+.shift-badge.afternoon-badge {
+    background: rgba(206, 147, 216, 0.15);
+    color: #ce93d8;
+}
+
 .today-badge {
     margin-left: auto;
     font-size: 0.7rem;
@@ -118,6 +152,16 @@
 
 .legend-today {
     margin-left: 0;
+}
+
+.legend-today-box {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1px solid var(--w-accent);
+    box-shadow: 0 0 0 1px var(--w-accent), 0 2px 8px rgba(229, 9, 20, 0.15);
+    background: var(--w-surface);
 }
 
 .cal-day-empty {
@@ -155,13 +199,6 @@
     font-size: 0.8rem;
 }
 
-.morning-label {
-    color: #ff9800;
-}
-
-.afternoon-label {
-    color: #ce93d8;
-}
 
 .cal-worker {
     display: flex;
@@ -360,6 +397,95 @@
     background: var(--w-accent-light);
 }
 
+.shift-option.assigned {
+    cursor: not-allowed;
+}
+
+
+.shift-hours-section {
+    margin-top: 16px;
+}
+
+.shift-hours-divider {
+    height: 1px;
+    background: var(--w-border);
+    margin-bottom: 16px;
+}
+
+.shift-hours-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--w-text);
+    margin-bottom: 14px;
+}
+
+.shift-hours-group {
+    margin-bottom: 14px;
+}
+
+.shift-hours-group:last-child {
+    margin-bottom: 0;
+}
+
+.shift-hours-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.shift-hours-inputs {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.shift-hours-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.shift-hours-field label {
+    font-size: 0.7rem;
+    color: var(--w-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.shift-hours-field input[type="time"] {
+    background: var(--w-bg);
+    border: 1px solid var(--w-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--w-text);
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+}
+
+.shift-hours-field input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+.shift-hours-field input[type="time"]:focus {
+    border-color: var(--w-accent);
+}
+
+.shift-hours-separator {
+    color: var(--w-text-muted);
+    padding-bottom: 10px;
+    font-size: 0.9rem;
+}
+
 .shift-modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -409,6 +535,89 @@
     border-radius: 20px;
     padding: 24px;
     box-shadow: var(--w-shadow);
+}
+
+.shift-hours-admin-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    border-radius: 10px;
+    color: #4caf50;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+}
+
+.shift-hours-absent-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(158, 158, 158, 0.1);
+    border: 1px solid rgba(158, 158, 158, 0.3);
+    border-radius: 10px;
+    color: #9e9e9e;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+}
+
+.shift-hours-absent-info i {
+    font-size: 1rem;
+}
+
+.shift-hours-admin-info i {
+    font-size: 1rem;
+}
+
+.shift-hours-time-note {
+    font-size: 0.72rem;
+    color: var(--w-text-muted);
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: rgba(255, 152, 0, 0.08);
+    border-radius: 6px;
+}
+
+.shift-hours-time-pair {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.shift-hours-time-pair input[type="number"] {
+    width: 48px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--w-border);
+    background: var(--w-bg);
+    color: var(--w-text);
+    font-size: 0.85rem;
+    font-family: inherit;
+    text-align: center;
+    -moz-appearance: textfield;
+}
+
+.shift-hours-time-pair input[type="number"]::-webkit-outer-spin-button,
+.shift-hours-time-pair input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.shift-hours-time-pair input[type="number"]:focus {
+    outline: none;
+    border-color: var(--w-accent);
+}
+
+.shift-hours-time-pair input[type="number"]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.shift-hours-time-pair .time-colon {
+    font-weight: 600;
+    color: var(--w-text-muted);
 }
 
 @media screen and (max-width: 768px) {

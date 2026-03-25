@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Schedule extends Model
@@ -16,9 +17,17 @@ class Schedule extends Model
         'end_date',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'start_date' => 'datetime',
+            'end_date' => 'datetime',
+        ];
+    }
+
     public static function getCurrent(): ?self
     {
-        return self::first();
+        return self::latest('id')->first();
     }
 
     public function isActive(): bool
@@ -29,5 +38,18 @@ class Schedule extends Model
             'range', 'week' => now()->between($this->start_date, $this->end_date),
             default => false,
         };
+    }
+
+    public function isDateInSchedule(Carbon $date): bool
+    {
+        if (!$this->isActive()) {
+            return false;
+        }
+
+        if ($this->end_date && $date->gt($this->end_date)) {
+            return false;
+        }
+
+        return true;
     }
 }

@@ -153,6 +153,12 @@
                                     <div class="field-group field-time">
                                         <span>Czas pracy</span>
 
+                                        @if($worker_morning->hours_source === 'worker' && $worker_morning->worker_from_time !== null)
+                                            <div class="worker-hours-badge">
+                                                <i class="fas fa-user-clock"></i> wpisane przez pracownika
+                                            </div>
+                                        @endif
+
                                         @if($worker_morning->minutes)
                                             <div class="time-saved">
                                                 <span class="saved-hours">
@@ -164,19 +170,22 @@
                                             </div>
                                         @endif
 
+                                        @php
+                                            $mPrefill = $worker_morning->hours_source === 'worker' && $worker_morning->worker_from_time !== null && !$worker_morning->minutes;
+                                        @endphp
                                         <div class="time-range-inputs" @if($worker_morning->minutes) style="display: none;" @endif>
-                                        <div class="time-from">
+                                            <div class="time-from">
                                                 <span class="time-label">Od</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23" value="{{ $mPrefill ? sprintf('%02d', $worker_morning->worker_from_hour) : '' }}">
                                                 <span class="time-colon">:</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59" value="{{ $mPrefill ? sprintf('%02d', $worker_morning->worker_from_minute) : '' }}">
                                             </div>
                                             <span class="time-range-separator">—</span>
                                             <div class="time-to">
                                                 <span class="time-label">Do</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23" value="{{ $mPrefill ? sprintf('%02d', $worker_morning->worker_to_hour) : '' }}">
                                                 <span class="time-colon">:</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
+                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59" value="{{ $mPrefill ? sprintf('%02d', $worker_morning->worker_to_minute) : '' }}">
                                             </div>
                                             <div class="time-calculated">
                                                 <span class="calculated-hours">0h 0min</span>
@@ -300,6 +309,12 @@
                                         <div class="field-group field-time">
                                             <span>Czas pracy</span>
 
+                                            @if($worker_afternoon->hours_source === 'worker' && $worker_afternoon->worker_from_time !== null)
+                                                <div class="worker-hours-badge">
+                                                    <i class="fas fa-user-clock"></i> wpisane przez pracownika
+                                                </div>
+                                            @endif
+
                                             @if($worker_afternoon->minutes)
                                                 <div class="time-saved">
                                                     <span class="saved-hours">
@@ -311,19 +326,22 @@
                                                 </div>
                                             @endif
 
+                                            @php
+                                                $aPrefill = $worker_afternoon->hours_source === 'worker' && $worker_afternoon->worker_from_time !== null && !$worker_afternoon->minutes;
+                                            @endphp
                                             <div class="time-range-inputs" @if($worker_afternoon->minutes) style="display: none;" @endif>
                                                 <div class="time-from">
                                                     <span class="time-label">Od</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23" value="{{ $aPrefill ? sprintf('%02d', $worker_afternoon->worker_from_hour) : '' }}">
                                                     <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59" value="{{ $aPrefill ? sprintf('%02d', $worker_afternoon->worker_from_minute) : '' }}">
                                                 </div>
                                                 <span class="time-range-separator">—</span>
                                                 <div class="time-to">
                                                     <span class="time-label">Do</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23" value="{{ $aPrefill ? sprintf('%02d', $worker_afternoon->worker_to_hour) : '' }}">
                                                     <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
+                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59" value="{{ $aPrefill ? sprintf('%02d', $worker_afternoon->worker_to_minute) : '' }}">
                                                 </div>
                                                 <div class="time-calculated">
                                                     <span class="calculated-hours">0h 0min</span>

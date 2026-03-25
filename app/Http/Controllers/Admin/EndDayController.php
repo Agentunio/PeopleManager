@@ -93,6 +93,7 @@ class EndDayController extends Controller
                             'package_id' => !empty($workerData['package']) ? $workerData['package'] : null,
                             'minutes' => $this->calculateMinutes($workerData) ?? 0,
                             'substituted_for_shift_id' => $workerData['substituted_for_shift_id'],
+                            'hours_source' => 'admin',
                         ]
                     );
                     continue;
@@ -106,11 +107,12 @@ class EndDayController extends Controller
                             'status' => 'absent',
                             'minutes' => 0,
                             'package_id' => null,
+                            'hours_source' => null,
                         ]);
                     continue;
                 }
 
-                $updateData = ['status' => 'worked'];
+                $updateData = ['status' => 'worked', 'hours_source' => 'admin'];
 
                 if (!empty($workerData['package'])) {
                     $updateData['package_id'] = $workerData['package'];

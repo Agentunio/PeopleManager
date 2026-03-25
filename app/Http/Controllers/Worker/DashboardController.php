@@ -3,12 +3,104 @@
 namespace App\Http\Controllers\Worker;
 
 use App\Http\Controllers\Controller;
+use App\Models\Schedule;
+use App\Models\WorkerShift;
+use App\Services\WorkerStatsService;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private WorkerStatsService $workerStatsService
+    ) {}
+
     public function index(): View
     {
-        return view('worker.dashboard.index');
+        $worker = auth()->user()->worker;
+
+        abort_unless($worker, 403, 'Brak powiązanego profilu pracownika');
+
+        $schedule = Schedule::getCurrent();
+        $stats = $this->workerStatsService->getStatsForWorker(
+            $worker,
+            now()->startOfMonth()->toDateString(),
+            now()->toDateString()
+        );
+
+        $minDate = now()->hour >= 21 ? now()->addDay()->toDateString() : now()->toDateString();
+
+        $nextDay = WorkerShift::where('worker_id', $worker->id)
+            ->where('day', '>=', $minDate)
+            ->orderBy('day')
+            ->value('day');
+
+        $nextShiftDay = $nextDay
+            ? WorkerShift::where('worker_id', $worker->id)->where('day', $nextDay)->get()
+            : null;
+
+        $nextShift = null;
+        if ($nextShiftDay && $nextShiftDay->isNotEmpty()) {
+            $firstShift = $nextShiftDay->first();
+            $date = Carbon::parse($firstShift->day);
+            $nextShift = [
+                'date' => $firstShift->day,
+                'weekday' => Str::ucfirst($date->translatedFormat('l')),
+                'short_date' => $date->translatedFormat('j') . ' ' . Str::ucfirst($date->translatedFormat('F')) . ' ' . $date->format('Y'),
+                'shifts' => $nextShiftDay->pluck('shift_type')->toArray(),
+            ];
+        }
+
+        $lastShift = $this->getLastShiftData($worker->id);
+
+        return view('worker.dashboard.index', compact('worker', 'schedule', 'stats', 'nextShift', 'lastShift'));
+    }
+
+    private function getLastShiftData(int $workerId): ?array
+    {
+        $weekStart = now()->startOfWeek()->toDateString();
+        $today = now()->toDateString();
+
+        $shifts = WorkerShift::where('worker_id', $workerId)
+            ->whereBetween('day', [$weekStart, $today])
+            ->whereNull('substituted_for_shift_id')
+            ->orderByDesc('day')
+            ->get();
+
+        if ($shifts->isEmpty()) {
+            return null;
+        }
+
+        $latestDay = $shifts->first()->day;
+        $dayShifts = $shifts->where('day', $latestDay);
+
+        $date = Carbon::parse($latestDay);
+        $isToday = $date->isToday();
+
+        $shiftsData = [];
+        foreach ($dayShifts as $shift) {
+            $shiftsData[$shift->shift_type] = [
+                'status' => $shift->status,
+                'hours_source' => $shift->hours_source,
+                'minutes' => $shift->minutes,
+                'from' => $shift->worker_from_time !== null
+                    ? sprintf('%02d:%02d', $shift->worker_from_hour, $shift->worker_from_minute)
+                    : null,
+                'to' => $shift->worker_to_time !== null
+                    ? sprintf('%02d:%02d', $shift->worker_to_hour, $shift->worker_to_minute)
+                    : null,
+            ];
+        }
+
+        $shiftsData = collect($shiftsData)->sortBy(fn($v, $k) => $k === 'morning' ? 0 : 1)->all();
+
+        return [
+            'date' => $latestDay,
+            'weekday' => Str::ucfirst($date->translatedFormat('l')),
+            'short_date' => $date->translatedFormat('j') . ' ' . Str::ucfirst($date->translatedFormat('F')) . ' ' . $date->format('Y'),
+            'is_today' => $isToday,
+            'shifts' => $shiftsData,
+        ];
     }
 }

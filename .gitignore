@@ -24,3 +24,5 @@ Homestead.yaml
 Thumbs.db
 /database/seeders/AdminSeeder.php
 /database/seeders/WorkerSeeder.php
+.claude
+CLAUDE.md

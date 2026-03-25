@@ -25,6 +25,7 @@ export default defineConfig({
                     'resources/js/settings.js',
                     'resources/js/dashboard.js',
                     'resources/js/worker-schedule.js',
+                    'resources/js/worker-dashboard.js',
                 ],
             refresh: true,
         }),

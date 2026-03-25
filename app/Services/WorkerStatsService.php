@@ -53,7 +53,7 @@ class WorkerStatsService
             $formatted .= ($hours > 0 ? ' ' : '') . $minutes . 'min';
         }
 
-        return $formatted ?: '0';
+        return $formatted ?: '0h';
     }
 
     public function getStatsForWorker(Worker $worker, string $dateFrom, string $dateTo): array

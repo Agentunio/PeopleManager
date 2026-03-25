@@ -66,5 +66,10 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
 
 Route::middleware(['auth', 'check.user.role:worker'])->prefix('strefa-pracownika')->name('worker.')->group(function () {
     Route::get('/', [WorkerDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/grafik', [WorkerScheduleController::class, 'index'])->name('schedule');
+    Route::get('/grafik/{week?}', [WorkerScheduleController::class, 'index'])->name('schedule')
+        ->where('week', '\d{2}-\d{2}-\d{4}');
+    Route::post('/grafik/dostepnosc/{date}', [WorkerScheduleController::class, 'storeAvailability'])->name('schedule.availability')
+        ->where('date', '\d{4}-\d{2}-\d{2}');
+    Route::post('/grafik/godziny/{date}', [WorkerScheduleController::class, 'storeHours'])->name('schedule.hours')
+        ->where('date', '\d{4}-\d{2}-\d{2}');
 });
