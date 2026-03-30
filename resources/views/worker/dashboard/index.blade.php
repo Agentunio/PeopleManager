@@ -10,29 +10,49 @@
     <div class="worker-content">
         <div class="dashboard-top">
             <div class="worker-header">
-                <h1>Cześć, <span class="worker-name">Jan Kowalski</span></h1>
+                <h1>Cześć, <span class="worker-name">{{ $worker->first_name }} {{ $worker->last_name }}</span></h1>
                 <p class="greeting-sub">Twoje podsumowanie</p>
             </div>
-            <div class="schedule-status">
-                <i class="fa-solid fa-circle"></i>
-                <span>Grafik: <strong>Nieaktywny</strong></span>
-            </div>
+            @include('worker.partials.schedule-status')
         </div>
 
         <div class="dashboard-grid">
-            <div class="col-left">
                 <div class="section-card next-shift">
                     <div class="section-header">
                         <div class="section-icon">
                             <i class="fa-solid fa-calendar-check"></i>
                         </div>
-                        <h2>Najbliższa zmiana</h2>
+                        <h2>Twoja najbliższa zmiana</h2>
                     </div>
                     <div class="section-body">
-                        <div class="empty-state">
-                            <i class="fa-regular fa-calendar-xmark"></i>
-                            <p>Brak zaplanowanych zmian</p>
-                        </div>
+                        @if($nextShift)
+                            <div class="next-shift-card">
+                                <div class="next-shift-date">
+                                    <span class="next-shift-weekday">{{ $nextShift['weekday'] }}</span>
+                                    <span class="next-shift-day">{{ $nextShift['short_date'] }}</span>
+                                </div>
+
+                                <div class="next-shift-types">
+                                    @if(in_array('morning', $nextShift['shifts']))
+                                        <div class="next-shift-card-item morning">
+                                            <i class="fa-solid fa-sun"></i>
+                                            <span>Zmiana ranna</span>
+                                        </div>
+                                    @endif
+                                    @if(in_array('afternoon', $nextShift['shifts']))
+                                        <div class="next-shift-card-item afternoon">
+                                            <i class="fa-solid fa-cloud-sun"></i>
+                                            <span>Zmiana popołudniowa</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @else
+                            <div class="empty-state">
+                                <i class="fa-regular fa-calendar-xmark"></i>
+                                <p>Brak zaplanowanych zmian</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -44,22 +64,82 @@
                         <h2>Wpisz godziny z ostatniej zmiany</h2>
                     </div>
                     <div class="section-body">
-                        <div class="empty-state">
-                            <i class="fa-regular fa-clock"></i>
-                            <p>Brak zmian do rozliczenia</p>
-                        </div>
+                        @if($lastShift)
+                            <div class="last-shift-info">
+                                <span class="last-shift-weekday">{{ $lastShift['weekday'] }}</span>
+                                <span class="last-shift-date">{{ $lastShift['short_date'] }}</span>
+                            </div>
+
+                            <div class="hours-form" id="dashboardHoursForm" data-date="{{ $lastShift['date'] }}" data-hours-url="{{ route('worker.schedule.hours', ':date') }}">
+                                @foreach($lastShift['shifts'] as $type => $shift)
+                                    <div class="dashboard-shift-group">
+                                        <div class="shift-type-badge {{ $type === 'morning' ? 'morning-label' : 'afternoon-label' }}">
+                                            <i class="fa-solid {{ $type === 'morning' ? 'fa-sun' : 'fa-cloud-sun' }}"></i>
+                                            {{ $type === 'morning' ? 'Zmiana ranna' : 'Zmiana popołudniowa' }}
+                                        </div>
+
+                                        @if($shift['status'] === 'absent')
+                                            <div class="dash-absent-info">
+                                                <i class="fa-solid fa-user-slash"></i>
+                                                <span>Nieobecność</span>
+                                            </div>
+                                        @elseif($shift['hours_source'] === 'admin')
+                                            <div class="dash-admin-info">
+                                                <i class="fa-solid fa-check-circle"></i>
+                                                <span>Zatwierdzone: <strong>{{ $shift['minutes'] ? floor($shift['minutes'] / 60) . 'h' . ($shift['minutes'] % 60 > 0 ? ' ' . ($shift['minutes'] % 60) . 'min' : '') : '—' }}</strong></span>
+                                            </div>
+                                        @else
+                                            @if($shift['blocked'])
+                                                <div class="dash-time-note">
+                                                    Godziny można wpisać po {{ $shift['block_label'] }}
+                                                </div>
+                                            @else
+                                                <div class="dash-hours-inputs" data-shift-type="{{ $type }}">
+                                                    <div class="dash-hours-field">
+                                                        <label>Od</label>
+                                                        <div class="dash-time-pair">
+                                                            <input type="number" class="dash-from-hour" placeholder="00" min="0" max="23" value="{{ $shift['from'] ? substr($shift['from'], 0, 2) : '' }}">
+                                                            <span class="time-colon">:</span>
+                                                            <input type="number" class="dash-from-minute" placeholder="00" min="0" max="59" value="{{ $shift['from'] ? substr($shift['from'], 3, 2) : '' }}">
+                                                        </div>
+                                                    </div>
+                                                    <span class="dash-hours-separator">—</span>
+                                                    <div class="dash-hours-field">
+                                                        <label>Do</label>
+                                                        <div class="dash-time-pair">
+                                                            <input type="number" class="dash-to-hour" placeholder="00" min="0" max="23" value="{{ $shift['to'] ? substr($shift['to'], 0, 2) : '' }}">
+                                                            <span class="time-colon">:</span>
+                                                            <input type="number" class="dash-to-minute" placeholder="00" min="0" max="59" value="{{ $shift['to'] ? substr($shift['to'], 3, 2) : '' }}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        @endif
+                                    </div>
+                                @endforeach
+
+                                @if(collect($lastShift['shifts'])->contains(fn($s) => $s['status'] !== 'absent' && $s['hours_source'] !== 'admin'))
+                                    @unless($lastShift['all_blocked'])
+                                        <button class="btn-submit-hours" id="dashboardSaveHours">Zapisz godziny</button>
+                                    @endunless
+                                @endif
+                            </div>
+                        @else
+                            <div class="empty-state">
+                                <i class="fa-regular fa-clock"></i>
+                                <p>Brak zmian do rozliczenia</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
-            </div>
 
-            <div class="col-right">
                 <div class="stat-card hours-card">
                     <div class="stat-icon">
                         <i class="fa-solid fa-clock"></i>
                     </div>
                     <div class="stat-info">
                         <span class="stat-label">Przepracowane godziny</span>
-                        <span class="stat-value">0h 0min</span>
+                        <span class="stat-value">{{ $stats['hours'] }}</span>
                     </div>
                 </div>
 
@@ -69,10 +149,13 @@
                     </div>
                     <div class="stat-info">
                         <span class="stat-label">Przewidywane wynagrodzenie</span>
-                        <span class="stat-value">0,00 zł</span>
+                        <span class="stat-value">{{ number_format($stats['salary'], 2, ',', ' ') }} zł</span>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    @vite(['resources/js/worker-dashboard.js'])
+@endpush

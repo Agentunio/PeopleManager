@@ -95,12 +95,36 @@ class DashboardController extends Controller
 
         $shiftsData = collect($shiftsData)->sortBy(fn($v, $k) => $k === 'morning' ? 0 : 1)->all();
 
+        $currentMinutes = now()->hour * 60 + now()->minute;
+        $allBlocked = true;
+
+        foreach ($shiftsData as $type => &$shift) {
+            $shift['blocked'] = false;
+            $shift['block_label'] = '';
+
+            if ($shift['status'] !== 'absent' && $shift['hours_source'] !== 'admin') {
+                if ($isToday) {
+                    $allowedFrom = WorkerShift::hoursAvailableFrom($type);
+                    if ($currentMinutes < $allowedFrom) {
+                        $shift['blocked'] = true;
+                        $shift['block_label'] = WorkerShift::hoursAvailableLabel($type);
+                    } else {
+                        $allBlocked = false;
+                    }
+                } else {
+                    $allBlocked = false;
+                }
+            }
+        }
+        unset($shift);
+
         return [
             'date' => $latestDay,
             'weekday' => Str::ucfirst($date->translatedFormat('l')),
             'short_date' => $date->translatedFormat('j') . ' ' . Str::ucfirst($date->translatedFormat('F')) . ' ' . $date->format('Y'),
             'is_today' => $isToday,
             'shifts' => $shiftsData,
+            'all_blocked' => $allBlocked,
         ];
     }
 }
