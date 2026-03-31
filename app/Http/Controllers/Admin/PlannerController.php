@@ -74,9 +74,12 @@ class PlannerController extends Controller
     private function resolveDate(?string $month): Carbon
     {
         try {
-            return $month ? Carbon::createFromFormat('Y-m', $month)->startOfMonth() : Carbon::now();
+            if ($month) {
+                return Carbon::createFromFormat('!Y-m', $month);
+            }
+            return Carbon::now()->startOfMonth();
         } catch (\Exception) {
-            return Carbon::now();
+            return Carbon::now()->startOfMonth();
         }
     }
 
