@@ -259,6 +259,107 @@ nav[role="navigation"] > div:first-child {
     font-weight: 400;
 }
 
+.worker-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.btn-account {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-account.btn-pending-account {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.btn-account.btn-pending-account:hover {
+    background-color: rgba(245, 158, 11, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(245, 158, 11, 0.2);
+}
+
+.btn-account.btn-generate {
+    background-color: #1a73e8;
+    color: white;
+}
+
+.btn-account.btn-generate:hover {
+    background-color: #1557b0;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(26, 115, 232, 0.3);
+}
+
+.btn-account.btn-deactivate {
+    background-color: #8B0000;
+    color: white;
+}
+
+.btn-account.btn-deactivate:hover {
+    background-color: #a50000;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(139, 0, 0, 0.3);
+}
+
+.btn-account.btn-activate {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-account.btn-activate:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.btn-account.btn-disabled {
+    background-color: #333;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.worker-name-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.account-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.badge-active {
+    background-color: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.badge-inactive {
+    background-color: rgba(139, 0, 0, 0.15);
+    color: #ff4444;
+    border: 1px solid rgba(139, 0, 0, 0.3);
+}
+
+.badge-pending {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
 @media (max-width: 1300px) {
     .worker-info-grid {
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Worker extends Model
 {
@@ -31,6 +32,16 @@ class Worker extends Model
             'is_student' => 'boolean',
             'is_employed' => 'boolean',
         ];
+    }
+
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class);
+    }
+
+    public function hasAccount(): bool
+    {
+        return $this->user !== null;
     }
 
     public function availabilities(): HasMany

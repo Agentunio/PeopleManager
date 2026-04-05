@@ -1,7 +1,24 @@
 <div class="settings-container" data-worker-id="{{ $worker->id }}">
     <div class="settings-section">
         <div class="package-header-row">
-            <h2>{{ $worker->first_name }} {{ $worker->last_name }}</h2>
+            <div class="worker-name-status">
+                <h2>{{ $worker->first_name }} {{ $worker->last_name }}</h2>
+                @if($worker->relationLoaded('user') && $worker->user)
+                    @if(!$worker->user->is_active && $worker->user->activation_token)
+                        <span class="account-badge badge-pending">
+                            <i class="fas fa-clock"></i> Konto oczekuje aktywacji
+                        </span>
+                    @elseif($worker->user->is_active)
+                        <span class="account-badge badge-active">
+                            <i class="fas fa-check-circle"></i> Konto aktywne
+                        </span>
+                    @else
+                        <span class="account-badge badge-inactive">
+                            <i class="fas fa-ban"></i> Konto dezaktywowane
+                        </span>
+                    @endif
+                @endif
+            </div>
             <div class="package-actions">
                 <form action="{{ route('workers.destroy', $worker) }}" method="post" class="delete-form" data-name="{{ $worker->first_name }} {{ $worker->last_name }}">
                     @csrf
@@ -45,10 +62,45 @@
             </div>
         </div>
 
-        <label for="toggle-edit-worker-{{ $worker->id }}" class="btn btn-change">
-            <i class="fas fa-edit"></i>
-            Edytuj Dane
-        </label>
+        <div class="worker-action-buttons">
+            <label for="toggle-edit-worker-{{ $worker->id }}" class="btn btn-change">
+                <i class="fas fa-edit"></i>
+                Edytuj Dane
+            </label>
+
+            @if($worker->relationLoaded('user') && $worker->user)
+                @if(!$worker->user->is_active && $worker->user->activation_token)
+                    <button class="btn btn-account btn-pending-account"
+                            data-url="{{ route('workers.account.regenerate', $worker) }}"
+                            data-email="{{ $worker->user->email }}">
+                        <i class="fas fa-redo"></i>
+                        Wyślij ponownie
+                    </button>
+                @elseif($worker->user->is_active)
+                    <button class="btn btn-account btn-deactivate" data-url="{{ route('workers.account.toggle', $worker) }}">
+                        <i class="fas fa-user-slash"></i>
+                        Dezaktywuj
+                    </button>
+                @else
+                    <button class="btn btn-account btn-activate" data-url="{{ route('workers.account.toggle', $worker) }}">
+                        <i class="fas fa-user-check"></i>
+                        Aktywuj
+                    </button>
+                @endif
+            @else
+                @if($worker->date_of_birth)
+                    <button class="btn btn-account btn-generate" data-url="{{ route('workers.account.store', $worker) }}">
+                        <i class="fas fa-user-plus"></i>
+                        Generuj konto
+                    </button>
+                @else
+                    <button class="btn btn-account btn-disabled" disabled title="Najpierw dodaj datę urodzenia">
+                        <i class="fas fa-user-plus"></i>
+                        Generuj konto
+                    </button>
+                @endif
+            @endif
+        </div>
 
         <hr class="section-separator">
 

@@ -13,12 +13,19 @@ class WorkerStoreRequest extends FormRequest
 
     public function rules(): array
     {
+        $dobRules = ['date', 'before:today'];
+
+        $worker = $this->route('worker');
+        if ($worker && $worker->hasAccount()) {
+            array_unshift($dobRules, 'required');
+        }
+
         return [
             'first_name' => ['required', 'string'],
             'last_name' => ['required', 'string'],
             'phone' => 'string',
             'address' => 'string',
-            'date_of_birth' => ['date', 'before:today'],
+            'date_of_birth' => $dobRules,
             'is_student' => 'boolean',
             'is_employed' => 'boolean',
             'contract_from' => 'date',

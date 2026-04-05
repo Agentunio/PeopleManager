@@ -1,3 +1,9 @@
+import flatpickr from 'flatpickr';
+import { Polish } from 'flatpickr/dist/l10n/pl.js';
+import 'flatpickr/dist/flatpickr.min.css';
+import 'flatpickr/dist/themes/dark.css';
+flatpickr.localize(Polish);
+
 document.addEventListener('DOMContentLoaded', function() {
     const dataUrl = '/panel/data';
     const exportUrl = '/panel/eksport-kosztow';

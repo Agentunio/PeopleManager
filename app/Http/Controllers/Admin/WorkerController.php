@@ -20,7 +20,7 @@ class WorkerController extends Controller
 
     public function index(Request $request): View|JsonResponse
     {
-        $workers = Worker::query()
+        $workers = Worker::with('user')
             ->when($request->searchWorker, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('first_name', 'like', "%{$search}%")
@@ -53,6 +53,7 @@ class WorkerController extends Controller
     public function store(WorkerStoreRequest $request): JsonResponse
     {
         $worker = Worker::create($request->validated());
+        $worker->load('user');
 
         return response()->json([
             'status' => 'success',
@@ -64,6 +65,7 @@ class WorkerController extends Controller
     public function update(WorkerStoreRequest $request, Worker $worker): JsonResponse
     {
         $worker->update($request->validated());
+        $worker->load('user');
 
         $this->statsService->getStatsForWorkers(
             collect([$worker]),

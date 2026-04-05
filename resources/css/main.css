@@ -249,3 +249,7 @@ body {
         padding-top: 65px;
     }
 }
+
+.swal2-styled {
+    font-family: 'Open Sans', sans-serif !important;
+}

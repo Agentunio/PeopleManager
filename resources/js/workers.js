@@ -1,3 +1,9 @@
+import flatpickr from 'flatpickr';
+import { Polish } from 'flatpickr/dist/l10n/pl.js';
+import 'flatpickr/dist/flatpickr.min.css';
+import 'flatpickr/dist/themes/dark.css';
+flatpickr.localize(Polish);
+
 $(document).ready(function () {
     const csrfToken = $('meta[name="csrf-token"]').attr('content');
 
@@ -202,6 +208,124 @@ $(document).ready(function () {
                 handleAjaxError(xhr, 'Wystąpił błąd podczas dodawania pracownika');
             });
     });
+
+    $(document).on('click', '.btn-generate', function() {
+        const $btn = $(this);
+        const url = $btn.data('url');
+
+        Swal.fire({
+            title: 'Generowanie konta',
+            input: 'email',
+            inputLabel: 'Adres e-mail pracownika',
+            inputPlaceholder: 'jan@example.com',
+            showCancelButton: true,
+            confirmButtonColor: '#1a73e8',
+            cancelButtonColor: '#555',
+            confirmButtonText: 'Generuj konto',
+            cancelButtonText: 'Anuluj',
+            background: '#1f1f1f',
+            color: '#f0f0f0',
+            inputValidator: (value) => {
+                if (!value) return 'Podaj adres e-mail';
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Podaj prawidłowy adres e-mail';
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                ajaxRequest({
+                    type: 'POST',
+                    url: url,
+                    data: { email: result.value }
+                })
+                .done(function(response) {
+                    showToast.success(response.message);
+                    reloadWorkerCard($btn);
+                })
+                .fail(function(xhr) {
+                    handleAjaxError(xhr, 'Wystąpił błąd podczas generowania konta');
+                });
+            }
+        });
+    });
+
+    $(document).on('click', '.btn-pending-account', function() {
+        const $btn = $(this);
+        const email = $btn.data('email');
+
+        Swal.fire({
+            title: 'Konto oczekuje aktywacji',
+            html: `<p style="color:#a0a0a0;margin-bottom:12px;">Link aktywacyjny został wysłany na:</p>
+                   <p style="color:#f59e0b;font-weight:bold;font-size:1.1em;margin-bottom:16px;">${email}</p>
+                   <p style="color:#a0a0a0;">Jeśli pracownik nie otrzymał maila, możesz wysłać link ponownie.</p>`,
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#555',
+            confirmButtonText: '<i class="fas fa-paper-plane"></i> Wyślij ponownie',
+            cancelButtonText: 'Zamknij',
+            background: '#1f1f1f',
+            color: '#f0f0f0'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                ajaxRequest({
+                    type: 'POST',
+                    url: $btn.data('url')
+                })
+                .done(function(response) {
+                    showToast.success(response.message);
+                })
+                .fail(function(xhr) {
+                    handleAjaxError(xhr, 'Wystąpił błąd podczas wysyłania linku');
+                });
+            }
+        });
+    });
+
+    $(document).on('click', '.btn-deactivate, .btn-activate', function() {
+        const $btn = $(this);
+        const isDeactivate = $btn.hasClass('btn-deactivate');
+        const action = isDeactivate ? 'dezaktywować' : 'aktywować';
+
+        Swal.fire({
+            title: `Czy na pewno chcesz ${action} konto?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: isDeactivate ? '#8B0000' : '#4CAF50',
+            cancelButtonColor: '#555',
+            confirmButtonText: isDeactivate ? 'Dezaktywuj' : 'Aktywuj',
+            cancelButtonText: 'Anuluj',
+            background: '#1f1f1f',
+            color: '#f0f0f0'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                ajaxRequest({
+                    type: 'POST',
+                    url: $btn.data('url')
+                })
+                .done(function(response) {
+                    showToast.success(response.message);
+                    reloadWorkerCard($btn);
+                })
+                .fail(function(xhr) {
+                    handleAjaxError(xhr, 'Wystąpił błąd');
+                });
+            }
+        });
+    });
+
+    function reloadWorkerCard($element) {
+        const $card = $element.closest('.settings-container');
+        const workerId = $card.data('worker-id');
+
+        ajaxRequest({
+            type: 'GET',
+            url: window.workersIndexUrl,
+            data: {
+                searchWorker: '',
+                filterStatus: ''
+            }
+        }).done(function() {
+            performSearch();
+        });
+    }
 
     $(document).on('submit', '.edit-worker-form', function(e) {
         e.preventDefault();

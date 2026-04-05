@@ -8,7 +8,9 @@ use App\Http\Controllers\Admin\PlannerController;
 use App\Http\Controllers\Admin\EndDayController;
 use App\Http\Controllers\Admin\WeeklyExportController;
 use App\Http\Controllers\Admin\WorkerCostExportController;
+use App\Http\Controllers\Admin\WorkerAccountController;
 use App\Http\Controllers\Admin\WorkerController;
+use App\Http\Controllers\Guest\AccountActivationController;
 use App\Http\Controllers\Worker\DashboardController as WorkerDashboardController;
 use App\Http\Controllers\Worker\ScheduleController as WorkerScheduleController;
 use App\Http\Controllers\Guest\AuthController;
@@ -17,6 +19,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function () {
     Route::get('/', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/', [AuthController::class, 'login'])->middleware('check.login.attempts');
+
+    Route::get('/aktywacja/{token}', [AccountActivationController::class, 'show'])->name('account.activate');
+    Route::post('/aktywacja/{token}/verify', [AccountActivationController::class, 'verify'])->middleware('throttle:10,15')->name('account.verify');
+    Route::post('/aktywacja/{token}/activate', [AccountActivationController::class, 'activate'])->middleware('throttle:10,15')->name('account.activate.store');
 });
 
 Route::middleware('auth')->group(function () {
@@ -34,6 +40,10 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
         Route::put('/{worker}', [WorkerController::class, 'update'])->name('update');
         Route::delete('/{worker}', [WorkerController::class, 'destroy'])->name('destroy');
         Route::get('/{worker}/stats', [WorkerController::class, 'stats'])->name('stats');
+
+        Route::post('/{worker}/account', [WorkerAccountController::class, 'store'])->name('account.store');
+        Route::post('/{worker}/account/regenerate', [WorkerAccountController::class, 'regenerateLink'])->name('account.regenerate');
+        Route::post('/{worker}/account/toggle', [WorkerAccountController::class, 'toggle'])->name('account.toggle');
     });
 
     Route::prefix('ustawienia')->name('settings.')->group(function () {
