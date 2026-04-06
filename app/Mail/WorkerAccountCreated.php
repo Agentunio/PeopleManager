@@ -21,7 +21,7 @@ class WorkerAccountCreated extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Twoje konto w sortowni Orlen Paczka Toruń czeka na aktywację',
+            subject: 'Twoje konto w Sortowni Orlen Paczka w Toruniu czeka na aktywację',
         );
     }
 
