@@ -17,7 +17,7 @@
 <body>
     <div class="container">
         <h1>Witaj, {{ $firstName }}!</h1>
-        <p>Twoje konto w sortowni Orlen Paczka Toruń czeka na aktywację</p>
+        <p>Twoje konto w sortowni Orlen Paczka w Toruniu czeka na aktywację</p>
 
         <div class="info-box">
             <span class="info-label">Twój login</span>
