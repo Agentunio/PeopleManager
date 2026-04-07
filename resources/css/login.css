@@ -105,6 +105,56 @@ input[type="password"]:focus {
     box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.2);
 }
 
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input.has-toggle {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.password-toggle:hover {
+    color: #f0f0f0;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.password-toggle:focus {
+    outline: none;
+    color: #e50914;
+}
+
+.password-toggle svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+}
+
+.password-toggle .eye-off-icon,
+.password-toggle.is-visible .eye-icon {
+    display: none;
+}
+
+.password-toggle.is-visible .eye-off-icon {
+    display: block;
+}
+
 .login-btn {
     width: 100%;
     padding: 14px;

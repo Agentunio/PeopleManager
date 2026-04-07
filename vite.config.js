@@ -30,6 +30,7 @@ export default defineConfig({
                     'resources/js/worker-schedule.js',
                     'resources/js/worker-dashboard.js',
                     'resources/js/activate.js',
+                    'resources/js/password-toggle.js',
                 ],
             refresh: true,
         }),
