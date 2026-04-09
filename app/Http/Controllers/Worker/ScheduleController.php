@@ -22,6 +22,7 @@ class ScheduleController extends Controller
         abort_unless($worker, 403, 'Brak powiązanego profilu pracownika');
 
         $schedule = Schedule::getCurrent();
+        $scheduleStatus = $schedule?->toStatusArray() ?? ['is_active' => false, 'text' => ''];
 
         if ($week) {
             $parts = explode('-', $week);
@@ -60,10 +61,12 @@ class ScheduleController extends Controller
         }
 
         $days = $this->buildDaysArray($weekStart, $weekEnd, $worker, $schedule, $availabilities, $allShifts, $myShifts, $isCurrentWeek);
+        $canOpenModal = collect($days)->contains(fn ($d) => $d['is_clickable']);
 
         return view('worker.schedule.index', [
-            'schedule' => $schedule,
+            'scheduleStatus' => $scheduleStatus,
             'days' => $days,
+            'canOpenModal' => $canOpenModal,
             'weekStart' => $weekStart,
             'weekEnd' => $weekEnd,
             'prevWeek' => $weekStart->copy()->subWeek()->format('d-m-Y'),
@@ -205,6 +208,7 @@ class ScheduleController extends Controller
         bool $isCurrentWeek
     ): array {
         $days = [];
+        $scheduleActive = $schedule && $schedule->isActive();
 
         for ($date = $weekStart->copy(); $date->lte($weekEnd); $date->addDay()) {
             $dateStr = $date->toDateString();
@@ -222,7 +226,14 @@ class ScheduleController extends Controller
                 'is_me' => $s->worker_id === $worker->id,
             ])->values()->all();
 
-            $inSchedule = $schedule && (!$schedule->end_date || $date->lte($schedule->end_date));
+            $inSchedule = $schedule ? $schedule->isDateInSchedule($date) : false;
+            $isToday = $date->isToday();
+            $isPast = $date->lte(now()->startOfDay());
+
+            $canInputHours = $isCurrentWeek && $isPast && ($myAssigned['morning'] || $myAssigned['afternoon']);
+            $isClickable = ($scheduleActive && !$isPast && $inSchedule)
+                || ($isToday && $scheduleActive)
+                || $canInputHours;
 
             $morningShift = $myShifts->get($dateStr . '_morning');
             $afternoonShift = $myShifts->get($dateStr . '_afternoon');
@@ -231,10 +242,12 @@ class ScheduleController extends Controller
                 'date' => $dateStr,
                 'weekday' => Str::ucfirst($date->translatedFormat('l')),
                 'short_date' => $date->translatedFormat('j') . ' ' . Str::ucfirst($date->translatedFormat('M')),
-                'is_today' => $date->isToday(),
-                'is_past' => $date->lte(now()->startOfDay()),
+                'is_today' => $isToday,
+                'is_past' => $isPast,
                 'is_current_week' => $isCurrentWeek,
                 'in_schedule' => $inSchedule,
+                'is_clickable' => $isClickable,
+                'can_input_hours' => $canInputHours,
                 'morning' => $availability?->morning_shift ?? false,
                 'afternoon' => $availability?->afternoon_shift ?? false,
                 'assigned_morning' => $myAssigned['morning'],

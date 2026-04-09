@@ -64,19 +64,25 @@ class WorkerDashboardTest extends TestCase
         $response->assertDontSee('is-active');
     }
 
-    public function test_schedule_active_with_range(): void
+    public function test_schedule_active_with_signup(): void
     {
         $user = $this->createWorkerUser();
+        $deadline = now()->addDay();
+        $rangeStart = now()->addDays(3);
+        $rangeEnd = now()->addDays(7);
+
         Schedule::create([
-            'type' => 'range',
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addDays(5),
+            'type' => 'signup',
+            'signup_deadline' => $deadline,
+            'start_date' => $rangeStart,
+            'end_date' => $rangeEnd,
         ]);
 
         $response = $this->actingAs($user)->get(route('worker.dashboard'));
 
         $response->assertStatus(200);
-        $response->assertSee('Aktywny do ' . now()->addDays(5)->format('d.m.Y'));
+        $response->assertSee('Grafik aktywny do:', false);
+        $response->assertSee($deadline->format('d.m.Y H:i'));
         $response->assertSee('is-active');
     }
 

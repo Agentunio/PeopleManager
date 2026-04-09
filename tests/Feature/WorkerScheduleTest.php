@@ -36,17 +36,61 @@ class WorkerScheduleTest extends TestCase
     public function test_schedule_page_shows_active_status(): void
     {
         $user = $this->createWorkerUser();
+        $deadline = now()->addDay();
+        $rangeStart = now()->addDays(3);
+        $rangeEnd = now()->addDays(7);
+
         Schedule::create([
-            'type' => 'range',
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addDays(3),
+            'type' => 'signup',
+            'signup_deadline' => $deadline,
+            'start_date' => $rangeStart,
+            'end_date' => $rangeEnd,
         ]);
 
         $response = $this->actingAs($user)->get(route('worker.schedule'));
 
         $response->assertStatus(200);
-        $response->assertSee('Aktywny do ' . now()->addDays(3)->format('d.m.Y'));
+        $response->assertSee('Grafik aktywny do:', false);
+        $response->assertSee($deadline->format('d.m.Y H:i'));
+        $response->assertSee($rangeStart->format('d.m.Y'));
+        $response->assertSee($rangeEnd->format('d.m.Y'));
         $response->assertSee('is-active');
+    }
+
+    public function test_schedule_signup_shows_relative_week_label_when_in_next_week(): void
+    {
+        $user = $this->createWorkerUser();
+        $nextMonday = now()->startOfWeek()->addWeek();
+
+        Schedule::create([
+            'type' => 'signup',
+            'signup_deadline' => now()->addDay(),
+            'start_date' => $nextMonday,
+            'end_date' => $nextMonday->copy()->addDays(6),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('worker.schedule'));
+
+        $response->assertStatus(200);
+        $response->assertSee('(następny tydzień)');
+    }
+
+    public function test_schedule_signup_inactive_after_deadline(): void
+    {
+        $user = $this->createWorkerUser();
+
+        Schedule::create([
+            'type' => 'signup',
+            'signup_deadline' => now()->subHour(),
+            'start_date' => now()->addDays(2),
+            'end_date' => now()->addDays(6),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('worker.schedule'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Nieaktywny');
+        $response->assertDontSee('is-active');
     }
 
     public function test_schedule_page_shows_inactive_status(): void
@@ -287,18 +331,65 @@ class WorkerScheduleTest extends TestCase
     {
         $user = $this->createWorkerUser();
         Schedule::create([
-            'type' => 'range',
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addDays(2),
+            'type' => 'signup',
+            'signup_deadline' => now()->addHour(),
+            'start_date' => now()->addDays(2),
+            'end_date' => now()->addDays(4),
         ]);
 
         $response = $this->actingAs($user)->postJson(
-            route('worker.schedule.availability', now()->addDays(5)->toDateString()),
+            route('worker.schedule.availability', now()->addDays(8)->toDateString()),
             ['morning_shift' => true, 'afternoon_shift' => false]
         );
 
         $response->assertStatus(422);
         $response->assertJson(['message' => 'Ten dzień wykracza poza zakres aktywnego grafiku']);
+    }
+
+    public function test_store_availability_rejected_when_deadline_passed(): void
+    {
+        $user = $this->createWorkerUser();
+        Schedule::create([
+            'type' => 'signup',
+            'signup_deadline' => now()->subMinute(),
+            'start_date' => now()->addDays(2),
+            'end_date' => now()->addDays(6),
+        ]);
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.availability', now()->addDays(3)->toDateString()),
+            ['morning_shift' => true, 'afternoon_shift' => false]
+        );
+
+        $response->assertStatus(422);
+        $response->assertJson(['message' => 'Grafik jest nieaktywny']);
+    }
+
+    public function test_store_availability_accepted_within_signup_range(): void
+    {
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+
+        Schedule::create([
+            'type' => 'signup',
+            'signup_deadline' => now()->addDay(),
+            'start_date' => now()->addDays(2),
+            'end_date' => now()->addDays(6),
+        ]);
+
+        $date = now()->addDays(3)->toDateString();
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.availability', $date),
+            ['morning_shift' => true, 'afternoon_shift' => false]
+        );
+
+        $response->assertOk();
+        $this->assertDatabaseHas('worker_availability', [
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'morning_shift' => true,
+        ]);
     }
 
     public function test_assigned_shift_cannot_be_unchecked(): void
@@ -610,15 +701,16 @@ class WorkerScheduleTest extends TestCase
     {
         $user = $this->createWorkerUser();
         Schedule::create([
-            'type' => 'range',
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addDays(1),
+            'type' => 'signup',
+            'signup_deadline' => now()->addHour(),
+            'start_date' => now()->addDays(1),
+            'end_date' => now()->addDays(2),
         ]);
 
         $response = $this->actingAs($user)->get(route('worker.schedule'));
 
         $content = $response->getContent();
-        $dayAfterEnd = now()->addDays(3)->toDateString();
+        $dayAfterEnd = now()->addDays(4)->toDateString();
 
         if (str_contains($content, 'data-date="' . $dayAfterEnd . '"')) {
             $this->assertDoesNotMatchRegularExpression(

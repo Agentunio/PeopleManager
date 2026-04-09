@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class PlannerAvailableStoreRequest extends FormRequest
 {
-
     public function authorize(): bool
     {
         return true;
@@ -15,39 +14,38 @@ class PlannerAvailableStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', 'in:range,week,always,disabled'],
-            'start_date' => ['required_if:type,range', 'nullable', 'date'],
-            'end_date' => ['required_if:type,range', 'nullable', 'date', 'after_or_equal:start_date'],
+            'type' => ['required', 'in:signup,always,disabled'],
+            'signup_deadline' => ['required_if:type,signup', 'nullable', 'date', 'after:now', 'before:start_date'],
+            'start_date' => ['required_if:type,signup', 'nullable', 'date', 'after:signup_deadline'],
+            'end_date' => ['required_if:type,signup', 'nullable', 'date', 'after_or_equal:start_date'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'type.required' => 'Pole wymagane',
-            'days.required' => 'Pole daty jest wymagane',
-            'start_date.required' => 'Pole daty jest wymagane',
-            'end_date.required' => 'Pole daty jest wymagane',
+            'type.required' => 'Wybierz typ grafiku',
+            'type.in' => 'Nieprawidłowy typ grafiku',
+            'signup_deadline.required_if' => 'Podaj termin zamknięcia zapisów',
+            'signup_deadline.date' => 'Nieprawidłowy format terminu zapisów',
+            'signup_deadline.after' => 'Termin zapisów musi być w przyszłości',
+            'signup_deadline.before' => 'Termin zapisów musi być przed początkiem zakresu dni grafiku',
+            'start_date.required_if' => 'Podaj początek zakresu dni grafiku',
+            'start_date.date' => 'Nieprawidłowy format początku zakresu',
+            'start_date.after' => 'Początek zakresu musi być po terminie zapisów',
+            'end_date.required_if' => 'Podaj koniec zakresu dni grafiku',
+            'end_date.date' => 'Nieprawidłowy format końca zakresu',
+            'end_date.after_or_equal' => 'Koniec zakresu nie może być wcześniejszy niż początek',
         ];
     }
 
     protected function prepareForValidation(): void
     {
-        $this->merge([
-            'type' => $this->input('type'),
-        ]);
-
-        if ($this->input('type') === 'week') {
+        if ($this->input('type') !== 'signup') {
             $this->merge([
-                'start_date' => now(),
-                'end_date' => now()->addDays((int) $this->input('days')),
-            ]);
-        }
-
-        else if ($this->input('type') === 'range') {
-            $this->merge([
-                'start_date' => $this->input('start_date'),
-                'end_date' => $this->input('end_date'),
+                'signup_deadline' => null,
+                'start_date' => null,
+                'end_date' => null,
             ]);
         }
     }

@@ -1,7 +1,7 @@
-@if($schedule && $schedule->isActive())
+@if($scheduleStatus['is_active'])
     <div class="schedule-status is-active">
         <i class="fa-solid fa-circle"></i>
-        <span>Grafik: <strong>Aktywny{{ $schedule->end_date ? ' do ' . $schedule->end_date->format('d.m.Y') : '' }}</strong></span>
+        <span>{!! $scheduleStatus['text'] !!}</span>
     </div>
 @else
     <div class="schedule-status">

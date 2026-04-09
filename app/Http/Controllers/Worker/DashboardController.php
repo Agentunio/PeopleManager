@@ -23,6 +23,7 @@ class DashboardController extends Controller
         abort_unless($worker, 403, 'Brak powiązanego profilu pracownika');
 
         $schedule = Schedule::getCurrent();
+        $scheduleStatus = $schedule?->toStatusArray() ?? ['is_active' => false, 'text' => ''];
         $stats = $this->workerStatsService->getStatsForWorker(
             $worker,
             now()->startOfMonth()->toDateString(),
@@ -54,7 +55,7 @@ class DashboardController extends Controller
 
         $lastShift = $this->getLastShiftData($worker->id);
 
-        return view('worker.dashboard.index', compact('worker', 'schedule', 'stats', 'nextShift', 'lastShift'));
+        return view('worker.dashboard.index', compact('worker', 'schedule', 'scheduleStatus', 'stats', 'nextShift', 'lastShift'));
     }
 
     private function getLastShiftData(int $workerId): ?array

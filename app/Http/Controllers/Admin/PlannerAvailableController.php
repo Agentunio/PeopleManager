@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PlannerAvailableStoreRequest;
 use App\Models\Schedule;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+
 class PlannerAvailableController extends Controller
 {
     public function index(): View
@@ -16,27 +18,21 @@ class PlannerAvailableController extends Controller
 
     public function store(PlannerAvailableStoreRequest $request): RedirectResponse
     {
-        $type = $request->type;
-        if ($type === 'range') {
-            $start_date = $request->start_date;
-            $end_date = $request->end_date;
-        }
+        $data = $request->validated();
 
-        if ($type === 'week') {
-            $days = $request->days;
-        }
+        Schedule::updateOrCreate(['id' => 1], $data);
 
-        Schedule::updateOrCreate(['id' => 1], $request->validated());
+        $message = match ($data['type']) {
+            'signup' => sprintf(
+                'Grafik aktywny do %s, zakres dni: %s – %s',
+                Carbon::parse($data['signup_deadline'])->format('d.m.Y H:i'),
+                Carbon::parse($data['start_date'])->format('d.m.Y'),
+                Carbon::parse($data['end_date'])->format('d.m.Y'),
+            ),
+            'always' => 'Grafik będzie aktywny do jego wyłączenia',
+            'disabled' => 'Grafik nie jest już aktywny',
+        };
 
-        if ($type === 'range') {
-            return back()->with('success', "Poprawnie zaplanowano grafik pomiędzy {$start_date} a {$end_date}");
-        } else if ($type === 'week') {
-            return back()->with('success', "Poprawnie zaplanowano grafik pomiędzy na następne {$days} dni");
-        } else if ($type === 'disabled'){
-            return back()->with('success', "Grafik nie jest już aktywny");
-        } else {
-            return back()->with('success', "Grafik będzie aktywny do jego wyłączenia");
-        }
+        return back()->with('success', $message);
     }
-
 }

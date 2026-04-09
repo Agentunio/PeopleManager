@@ -32,17 +32,11 @@
 
         <div class="calendar-grid">
             @foreach($days as $day)
-                @php
-                    $canInputHours = $day['is_current_week'] && $day['is_past'] && ($day['assigned_morning'] || $day['assigned_afternoon']);
-                    $isClickable = ($schedule && $schedule->isActive() && !$day['is_past'] && $day['in_schedule'])
-                        || ($day['is_today'] && $schedule && $schedule->isActive())
-                        || $canInputHours;
-                @endphp
                 <div @class([
                         'cal-day',
                         'today' => $day['is_today'],
-                        'clickable' => $isClickable,
-                        'locked' => $day['is_past'] && !$day['is_today'] && !$canInputHours,
+                        'clickable' => $day['is_clickable'],
+                        'locked' => $day['is_past'] && !$day['is_today'] && !$day['can_input_hours'],
                         'out-of-schedule' => !$day['is_past'] && !$day['in_schedule'],
                     ])
                      data-date="{{ $day['date'] }}"
@@ -145,7 +139,7 @@
          data-availability-url="{{ route('worker.schedule.availability', ':date') }}"
          style="display:none;"></div>
 
-    @if($schedule && $schedule->isActive())
+    @if($canOpenModal)
         <div class="shift-modal-overlay" id="shiftModalOverlay">
             <div class="shift-modal">
                 <div class="shift-modal-header">
