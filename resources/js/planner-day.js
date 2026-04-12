@@ -575,6 +575,16 @@ $(document).ready(function() {
         }, 250);
     });
 
+    $('#save-draft').on('click', function(e) {
+        e.preventDefault();
+        $('#is-draft-input').val('1');
+        $('#schedule-form').submit();
+    });
+
+    $('#save-schedule').on('click', function() {
+        $('#is-draft-input').val('0');
+    });
+
     initDragAndDrop();
     updateCounts();
     initMode();

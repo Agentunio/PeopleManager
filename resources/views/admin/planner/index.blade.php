@@ -55,12 +55,18 @@
                             $date = $start->copy()->setDay($day)->toDateString();
                             $isToday = $date === $calendar['today'];
                             $isSettled = in_array($date, $settled);
+                            $isDayDraft = in_array($date, $draftDays);
                             $dayShifts = $shifts[$date] ?? [];
                         @endphp
 
-                        <a href="{{ route('planner.day.index', $date) }}" class="calendar-day {{ $isToday ? 'calendar-day-today' : '' }} {{ $isSettled ? 'calendar-day-settled' : '' }}">
+                        <a href="{{ route('planner.day.index', $date) }}" class="calendar-day {{ $isToday ? 'calendar-day-today' : '' }} {{ $isSettled ? 'calendar-day-settled' : '' }} {{ $isDayDraft ? 'calendar-day-draft' : '' }}">
                             <div class="day-header">
                                 <span class="day-number">{{ $day }}</span>
+                                @if($isDayDraft)
+                                    <span class="day-draft-badge" title="Szkic">
+                                        <i class="fas fa-pencil-alt"></i> Szkic
+                                    </span>
+                                @endif
                                 @if($isSettled)
                                     <span class="day-settled-badge" title="Rozliczony">
                                     <i class="fas fa-check"></i>
@@ -109,6 +115,10 @@
                     <div class="legend-item">
                         <span class="legend-icon legend-settled"></span>
                         <span>Rozliczony</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon legend-draft"></span>
+                        <span>Szkic</span>
                     </div>
                     <div class="legend-item">
                         <span class="legend-text legend-absent-text">Nieobecny</span>

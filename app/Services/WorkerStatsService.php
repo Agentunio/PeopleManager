@@ -59,6 +59,7 @@ class WorkerStatsService
     public function getStatsForWorker(Worker $worker, string $dateFrom, string $dateTo): array
     {
         $shifts = $worker->shifts()
+            ->published()
             ->with(['package', 'substitute.worker'])
             ->whereBetween('day', [$dateFrom, $dateTo])
             ->get();
@@ -71,6 +72,7 @@ class WorkerStatsService
         $workerIds = $workers->pluck('id');
 
         $shifts = WorkerShift::with(['package', 'substitute.worker'])
+            ->published()
             ->whereIn('worker_id', $workerIds)
             ->whereBetween('day', [$dateFrom, $dateTo])
             ->get()

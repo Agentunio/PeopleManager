@@ -19,24 +19,28 @@ class EndDayController extends Controller
         $day = request()->route('date');
 
         $workers_morning = WorkerShift::with('worker:id,first_name,last_name')
+            ->published()
             ->where('day', $day)
             ->where('shift_type', 'morning')
             ->whereNull('substituted_for_shift_id')
             ->get();
 
         $workers_afternoon = WorkerShift::with('worker:id,first_name,last_name')
+            ->published()
             ->where('day', $day)
             ->where('shift_type', 'afternoon')
             ->whereNull('substituted_for_shift_id')
             ->get();
 
         $substitutes_morning = WorkerShift::with(['worker:id,first_name,last_name', 'substitutedForShift.worker:id,first_name,last_name'])
+            ->published()
             ->where('day', $day)
             ->where('shift_type', 'morning')
             ->whereNotNull('substituted_for_shift_id')
             ->get();
 
         $substitutes_afternoon = WorkerShift::with(['worker:id,first_name,last_name', 'substitutedForShift.worker:id,first_name,last_name'])
+            ->published()
             ->where('day', $day)
             ->where('shift_type', 'afternoon')
             ->whereNotNull('substituted_for_shift_id')

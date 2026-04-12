@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -43,7 +44,25 @@ class WorkerShift extends Model
         'worker_from_time',
         'worker_to_time',
         'hours_source',
+        'is_draft',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_draft' => 'boolean',
+        ];
+    }
+
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('is_draft', false);
+    }
+
+    public function scopeDraft(Builder $query): Builder
+    {
+        return $query->where('is_draft', true);
+    }
 
     public function getWorkerFromHourAttribute(): ?int
     {

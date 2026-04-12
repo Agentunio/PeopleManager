@@ -22,6 +22,7 @@ class WeeklyScheduleExportService
         $weekEnd = $weekStart->copy()->endOfWeek();
 
         $shifts = WorkerShift::with('worker:id,first_name,last_name')
+            ->published()
             ->whereBetween('day', [$weekStart->toDateString(), $weekEnd->toDateString()])
             ->get()
             ->groupBy('day');

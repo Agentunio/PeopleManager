@@ -21,6 +21,7 @@ class DayController extends Controller
             $query->where('day', $day);
         }])->get();
         $workers_on_shift = WorkerShift::with('worker')->where('day', $day)->get();
+        $isDraft = $workers_on_shift->isNotEmpty() && $workers_on_shift->every(fn($s) => $s->is_draft);
 
         $workersJson = $workers->map(fn($w) => [
             'id' => $w->id,
@@ -33,7 +34,8 @@ class DayController extends Controller
             'date' => $day,
             'workers' => $workers,
             'workers_on_shift' => $workers_on_shift,
-            'workersJson' => $workersJson
+            'workersJson' => $workersJson,
+            'isDraft' => $isDraft,
         ]);
     }
 
@@ -81,6 +83,7 @@ class DayController extends Controller
     public function storeShift(WorkerShiftStoreRequest $request, $date): RedirectResponse
     {
         $submitted = collect($request->validated()['workers'] ?? []);
+        $isDraft = (bool) $request->input('is_draft', false);
 
         $existing = WorkerShift::where('day', $date)->get();
 
@@ -94,13 +97,18 @@ class DayController extends Controller
         WorkerShift::whereIn('id', $toDelete->pluck('id'))->delete();
 
         foreach ($submitted as $data) {
-            WorkerShift::firstOrCreate([
-                'worker_id' => $data['worker_id'],
-                'day' => $date,
-                'shift_type' => $data['shift_type']
-            ]);
+            WorkerShift::updateOrCreate(
+                [
+                    'worker_id' => $data['worker_id'],
+                    'day' => $date,
+                    'shift_type' => $data['shift_type'],
+                ],
+                ['is_draft' => $isDraft]
+            );
         }
 
-        return back()->with('success', 'Grafik został zapisany');
+        $message = $isDraft ? 'Grafik zapisany jako szkic' : 'Grafik został zapisany';
+
+        return back()->with('success', $message);
     }
 }

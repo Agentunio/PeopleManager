@@ -22,6 +22,11 @@
         <div id="day-view" class="planner-view">
             <div class="day-view-header">
                 <h2 id="selected-date-title">Grafik na dzień: <span>{{ date('d.m.Y', strtotime($date)) ?? '--' }}</span></h2>
+                @if($isDraft)
+                    <div class="draft-banner">
+                        <i class="fas fa-pencil-alt"></i> Grafik jest szkicem!
+                    </div>
+                @endif
             </div>
 
             <form id="schedule-form" action="{{ route('planner.day.shift', $date) }}" method="POST">
@@ -121,6 +126,10 @@
                 <a href="{{ route('planner.day.end-day', $date) }}" id="settle-day" class="btn btn-change">
                     <i class="fas fa-calculator"></i> Rozlicz dzień
                 </a>
+                <input type="hidden" name="is_draft" id="is-draft-input" value="0">
+                <button type="button" id="save-draft" class="btn btn-draft">
+                    <i class="fas fa-pencil-alt"></i> Zapisz jako szkic
+                </button>
                 <button type="submit" id="save-schedule" class="btn btn-submit">
                     <i class="fas fa-save"></i> Zapisz grafik
                 </button>

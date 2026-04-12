@@ -32,13 +32,14 @@ class DashboardController extends Controller
 
         $minDate = now()->hour >= 21 ? now()->addDay()->toDateString() : now()->toDateString();
 
-        $nextDay = WorkerShift::where('worker_id', $worker->id)
+        $nextDay = WorkerShift::published()
+            ->where('worker_id', $worker->id)
             ->where('day', '>=', $minDate)
             ->orderBy('day')
             ->value('day');
 
         $nextShiftDay = $nextDay
-            ? WorkerShift::where('worker_id', $worker->id)->where('day', $nextDay)->get()
+            ? WorkerShift::published()->where('worker_id', $worker->id)->where('day', $nextDay)->get()
             : null;
 
         $nextShift = null;
@@ -63,7 +64,8 @@ class DashboardController extends Controller
         $weekStart = now()->startOfWeek()->toDateString();
         $today = now()->toDateString();
 
-        $shifts = WorkerShift::where('worker_id', $workerId)
+        $shifts = WorkerShift::published()
+            ->where('worker_id', $workerId)
             ->whereBetween('day', [$weekStart, $today])
             ->whereNull('substituted_for_shift_id')
             ->orderByDesc('day')

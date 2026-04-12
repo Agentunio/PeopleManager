@@ -23,10 +23,11 @@ class PlannerController extends Controller
         $start = $date->copy()->startOfMonth();
         $end = $date->copy()->endOfMonth();
 
-        $shifts = WorkerShift::with('worker:id,first_name,last_name')
+        $allShifts = WorkerShift::with('worker:id,first_name,last_name')
             ->whereBetween('day', [$start, $end])
-            ->get()
-            ->groupBy('day')
+            ->get();
+
+        $shifts = $allShifts->groupBy('day')
             ->map(fn($dayShifts) => $dayShifts->groupBy('shift_type')
                 ->map(fn($typeShifts) => $typeShifts->map(fn($s) => [
                     'name' => "{$s->worker->first_name} {$s->worker->last_name}",
@@ -34,6 +35,12 @@ class PlannerController extends Controller
                     'is_substitute' => !is_null($s->substituted_for_shift_id),
                 ])->values()->toArray())
             )->toArray();
+
+        $draftDays = $allShifts->filter(fn($s) => $s->is_draft)
+            ->pluck('day')
+            ->map(fn($d) => Carbon::parse($d)->toDateString())
+            ->unique()
+            ->toArray();
 
         $daysWithPackages = PackageShift::whereBetween('day', [$start, $end])
             ->selectRaw('day')
@@ -43,7 +50,8 @@ class PlannerController extends Controller
             ->map(fn($d) => Carbon::parse($d)->toDateString())
             ->toArray();
 
-        $daysWithUnsetHours = WorkerShift::whereBetween('day', [$start, $end])
+        $daysWithUnsetHours = WorkerShift::published()
+            ->whereBetween('day', [$start, $end])
             ->whereNull('minutes')
             ->pluck('day')
             ->map(fn($d) => Carbon::parse($d)->toDateString())
@@ -57,6 +65,7 @@ class PlannerController extends Controller
         return view('admin.planner.index', [
             'shifts' => $shifts,
             'settled' => $settled,
+            'draftDays' => $draftDays,
             'weeks' => $weeks,
             'calendar' => [
                 'month' => self::MONTHS[$date->month],

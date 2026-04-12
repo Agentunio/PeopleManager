@@ -44,7 +44,8 @@ class ScheduleController extends Controller
         $isCurrentWeek = $weekStart->eq(now()->startOfWeek());
         $showAllWorkers = $weekStart->gte(now()->startOfWeek());
 
-        $shiftsQuery = WorkerShift::whereBetween('day', [$weekStart->toDateString(), $weekEnd->toDateString()]);
+        $shiftsQuery = WorkerShift::published()
+            ->whereBetween('day', [$weekStart->toDateString(), $weekEnd->toDateString()]);
 
         if (!$showAllWorkers) {
             $shiftsQuery->where('worker_id', $worker->id);
@@ -100,7 +101,8 @@ class ScheduleController extends Controller
         $morning = (bool) $request->input('morning_shift', false);
         $afternoon = (bool) $request->input('afternoon_shift', false);
 
-        $assignedShifts = WorkerShift::where('worker_id', $worker->id)
+        $assignedShifts = WorkerShift::published()
+            ->where('worker_id', $worker->id)
             ->where('day', $date)
             ->pluck('shift_type')
             ->toArray();
@@ -164,7 +166,8 @@ class ScheduleController extends Controller
             }
         }
 
-        $shift = WorkerShift::where('worker_id', $worker->id)
+        $shift = WorkerShift::published()
+            ->where('worker_id', $worker->id)
             ->where('day', $date)
             ->where('shift_type', $shiftType)
             ->whereNull('substituted_for_shift_id')
