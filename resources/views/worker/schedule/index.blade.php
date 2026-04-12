@@ -189,6 +189,19 @@
                                 <i class="fa-solid fa-check-circle"></i>
                                 <span>Zatwierdzone: <strong id="morningAdminHours"></strong></span>
                             </div>
+                            <div class="shift-hours-saved-info" id="morningSavedInfo" style="display: none;">
+                                <div class="shift-hours-saved-text">
+                                    <i class="fa-solid fa-clock"></i>
+                                    Twoje godziny zostały zapisane.
+                                </div>
+                                <div class="shift-hours-saved-times" id="morningSavedTimes"></div>
+                                <div class="shift-hours-saved-status">
+                                    Oczekuje na akceptację administratora
+                                </div>
+                                <button type="button" class="shift-hours-edit-btn" id="morningEditBtn">
+                                    Edytuj
+                                </button>
+                            </div>
                             <div class="shift-hours-inputs" id="morningHoursInputs">
                                 <div class="shift-hours-field">
                                     <label>Od</label>
@@ -208,6 +221,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <button type="button" class="shift-hours-cancel-btn" id="morningCancelBtn" style="display: none;">Anuluj</button>
                             <div class="shift-hours-time-note" id="morningTimeNote" style="display: none;"></div>
                         </div>
 
@@ -222,6 +236,19 @@
                             <div class="shift-hours-admin-info" id="afternoonAdminInfo" style="display: none;">
                                 <i class="fa-solid fa-check-circle"></i>
                                 <span>Zatwierdzone: <strong id="afternoonAdminHours"></strong></span>
+                            </div>
+                            <div class="shift-hours-saved-info" id="afternoonSavedInfo" style="display: none;">
+                                <div class="shift-hours-saved-text">
+                                    <i class="fa-solid fa-clock"></i>
+                                    Twoje godziny zostały zapisane.
+                                </div>
+                                <div class="shift-hours-saved-times" id="afternoonSavedTimes"></div>
+                                <div class="shift-hours-saved-status">
+                                    Oczekuje na akceptację administratora
+                                </div>
+                                <button type="button" class="shift-hours-edit-btn" id="afternoonEditBtn">
+                                    Edytuj
+                                </button>
                             </div>
                             <div class="shift-hours-inputs" id="afternoonHoursInputs">
                                 <div class="shift-hours-field">
@@ -242,6 +269,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <button type="button" class="shift-hours-cancel-btn" id="afternoonCancelBtn" style="display: none;">Anuluj</button>
                             <div class="shift-hours-time-note" id="afternoonTimeNote" style="display: none;"></div>
                         </div>
                     </div>

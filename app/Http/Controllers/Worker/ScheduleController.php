@@ -194,9 +194,23 @@ class ScheduleController extends Controller
             'hours_source' => 'worker',
         ]);
 
+        $shiftData = [
+            'status' => $shift->status,
+            'hours_source' => 'worker',
+            'minutes' => $shift->minutes,
+            'from' => sprintf('%02d:%02d', $shift->worker_from_hour, $shift->worker_from_minute),
+            'to' => sprintf('%02d:%02d', $shift->worker_to_hour, $shift->worker_to_minute),
+            'blocked' => false,
+            'block_label' => '',
+        ];
+
         return response()->json([
             'success' => true,
             'message' => 'Godziny zostały zapisane',
+            'html' => view('worker.dashboard.partials.shift-hours', [
+                'shift' => $shiftData,
+                'type' => $shiftType,
+            ])->render(),
         ]);
     }
 

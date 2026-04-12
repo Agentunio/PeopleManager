@@ -571,6 +571,77 @@
     font-size: 1rem;
 }
 
+.shift-hours-saved-info {
+    padding: 14px;
+    background: var(--w-surface);
+    border: 1px solid var(--w-border);
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.shift-hours-saved-text {
+    color: var(--w-text-muted);
+    font-size: 0.82rem;
+    margin-bottom: 8px;
+}
+
+.shift-hours-saved-text i {
+    margin-right: 4px;
+}
+
+.shift-hours-saved-times {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--w-text);
+    margin-bottom: 4px;
+}
+
+.shift-hours-saved-status {
+    font-size: 0.75rem;
+    color: #ff9800;
+    margin-bottom: 12px;
+}
+
+.shift-hours-saved-status i {
+    margin-right: 3px;
+}
+
+.shift-hours-edit-btn {
+    width: 100%;
+    padding: 8px 0;
+    border: 1px solid var(--w-border);
+    border-radius: 8px;
+    background: transparent;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.shift-hours-edit-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--w-accent);
+}
+
+.shift-hours-cancel-btn {
+    width: 100%;
+    padding: 7px 0;
+    margin-top: 8px;
+    border: 1px solid var(--w-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--w-text-muted);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.shift-hours-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
 .shift-hours-time-note {
     font-size: 0.72rem;
     color: var(--w-text-muted);

@@ -228,7 +228,7 @@ class DraftShiftTest extends TestCase
         $response = $this->actingAs($admin)->get(route('planner.day.index', $date));
 
         $response->assertStatus(200);
-        $response->assertSee('SZKIC');
+        $response->assertSee('Grafik jest szkicem!');
     }
 
     public function test_day_view_hides_draft_banner_for_published(): void

@@ -39,27 +39,30 @@ document.addEventListener('DOMContentLoaded', function () {
     var morningOption = morningCheckbox.closest('.shift-option');
     var afternoonOption = afternoonCheckbox.closest('.shift-option');
     var hoursSection = document.getElementById('shiftHoursSection');
-    var morningHoursGroup = document.getElementById('morningHoursGroup');
-    var afternoonHoursGroup = document.getElementById('afternoonHoursGroup');
-    var morningHoursInputs = document.getElementById('morningHoursInputs');
-    var afternoonHoursInputs = document.getElementById('afternoonHoursInputs');
-    var morningAdminInfo = document.getElementById('morningAdminInfo');
-    var afternoonAdminInfo = document.getElementById('afternoonAdminInfo');
-    var morningAdminHours = document.getElementById('morningAdminHours');
-    var afternoonAdminHours = document.getElementById('afternoonAdminHours');
-    var morningTimeNote = document.getElementById('morningTimeNote');
-    var afternoonTimeNote = document.getElementById('afternoonTimeNote');
-    var morningAbsentInfo = document.getElementById('morningAbsentInfo');
-    var afternoonAbsentInfo = document.getElementById('afternoonAbsentInfo');
 
-    var morningFromHour = document.getElementById('morningFromHour');
-    var morningFromMinute = document.getElementById('morningFromMinute');
-    var morningToHour = document.getElementById('morningToHour');
-    var morningToMinute = document.getElementById('morningToMinute');
-    var afternoonFromHour = document.getElementById('afternoonFromHour');
-    var afternoonFromMinute = document.getElementById('afternoonFromMinute');
-    var afternoonToHour = document.getElementById('afternoonToHour');
-    var afternoonToMinute = document.getElementById('afternoonToMinute');
+    function buildShiftEls(prefix) {
+        return {
+            group: document.getElementById(prefix + 'HoursGroup'),
+            inputs: document.getElementById(prefix + 'HoursInputs'),
+            adminInfo: document.getElementById(prefix + 'AdminInfo'),
+            adminHours: document.getElementById(prefix + 'AdminHours'),
+            absentInfo: document.getElementById(prefix + 'AbsentInfo'),
+            savedInfo: document.getElementById(prefix + 'SavedInfo'),
+            savedTimes: document.getElementById(prefix + 'SavedTimes'),
+            cancelBtn: document.getElementById(prefix + 'CancelBtn'),
+            timeNote: document.getElementById(prefix + 'TimeNote'),
+            fromH: document.getElementById(prefix + 'FromHour'),
+            fromM: document.getElementById(prefix + 'FromMinute'),
+            toH: document.getElementById(prefix + 'ToHour'),
+            toM: document.getElementById(prefix + 'ToMinute'),
+            editBtn: document.getElementById(prefix + 'EditBtn'),
+        };
+    }
+
+    var shifts = {
+        morning: buildShiftEls('morning'),
+        afternoon: buildShiftEls('afternoon'),
+    };
 
     var months = [
         'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
@@ -100,66 +103,77 @@ document.addEventListener('DOMContentLoaded', function () {
         return { hour: parseInt(parts[0], 10), minute: parseInt(parts[1], 10) };
     }
 
-    function setTimeInputsDisabled(fromH, fromM, toH, toM, disabled) {
-        fromH.disabled = disabled;
-        fromM.disabled = disabled;
-        toH.disabled = disabled;
-        toM.disabled = disabled;
+    function setTimeInputsDisabled(s, disabled) {
+        s.fromH.disabled = disabled;
+        s.fromM.disabled = disabled;
+        s.toH.disabled = disabled;
+        s.toM.disabled = disabled;
     }
 
-    function clearTimeInputs(fromH, fromM, toH, toM) {
-        fromH.value = '';
-        fromM.value = '';
-        toH.value = '';
-        toM.value = '';
+    function clearTimeInputs(s) {
+        s.fromH.value = '';
+        s.fromM.value = '';
+        s.toH.value = '';
+        s.toM.value = '';
     }
 
-    function prefillTimeInputs(fromH, fromM, toH, toM, fromStr, toStr) {
+    function prefillTimeInputs(s, fromStr, toStr) {
         var from = parseTimeValue(fromStr);
         var to = parseTimeValue(toStr);
-        fromH.value = from ? padTime(from.hour) : '';
-        fromM.value = from ? padTime(from.minute) : '';
-        toH.value = to ? padTime(to.hour) : '';
-        toM.value = to ? padTime(to.minute) : '';
+        s.fromH.value = from ? padTime(from.hour) : '';
+        s.fromM.value = from ? padTime(from.minute) : '';
+        s.toH.value = to ? padTime(to.hour) : '';
+        s.toM.value = to ? padTime(to.minute) : '';
     }
 
-    function setupHoursGroup(groupEl, inputsEl, adminInfoEl, adminHoursEl, absentInfoEl, timeNoteEl, fromH, fromM, toH, toM, data) {
+    function setupHoursGroup(s, data) {
+        s.cancelBtn.style.display = 'none';
+
         if (!data.assigned) {
-            groupEl.style.display = 'none';
+            s.group.style.display = 'none';
             return;
         }
 
-        groupEl.style.display = '';
+        s.group.style.display = '';
 
         if (data.status === 'absent') {
-            absentInfoEl.style.display = '';
-            adminInfoEl.style.display = 'none';
-            inputsEl.style.display = 'none';
-            timeNoteEl.style.display = 'none';
-            setTimeInputsDisabled(fromH, fromM, toH, toM, true);
+            s.absentInfo.style.display = '';
+            s.adminInfo.style.display = 'none';
+            s.savedInfo.style.display = 'none';
+            s.inputs.style.display = 'none';
+            s.timeNote.style.display = 'none';
+            setTimeInputsDisabled(s, true);
             return;
         }
 
-        absentInfoEl.style.display = 'none';
+        s.absentInfo.style.display = 'none';
 
         if (data.source === 'admin') {
-            adminInfoEl.style.display = '';
-            inputsEl.style.display = 'none';
-            timeNoteEl.style.display = 'none';
-            adminHoursEl.textContent = data.minutes ? formatMinutesToHours(parseInt(data.minutes)) : '—';
-            setTimeInputsDisabled(fromH, fromM, toH, toM, true);
+            s.adminInfo.style.display = '';
+            s.savedInfo.style.display = 'none';
+            s.inputs.style.display = 'none';
+            s.timeNote.style.display = 'none';
+            s.adminHours.textContent = data.minutes ? formatMinutesToHours(parseInt(data.minutes)) : '—';
+            setTimeInputsDisabled(s, true);
             return;
         }
 
-        adminInfoEl.style.display = 'none';
-        inputsEl.style.display = '';
-        setTimeInputsDisabled(fromH, fromM, toH, toM, false);
+        s.adminInfo.style.display = 'none';
 
-        if (data.from && data.to) {
-            prefillTimeInputs(fromH, fromM, toH, toM, data.from, data.to);
-        } else {
-            clearTimeInputs(fromH, fromM, toH, toM);
+        if (data.source === 'worker' && data.from && data.to) {
+            s.savedInfo.style.display = '';
+            s.savedTimes.textContent = data.from + ' — ' + data.to;
+            s.inputs.style.display = 'none';
+            s.timeNote.style.display = 'none';
+            prefillTimeInputs(s, data.from, data.to);
+            setTimeInputsDisabled(s, false);
+            return;
         }
+
+        s.savedInfo.style.display = 'none';
+        s.inputs.style.display = '';
+        setTimeInputsDisabled(s, false);
+        clearTimeInputs(s);
 
         if (data.isToday) {
             var now = new Date();
@@ -168,15 +182,31 @@ document.addEventListener('DOMContentLoaded', function () {
             var label = SHIFT_HOURS_LABELS[data.shiftType];
 
             if (currentMins < allowedFrom) {
-                setTimeInputsDisabled(fromH, fromM, toH, toM, true);
-                timeNoteEl.textContent = 'Godziny można wpisać po ' + label;
-                timeNoteEl.style.display = '';
+                setTimeInputsDisabled(s, true);
+                s.timeNote.textContent = 'Godziny można wpisać po ' + label;
+                s.timeNote.style.display = '';
                 return;
             }
         }
 
-        timeNoteEl.style.display = 'none';
+        s.timeNote.style.display = 'none';
     }
+
+    ['morning', 'afternoon'].forEach(function (type) {
+        var s = shifts[type];
+
+        s.editBtn.addEventListener('click', function () {
+            s.savedInfo.style.display = 'none';
+            s.inputs.style.display = '';
+            s.cancelBtn.style.display = '';
+        });
+
+        s.cancelBtn.addEventListener('click', function () {
+            s.inputs.style.display = 'none';
+            s.cancelBtn.style.display = 'none';
+            s.savedInfo.style.display = '';
+        });
+    });
 
     document.querySelectorAll('.cal-day.clickable').forEach(function (day) {
         day.addEventListener('click', function () {
@@ -208,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var hasAnyHoursToShow = false;
             if (showHours) {
-                setupHoursGroup(morningHoursGroup, morningHoursInputs, morningAdminInfo, morningAdminHours, morningAbsentInfo, morningTimeNote, morningFromHour, morningFromMinute, morningToHour, morningToMinute, {
+                setupHoursGroup(shifts.morning, {
                     assigned: assignedMorning,
                     source: this.dataset.morningSource,
                     status: this.dataset.morningStatus,
@@ -218,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     isToday: isToday,
                     shiftType: 'morning'
                 });
-                setupHoursGroup(afternoonHoursGroup, afternoonHoursInputs, afternoonAdminInfo, afternoonAdminHours, afternoonAbsentInfo, afternoonTimeNote, afternoonFromHour, afternoonFromMinute, afternoonToHour, afternoonToMinute, {
+                setupHoursGroup(shifts.afternoon, {
                     assigned: assignedAfternoon,
                     source: this.dataset.afternoonSource,
                     status: this.dataset.afternoonStatus,
@@ -230,8 +260,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 hasAnyHoursToShow = true;
             } else {
-                morningHoursGroup.style.display = 'none';
-                afternoonHoursGroup.style.display = 'none';
+                shifts.morning.group.style.display = 'none';
+                shifts.afternoon.group.style.display = 'none';
             }
 
             hoursSection.style.display = hasAnyHoursToShow ? '' : 'none';
@@ -277,11 +307,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    function submitHours(shiftType, fromHourInput, fromMinuteInput, toHourInput, toMinuteInput) {
-        var fromTime = buildTimeString(fromHourInput, fromMinuteInput);
-        var toTime = buildTimeString(toHourInput, toMinuteInput);
+    function submitHours(s, shiftType) {
+        var fromTime = buildTimeString(s.fromH, s.fromM);
+        var toTime = buildTimeString(s.toH, s.toM);
 
-        if (!fromTime || !toTime || fromHourInput.disabled) return Promise.resolve(null);
+        if (!fromTime || !toTime || s.fromH.disabled) return Promise.resolve(null);
 
         return $.ajax({
             url: hoursUrl.replace(':date', selectedDate),
@@ -313,6 +343,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function canSubmitShift(dayEl, type) {
+        var s = shifts[type];
+        return dayEl.dataset[type + 'Source'] !== 'admin'
+            && dayEl.dataset[type + 'Status'] !== 'absent'
+            && !s.fromH.disabled;
+    }
+
     saveBtn.addEventListener('click', function () {
         if (!selectedDate) return;
 
@@ -325,18 +362,20 @@ document.addEventListener('DOMContentLoaded', function () {
         var shouldSubmitHours = isCurrentWeek && (isPast || isToday);
 
         if (shouldSubmitHours) {
-            if (assignedMorning && dayEl.dataset.morningSource !== 'admin' && dayEl.dataset.morningStatus !== 'absent' && !morningFromHour.disabled) {
-                var mVal = validateHoursInputs(morningFromHour, morningFromMinute, morningToHour, morningToMinute);
-                if (!mVal.valid) {
-                    showToast.error('Zmiana ranna: ' + mVal.error);
-                    return;
-                }
-            }
-            if (assignedAfternoon && dayEl.dataset.afternoonSource !== 'admin' && dayEl.dataset.afternoonStatus !== 'absent' && !afternoonFromHour.disabled) {
-                var aVal = validateHoursInputs(afternoonFromHour, afternoonFromMinute, afternoonToHour, afternoonToMinute);
-                if (!aVal.valid) {
-                    showToast.error('Zmiana popołudniowa: ' + aVal.error);
-                    return;
+            var shiftChecks = [
+                { type: 'morning', assigned: assignedMorning, label: 'Zmiana ranna' },
+                { type: 'afternoon', assigned: assignedAfternoon, label: 'Zmiana popołudniowa' },
+            ];
+
+            for (var i = 0; i < shiftChecks.length; i++) {
+                var check = shiftChecks[i];
+                if (check.assigned && canSubmitShift(dayEl, check.type)) {
+                    var s = shifts[check.type];
+                    var val = validateHoursInputs(s.fromH, s.fromM, s.toH, s.toM);
+                    if (!val.valid) {
+                        showToast.error(check.label + ': ' + val.error);
+                        return;
+                    }
                 }
             }
         }
@@ -345,32 +384,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var hoursPromises = [];
         if (shouldSubmitHours) {
-            if (assignedMorning && dayEl.dataset.morningSource !== 'admin' && dayEl.dataset.morningStatus !== 'absent' && !morningFromHour.disabled) {
-                var mResult = validateHoursInputs(morningFromHour, morningFromMinute, morningToHour, morningToMinute);
-                if (!mResult.empty) {
-                    hoursPromises.push(
-                        submitHours('morning', morningFromHour, morningFromMinute, morningToHour, morningToMinute)
-                            .then(function () {
-                                dayEl.dataset.morningFrom = mResult.from;
-                                dayEl.dataset.morningTo = mResult.to;
-                                dayEl.dataset.morningSource = 'worker';
-                            })
-                    );
-                }
-            }
-            if (assignedAfternoon && dayEl.dataset.afternoonSource !== 'admin' && dayEl.dataset.afternoonStatus !== 'absent' && !afternoonFromHour.disabled) {
-                var aResult = validateHoursInputs(afternoonFromHour, afternoonFromMinute, afternoonToHour, afternoonToMinute);
-                if (!aResult.empty) {
-                    hoursPromises.push(
-                        submitHours('afternoon', afternoonFromHour, afternoonFromMinute, afternoonToHour, afternoonToMinute)
-                            .then(function () {
-                                dayEl.dataset.afternoonFrom = aResult.from;
-                                dayEl.dataset.afternoonTo = aResult.to;
-                                dayEl.dataset.afternoonSource = 'worker';
-                            })
-                    );
-                }
-            }
+            [{ type: 'morning', assigned: assignedMorning },
+             { type: 'afternoon', assigned: assignedAfternoon }].forEach(function (item) {
+                if (!item.assigned || !canSubmitShift(dayEl, item.type)) return;
+                var s = shifts[item.type];
+                var result = validateHoursInputs(s.fromH, s.fromM, s.toH, s.toM);
+                if (result.empty) return;
+
+                hoursPromises.push(
+                    submitHours(s, item.type).then(function () {
+                        dayEl.dataset[item.type + 'From'] = result.from;
+                        dayEl.dataset[item.type + 'To'] = result.to;
+                        dayEl.dataset[item.type + 'Source'] = 'worker';
+                    })
+                );
+            });
         }
 
         var skipAvailability = isPast || isToday;

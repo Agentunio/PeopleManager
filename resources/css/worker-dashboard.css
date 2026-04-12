@@ -237,6 +237,76 @@
     font-size: 1rem;
 }
 
+.dash-saved-info {
+    padding: 14px;
+    background: var(--w-surface);
+    border: 1px solid var(--w-border);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.dash-saved-text {
+    color: var(--w-text-muted);
+    font-size: 0.82rem;
+    margin-bottom: 8px;
+}
+
+.dash-saved-text i {
+    margin-right: 4px;
+}
+
+.dash-saved-times {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--w-text);
+    margin-bottom: 4px;
+}
+
+.dash-saved-status {
+    font-size: 0.75rem;
+    color: #ff9800;
+    margin-bottom: 12px;
+}
+
+.dash-saved-status i {
+    margin-right: 3px;
+}
+
+.dash-edit-btn {
+    width: 100%;
+    padding: 8px 0;
+    border: 1px solid var(--w-border);
+    border-radius: 8px;
+    background: transparent;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.dash-edit-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--w-accent);
+}
+
+.dash-cancel-btn {
+    width: 100%;
+    padding: 7px 0;
+    margin-top: 8px;
+    border: 1px solid var(--w-border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--w-text-muted);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.dash-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
 .dash-time-note {
     font-size: 0.75rem;
     color: var(--w-text-muted);
