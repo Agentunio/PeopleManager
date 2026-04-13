@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Guest;
 
 use App\Http\Controllers\Controller;
+use App\Mail\WorkerAccountActivated;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -64,6 +66,8 @@ class AccountActivationController extends Controller
             'activation_token' => null,
             'activation_expires_at' => null,
         ]);
+
+        Mail::to($user->email)->send(new WorkerAccountActivated($user));
 
         $request->session()->forget('activation_verified_' . $token);
         $request->session()->invalidate();

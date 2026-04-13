@@ -37,7 +37,7 @@
                         'today' => $day['is_today'],
                         'clickable' => $day['is_clickable'],
                         'locked' => $day['is_past'] && !$day['is_today'] && !$day['can_input_hours'],
-                        'out-of-schedule' => !$day['is_past'] && !$day['in_schedule'],
+                        'out-of-schedule' => $scheduleStatus['is_active'] && !$day['is_past'] && !$day['in_schedule'],
                     ])
                      data-date="{{ $day['date'] }}"
                      data-morning="{{ $day['morning'] ? '1' : '0' }}"

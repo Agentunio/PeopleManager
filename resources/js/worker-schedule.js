@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (this.classList.contains('out-of-schedule')) {
                 showToast.error('Ten dzień wykracza poza zakres aktywnego grafiku');
             } else {
-                showToast.error('Grafik jest nieaktywny. Zapisywanie na zmiany jest wyłączone');
+                showToast.error('Grafik jest nieaktywny');
             }
         });
     });

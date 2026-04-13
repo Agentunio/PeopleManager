@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Mail\WorkerAccountActivated;
 use App\Models\User;
 use App\Models\Worker;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -137,6 +139,33 @@ class AccountActivationTest extends TestCase
         $this->assertTrue($user->is_active);
         $this->assertNull($user->activation_token);
         $this->assertNull($user->activation_expires_at);
+    }
+
+    public function test_successful_activation_sends_confirmation_email(): void
+    {
+        Mail::fake();
+
+        $user = $this->createPendingAccount();
+
+        $this->verifyDob();
+        $this->activateAccount();
+
+        Mail::assertSent(WorkerAccountActivated::class, function (WorkerAccountActivated $mail) use ($user) {
+            return $mail->hasTo($user->email)
+                && $mail->user->id === $user->id;
+        });
+    }
+
+    public function test_failed_activation_does_not_send_email(): void
+    {
+        Mail::fake();
+
+        $this->createPendingAccount();
+
+        $this->verifyDob();
+        $this->activateAccount(password: 'weak');
+
+        Mail::assertNotSent(WorkerAccountActivated::class);
     }
 
     public function test_activation_without_verification_rejected(): void
