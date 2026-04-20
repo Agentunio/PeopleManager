@@ -39,23 +39,7 @@
                         'locked' => $day['is_past'] && !$day['is_today'] && !$day['can_input_hours'],
                         'out-of-schedule' => $scheduleStatus['is_active'] && !$day['is_past'] && !$day['in_schedule'],
                     ])
-                     data-date="{{ $day['date'] }}"
-                     data-morning="{{ $day['morning'] ? '1' : '0' }}"
-                     data-afternoon="{{ $day['afternoon'] ? '1' : '0' }}"
-                     data-assigned-morning="{{ $day['assigned_morning'] ? '1' : '0' }}"
-                     data-assigned-afternoon="{{ $day['assigned_afternoon'] ? '1' : '0' }}"
-                     data-current-week="{{ $day['is_current_week'] ? '1' : '0' }}"
-                     data-is-past="{{ $day['is_past'] ? '1' : '0' }}"
-                     data-morning-from="{{ $day['morning_shift']?->worker_from_time !== null ? sprintf('%02d:%02d', $day['morning_shift']->worker_from_hour, $day['morning_shift']->worker_from_minute) : '' }}"
-                     data-morning-to="{{ $day['morning_shift']?->worker_to_time !== null ? sprintf('%02d:%02d', $day['morning_shift']->worker_to_hour, $day['morning_shift']->worker_to_minute) : '' }}"
-                     data-morning-source="{{ $day['morning_shift']?->hours_source ?? '' }}"
-                     data-morning-minutes="{{ $day['morning_shift']?->minutes ?? '' }}"
-                     data-afternoon-from="{{ $day['afternoon_shift']?->worker_from_time !== null ? sprintf('%02d:%02d', $day['afternoon_shift']->worker_from_hour, $day['afternoon_shift']->worker_from_minute) : '' }}"
-                     data-afternoon-to="{{ $day['afternoon_shift']?->worker_to_time !== null ? sprintf('%02d:%02d', $day['afternoon_shift']->worker_to_hour, $day['afternoon_shift']->worker_to_minute) : '' }}"
-                     data-afternoon-source="{{ $day['afternoon_shift']?->hours_source ?? '' }}"
-                     data-afternoon-minutes="{{ $day['afternoon_shift']?->minutes ?? '' }}"
-                     data-morning-status="{{ $day['morning_status'] ?? '' }}"
-                     data-afternoon-status="{{ $day['afternoon_status'] ?? '' }}">
+                     data-date="{{ $day['date'] }}">
                     <div class="cal-day-header">
                         <span class="cal-day-weekday">{{ $day['weekday'] }}</span>
                         <span class="cal-day-date">{{ $day['short_date'] }}</span>
@@ -134,10 +118,37 @@
         </div>
     </div>
 
-    <div id="scheduleConfig"
-         data-hours-url="{{ route('worker.schedule.hours', ':date') }}"
-         data-availability-url="{{ route('worker.schedule.availability', ':date') }}"
-         style="display:none;"></div>
+    @php
+        $scheduleDaysJs = [];
+        foreach ($days as $day) {
+            $scheduleDaysJs[$day['date']] = [
+                'morning' => $day['morning'] ? '1' : '0',
+                'afternoon' => $day['afternoon'] ? '1' : '0',
+                'assignedMorning' => $day['assigned_morning'] ? '1' : '0',
+                'assignedAfternoon' => $day['assigned_afternoon'] ? '1' : '0',
+                'currentWeek' => $day['is_current_week'] ? '1' : '0',
+                'isPast' => $day['is_past'] ? '1' : '0',
+                'morningFrom' => $day['morning_from'],
+                'morningTo' => $day['morning_to'],
+                'morningSource' => $day['morning_source'],
+                'morningMinutes' => $day['morning_minutes'],
+                'afternoonFrom' => $day['afternoon_from'],
+                'afternoonTo' => $day['afternoon_to'],
+                'afternoonSource' => $day['afternoon_source'],
+                'afternoonMinutes' => $day['afternoon_minutes'],
+                'morningStatus' => $day['morning_status'],
+                'afternoonStatus' => $day['afternoon_status'],
+            ];
+        }
+        $scheduleConfigJs = [
+            'hoursUrl' => route('worker.schedule.hours', ':date'),
+            'availabilityUrl' => route('worker.schedule.availability', ':date'),
+        ];
+    @endphp
+    <script>
+        window.scheduleDays = @json($scheduleDaysJs);
+        window.scheduleConfig = @json($scheduleConfigJs);
+    </script>
 
     @if($canOpenModal)
         <div class="shift-modal-overlay" id="shiftModalOverlay">

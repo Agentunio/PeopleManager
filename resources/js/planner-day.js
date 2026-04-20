@@ -1,7 +1,11 @@
+import Swal from 'sweetalert2';
+import Sortable from 'sortablejs';
+
 $(document).ready(function() {
     const $dropzones = $('.shift-dropzone');
     let isTapMode = false;
     let selectedWorkers = [];
+    let sortableInstances = [];
 
     function escapeHtml(str) {
         if (!str) return '';
@@ -33,14 +37,9 @@ $(document).ready(function() {
     }
 
     function enableTapMode() {
-        console.log('Enabling tap mode');
         $('body').addClass('tap-mode-active');
 
-        $('.worker-card.draggable').each(function() {
-            if ($(this).data('ui-draggable')) {
-                $(this).draggable('disable');
-            }
-        });
+        sortableInstances.forEach(s => s.option('disabled', true));
 
         if ($('.selection-info-bar').length === 0) {
             const infoBar = `
@@ -69,14 +68,9 @@ $(document).ready(function() {
     }
 
     function disableTapMode() {
-        console.log('Disabling tap mode');
         $('body').removeClass('tap-mode-active selection-active');
 
-        $('.worker-card.draggable').each(function() {
-            if ($(this).data('ui-draggable')) {
-                $(this).draggable('enable');
-            }
-        });
+        sortableInstances.forEach(s => s.option('disabled', false));
 
         clearSelection();
 
@@ -225,7 +219,6 @@ $(document).ready(function() {
             </div>
         `;
             $('#workers-list').append(cardHtml);
-            initDragAndDrop();
         } else {
             $workerCard.show();
             $workerCard.attr('data-morning', freeMorning);
@@ -249,7 +242,6 @@ $(document).ready(function() {
 
         if (!freeMorning && !freeAfternoon) {
             $workerCard.hide();
-            // Remove from selection if hidden
             const index = selectedWorkers.indexOf(workerId);
             if (index > -1) {
                 selectedWorkers.splice(index, 1);
@@ -286,103 +278,107 @@ $(document).ready(function() {
     }
 
     function initDragAndDrop() {
-        $(".worker-card.draggable").draggable({
-            helper: "clone",
-            revert: "invalid",
-            revertDuration: 100,
-            cursor: "grabbing",
-            zIndex: 1000,
-            opacity: 0.9,
+        sortableInstances.forEach(s => s.destroy());
+        sortableInstances = [];
+
+        const sharedConfig = {
             disabled: isTapMode,
-            start: function(event, ui) {
-                $(this).addClass('dragging');
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'dragging',
+            dragClass: 'sortable-drag',
+            animation: 150,
+            onStart: function() {
                 $dropzones.addClass('highlight');
             },
-            stop: function(event, ui) {
-                $(this).removeClass('dragging');
-                $dropzones.removeClass('highlight');
+            onEnd: function() {
+                $dropzones.removeClass('highlight dropzone-hover');
             }
-        });
+        };
 
-        initDropzones();
-    }
+        const workersListEl = document.getElementById('workers-list');
+        if (workersListEl) {
+            sortableInstances.push(
+                new Sortable(workersListEl, {
+                    ...sharedConfig,
+                    group: { name: 'planner', pull: 'clone', put: false },
+                    sort: false,
+                    draggable: '.worker-card.draggable'
+                })
+            );
+        }
 
-    function initDropzones() {
-        $dropzones.droppable({
-            accept: ".worker-card.draggable, .assigned-worker.draggable",
-            hoverClass: "dropzone-hover",
-            tolerance: "pointer",
-            drop: function(event, ui) {
-                if (isTapMode) return;
+        ['morning', 'afternoon'].forEach(function(shiftType) {
+            const container = document.querySelector(`#${shiftType}-shift .assigned-workers`);
+            if (!container) return;
 
-                const $dragged = ui.draggable;
-                const $currentDropzone = $(this);
-                const shiftType = $currentDropzone.data('shift');
-
-                let workerId, workerName;
-
-                if ($dragged.hasClass('worker-card')) {
-                    workerId = $dragged.data('worker-id');
-                    workerName = $dragged.find('.worker-name').text();
-                } else if ($dragged.hasClass('assigned-worker')) {
-                    workerId = $dragged.data('worker-id');
-                    workerName = $dragged.find('.worker-name').text();
-
-                    const $oldDropzone = $dragged.closest('.shift-dropzone');
-                    if ($oldDropzone.length && $oldDropzone[0] !== $currentDropzone[0]) {
-                        $dragged.remove();
-                        $oldDropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
-                        updatePlaceholder($oldDropzone);
-                    } else if ($oldDropzone[0] === $currentDropzone[0]) {
-                        return;
+            sortableInstances.push(
+                new Sortable(container, {
+                    ...sharedConfig,
+                    group: { name: 'planner', pull: 'clone', put: true },
+                    sort: false,
+                    draggable: '.assigned-worker.draggable',
+                    emptyInsertThreshold: 80,
+                    onAdd: function(evt) {
+                        handleShiftDrop(evt, shiftType);
                     }
-                }
+                })
+            );
+        });
 
-                if (!isWorkerAvailableForShift(workerId, shiftType)) {
-                    showToast.error('Ten pracownik nie jest dostępny na tę zmianę');
-                    return;
-                }
-
-                if ($currentDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0) {
-                    showToast.warning('Ten pracownik jest już przypisany do tej zmiany');
-                    return;
-                }
-
-                if (!canWorkerBeOnBothShifts(workerId)) {
-                    const $otherDropzone = $dropzones.not($currentDropzone);
-                    $otherDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).remove();
-                    $otherDropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
-                    updatePlaceholder($otherDropzone);
-                }
-
-                addWorkerToShift(workerId, workerName, shiftType, $currentDropzone);
-                updatePlaceholder($currentDropzone);
-                updateCounts();
-                updateWorkerCardVisibility(workerId);
-
-                showToast.success(`${workerName} przypisany do zmiany`);
+        $dropzones.off('dragenter.sortable dragleave.sortable drop.sortable');
+        $dropzones.on('dragenter.sortable', function() {
+            $(this).addClass('dropzone-hover');
+        });
+        $dropzones.on('dragleave.sortable', function(e) {
+            if (!this.contains(e.originalEvent ? e.originalEvent.relatedTarget : e.relatedTarget)) {
+                $(this).removeClass('dropzone-hover');
             }
+        });
+        $dropzones.on('drop.sortable', function() {
+            $(this).removeClass('dropzone-hover');
         });
     }
 
-    function makeAssignedWorkerDraggable($element) {
-        $element.draggable({
-            helper: "clone",
-            revert: "invalid",
-            revertDuration: 100,
-            cursor: "grabbing",
-            zIndex: 1000,
-            opacity: 0.9,
-            disabled: isTapMode,
-            start: function(event, ui) {
-                $(this).addClass('dragging');
-                $dropzones.addClass('highlight');
-            },
-            stop: function(event, ui) {
-                $(this).removeClass('dragging');
-                $dropzones.removeClass('highlight');
-            }
-        });
+    function handleShiftDrop(evt, shiftType) {
+        const item = evt.item;
+        const $currentDropzone = $(`#${shiftType}-shift`);
+
+        const workerId = $(item).data('worker-id');
+        const workerName = $(item).find('.worker-name').text();
+        const isFromWorkersList = item.classList.contains('worker-card');
+
+        item.remove();
+
+        if (!isWorkerAvailableForShift(workerId, shiftType)) {
+            showToast.error('Ten pracownik nie jest dostępny na tę zmianę');
+            return;
+        }
+
+        if ($currentDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0) {
+            showToast.warning('Ten pracownik jest już przypisany do tej zmiany');
+            return;
+        }
+
+        if (!isFromWorkersList) {
+            const $sourceDropzone = $(evt.from).closest('.shift-dropzone');
+            $sourceDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).remove();
+            $sourceDropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
+            updatePlaceholder($sourceDropzone);
+        }
+
+        if (!canWorkerBeOnBothShifts(workerId)) {
+            const $otherDropzone = $dropzones.not($currentDropzone);
+            $otherDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).remove();
+            $otherDropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
+            updatePlaceholder($otherDropzone);
+        }
+
+        addWorkerToShift(workerId, workerName, shiftType, $currentDropzone);
+        updatePlaceholder($currentDropzone);
+        updateCounts();
+        updateWorkerCardVisibility(workerId);
+
+        showToast.success(`${workerName} przypisany do zmiany`);
     }
 
     function addWorkerToShift(workerId, workerName, shiftType, $dropzone) {
@@ -402,10 +398,6 @@ $(document).ready(function() {
 
         $dropzone.find('.assigned-workers').append($workerElement);
         $dropzone.find('.hidden-inputs').append(hiddenInput);
-
-        if (!isTapMode) {
-            makeAssignedWorkerDraggable($workerElement);
-        }
     }
 
     function updatePlaceholder($dropzone) {

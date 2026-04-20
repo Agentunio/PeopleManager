@@ -99,7 +99,6 @@
                                 <i class="fas fa-user-plus"></i>
                                 <span>Przeciągnij pracownika tutaj</span>
                             </div>
-
                             <div class="assigned-workers">
                                 @foreach($workers_on_shift->where('shift_type', 'afternoon') as $shift)
                                     <div class="assigned-worker draggable {{ $shift->status === 'absent' ? 'worker-absent' : '' }} {{ $shift->substituted_for_shift_id ? 'worker-substitute' : '' }}" data-worker-id="{{ $shift->worker_id }}" data-shift-id="{{ $shift->id }}" data-substituted-for="{{ $shift->substituted_for_shift_id }}">

@@ -162,10 +162,13 @@ class WorkerScheduleTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertStringContainsString('data-date="' . $today->toDateString() . '"', $content);
-        $this->assertMatchesRegularExpression(
-            '/data-date="' . preg_quote($today->toDateString()) . '"[^>]*data-morning="1"[^>]*data-afternoon="0"/',
-            $content
-        );
+
+        preg_match('/window\.scheduleDays\s*=\s*(\{.*?\});/s', $content, $matches);
+        $this->assertNotEmpty($matches, 'window.scheduleDays not found in page');
+        $scheduleDays = json_decode($matches[1], true);
+        $this->assertNotNull($scheduleDays);
+        $this->assertEquals('1', $scheduleDays[$today->toDateString()]['morning']);
+        $this->assertEquals('0', $scheduleDays[$today->toDateString()]['afternoon']);
     }
 
     public function test_store_availability_creates_record(): void

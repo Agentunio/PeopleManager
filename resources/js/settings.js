@@ -1,10 +1,11 @@
+import Swal from 'sweetalert2';
+
 $(document).ready(function () {
-    // Obsługa potwierdzenia usuwania przez SweetAlert2
     $('.delete-form').on('submit', function(e) {
         e.preventDefault();
         const form = this;
         const name = $(this).data('name');
-        
+
         Swal.fire({
             title: 'Czy na pewno?',
             text: `Chcesz usunąć pakiet: ${name}?`,

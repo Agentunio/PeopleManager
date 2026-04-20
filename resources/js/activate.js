@@ -2,6 +2,7 @@ import flatpickr from 'flatpickr';
 import { Polish } from 'flatpickr/dist/l10n/pl.js';
 import 'flatpickr/dist/flatpickr.min.css';
 import 'flatpickr/dist/themes/dark.css';
+import Swal from 'sweetalert2';
 
 document.addEventListener('DOMContentLoaded', function () {
     const dobDisplay = document.getElementById('date_of_birth_display');
@@ -89,5 +90,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 matchInfo.className = 'password-match no-match';
             }
         }
+    }
+
+    const flashError = document.querySelector('meta[name="flash-error"]');
+    if (flashError) {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: flashError.content,
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            background: '#1f1f1f',
+            color: '#f0f0f0'
+        });
     }
 });

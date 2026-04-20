@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aktywacja konta</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
-    @vite(['resources/css/activate.css', 'resources/js/activate.js', 'resources/js/password-toggle.js'])
     <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @if($errors->any())
+        <meta name="flash-error" content="{{ $errors->first() }}">
+    @endif
+    @vite(['resources/css/activate.css', 'resources/js/activate.js', 'resources/js/password-toggle.js'])
 </head>
 <body>
 
@@ -69,20 +71,5 @@
     @endif
 </div>
 
-@if($errors->any())
-    <script>
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: @json($errors->first()),
-            showConfirmButton: false,
-            timer: 4000,
-            timerProgressBar: true,
-            background: '#1f1f1f',
-            color: '#f0f0f0'
-        });
-    </script>
-@endif
 </body>
 </html>

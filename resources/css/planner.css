@@ -591,7 +591,6 @@
 }
 
 .shift-dropzone {
-    min-height: 120px;
     padding: 20px;
     transition: all 0.3s ease;
     position: relative;
@@ -613,11 +612,12 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 30px;
+    padding: 20px;
     border: 2px dashed var(--border-color);
     border-radius: 8px;
     color: #666;
     text-align: center;
+    width: 100%;
 }
 
 .dropzone-placeholder i {
@@ -638,6 +638,7 @@
     flex-wrap: wrap;
     gap: 10px;
     cursor: pointer;
+    min-height: 10px;
 }
 
 .assigned-worker {
@@ -913,10 +914,19 @@
     transform: translateX(24px);
 }
 
-.ui-draggable-dragging {
+.sortable-drag {
     z-index: 1000 !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     transform: rotate(3deg);
+    opacity: 0.9;
+    width: fit-content !important;
+    max-width: 220px !important;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    width: fit-content !important;
+    max-width: 220px !important;
 }
 
 .tap-mode-active .worker-card {

@@ -10,7 +10,10 @@ import {
 
 document.addEventListener('DOMContentLoaded', function () {
     var overlay = document.getElementById('shiftModalOverlay');
-    var scheduleConfig = document.getElementById('scheduleConfig');
+
+    function getDayData(dateStr) {
+        return window.scheduleDays[dateStr];
+    }
 
     document.querySelectorAll('.cal-day:not(.clickable)').forEach(function (day) {
         day.addEventListener('click', function () {
@@ -24,10 +27,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    if (!overlay || !scheduleConfig) return;
+    if (!overlay || !window.scheduleConfig) return;
 
-    var hoursUrl = scheduleConfig.dataset.hoursUrl;
-    var availabilityUrl = scheduleConfig.dataset.availabilityUrl;
+    var hoursUrl = window.scheduleConfig.hoursUrl;
+    var availabilityUrl = window.scheduleConfig.availabilityUrl;
 
     var modalDate = document.getElementById('shiftModalDate');
     var modalTitle = document.getElementById('shiftModalTitle');
@@ -212,17 +215,18 @@ document.addEventListener('DOMContentLoaded', function () {
         day.addEventListener('click', function () {
             selectedDate = this.dataset.date;
             selectedDayEl = this;
+            var dayData = getDayData(selectedDate);
             var d = new Date(selectedDate + 'T00:00:00');
             modalDate.textContent = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
 
-            var assignedMorning = this.dataset.assignedMorning === '1';
-            var assignedAfternoon = this.dataset.assignedAfternoon === '1';
+            var assignedMorning = dayData.assignedMorning === '1';
+            var assignedAfternoon = dayData.assignedAfternoon === '1';
             var isToday = this.classList.contains('today');
-            var isPast = this.dataset.isPast === '1';
-            var isCurrentWeek = this.dataset.currentWeek === '1';
+            var isPast = dayData.isPast === '1';
+            var isCurrentWeek = dayData.currentWeek === '1';
 
-            morningCheckbox.checked = this.dataset.morning === '1';
-            afternoonCheckbox.checked = this.dataset.afternoon === '1';
+            morningCheckbox.checked = dayData.morning === '1';
+            afternoonCheckbox.checked = dayData.afternoon === '1';
 
             var isPastDay = isPast && !isToday;
 
@@ -240,21 +244,21 @@ document.addEventListener('DOMContentLoaded', function () {
             if (showHours) {
                 setupHoursGroup(shifts.morning, {
                     assigned: assignedMorning,
-                    source: this.dataset.morningSource,
-                    status: this.dataset.morningStatus,
-                    from: this.dataset.morningFrom,
-                    to: this.dataset.morningTo,
-                    minutes: this.dataset.morningMinutes,
+                    source: dayData.morningSource,
+                    status: dayData.morningStatus,
+                    from: dayData.morningFrom,
+                    to: dayData.morningTo,
+                    minutes: dayData.morningMinutes,
                     isToday: isToday,
                     shiftType: 'morning'
                 });
                 setupHoursGroup(shifts.afternoon, {
                     assigned: assignedAfternoon,
-                    source: this.dataset.afternoonSource,
-                    status: this.dataset.afternoonStatus,
-                    from: this.dataset.afternoonFrom,
-                    to: this.dataset.afternoonTo,
-                    minutes: this.dataset.afternoonMinutes,
+                    source: dayData.afternoonSource,
+                    status: dayData.afternoonStatus,
+                    from: dayData.afternoonFrom,
+                    to: dayData.afternoonTo,
+                    minutes: dayData.afternoonMinutes,
                     isToday: isToday,
                     shiftType: 'afternoon'
                 });
@@ -267,8 +271,8 @@ document.addEventListener('DOMContentLoaded', function () {
             hoursSection.style.display = hasAnyHoursToShow ? '' : 'none';
 
             var allAdminApproved = showHours
-                && (!assignedMorning || this.dataset.morningSource === 'admin' || this.dataset.morningStatus === 'absent')
-                && (!assignedAfternoon || this.dataset.afternoonSource === 'admin' || this.dataset.afternoonStatus === 'absent');
+                && (!assignedMorning || dayData.morningSource === 'admin' || dayData.morningStatus === 'absent')
+                && (!assignedAfternoon || dayData.afternoonSource === 'admin' || dayData.afternoonStatus === 'absent');
 
             var readonly = isPastDay || ((assignedMorning && assignedAfternoon) || isToday);
             var hideAvailabilitySave = readonly && !showHours;
@@ -343,22 +347,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function canSubmitShift(dayEl, type) {
+    function canSubmitShift(dateStr, type) {
+        var dayData = getDayData(dateStr);
         var s = shifts[type];
-        return dayEl.dataset[type + 'Source'] !== 'admin'
-            && dayEl.dataset[type + 'Status'] !== 'absent'
+        return dayData[type + 'Source'] !== 'admin'
+            && dayData[type + 'Status'] !== 'absent'
             && !s.fromH.disabled;
     }
 
     saveBtn.addEventListener('click', function () {
         if (!selectedDate) return;
 
-        var dayEl = selectedDayEl;
-        var isPast = dayEl.dataset.isPast === '1';
-        var isToday = dayEl.classList.contains('today');
-        var isCurrentWeek = dayEl.dataset.currentWeek === '1';
-        var assignedMorning = dayEl.dataset.assignedMorning === '1';
-        var assignedAfternoon = dayEl.dataset.assignedAfternoon === '1';
+        var dayData = getDayData(selectedDate);
+        var isPast = dayData.isPast === '1';
+        var isToday = selectedDayEl.classList.contains('today');
+        var isCurrentWeek = dayData.currentWeek === '1';
+        var assignedMorning = dayData.assignedMorning === '1';
+        var assignedAfternoon = dayData.assignedAfternoon === '1';
         var shouldSubmitHours = isCurrentWeek && (isPast || isToday);
 
         if (shouldSubmitHours) {
@@ -369,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             for (var i = 0; i < shiftChecks.length; i++) {
                 var check = shiftChecks[i];
-                if (check.assigned && canSubmitShift(dayEl, check.type)) {
+                if (check.assigned && canSubmitShift(selectedDate, check.type)) {
                     var s = shifts[check.type];
                     var val = validateHoursInputs(s.fromH, s.fromM, s.toH, s.toM);
                     if (!val.valid) {
@@ -386,16 +391,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (shouldSubmitHours) {
             [{ type: 'morning', assigned: assignedMorning },
              { type: 'afternoon', assigned: assignedAfternoon }].forEach(function (item) {
-                if (!item.assigned || !canSubmitShift(dayEl, item.type)) return;
+                if (!item.assigned || !canSubmitShift(selectedDate, item.type)) return;
                 var s = shifts[item.type];
                 var result = validateHoursInputs(s.fromH, s.fromM, s.toH, s.toM);
                 if (result.empty) return;
 
                 hoursPromises.push(
                     submitHours(s, item.type).then(function () {
-                        dayEl.dataset[item.type + 'From'] = result.from;
-                        dayEl.dataset[item.type + 'To'] = result.to;
-                        dayEl.dataset[item.type + 'Source'] = 'worker';
+                        var dayData = getDayData(selectedDate);
+                        dayData[item.type + 'From'] = result.from;
+                        dayData[item.type + 'To'] = result.to;
+                        dayData[item.type + 'Source'] = 'worker';
                     })
                 );
             });
@@ -408,10 +414,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 var morning = morningCheckbox.checked;
                 var afternoon = afternoonCheckbox.checked;
 
-                dayEl.dataset.morning = morning ? '1' : '0';
-                dayEl.dataset.afternoon = afternoon ? '1' : '0';
+                var dayData = getDayData(selectedDate);
+                dayData.morning = morning ? '1' : '0';
+                dayData.afternoon = afternoon ? '1' : '0';
 
-                var badges = dayEl.querySelector('.shift-badges');
+                var badges = selectedDayEl.querySelector('.shift-badges');
                 while (badges.firstChild) {
                     badges.removeChild(badges.firstChild);
                 }

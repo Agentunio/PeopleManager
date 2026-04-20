@@ -1,6 +1,7 @@
 import flatpickr from 'flatpickr';
 import { Polish } from 'flatpickr/dist/l10n/pl.js';
 import 'flatpickr/dist/flatpickr.min.css';
+import Swal from 'sweetalert2';
 import 'flatpickr/dist/themes/dark.css';
 flatpickr.localize(Polish);
 

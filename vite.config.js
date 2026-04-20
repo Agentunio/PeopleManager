@@ -6,6 +6,7 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
+                    'resources/css/fontawesome.css',
                     'resources/css/main.css',
                     'resources/css/system.css',
                     'resources/css/settings.css',
@@ -30,6 +31,7 @@ export default defineConfig({
                     'resources/js/worker-schedule.js',
                     'resources/js/worker-dashboard.js',
                     'resources/js/activate.js',
+                    'resources/js/login.js',
                     'resources/js/password-toggle.js',
                 ],
             refresh: true,

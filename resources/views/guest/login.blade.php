@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Logowania</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
-    @vite(['resources/css/login.css', 'resources/js/password-toggle.js'])
     <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @if($errors->any())
+        <meta name="flash-error" content="{{ $errors->first() }}">
+    @endif
+    @vite(['resources/css/login.css', 'resources/js/password-toggle.js', 'resources/js/login.js'])
 </head>
 <body>
 
@@ -40,20 +42,5 @@
     </form>
 </div>
 
-@if($errors->any())
-    <script>
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: @json($errors->first()),
-            showConfirmButton: false,
-            timer: 4000,
-            timerProgressBar: true,
-            background: '#1f1f1f',
-            color: '#f0f0f0'
-        });
-    </script>
-@endif
 </body>
 </html>

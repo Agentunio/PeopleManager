@@ -270,10 +270,20 @@ class ScheduleController extends Controller
                 'assigned_morning' => $myAssigned['morning'],
                 'assigned_afternoon' => $myAssigned['afternoon'],
                 'assigned_workers' => $assignedWorkers,
-                'morning_shift' => $morningShift,
-                'afternoon_shift' => $afternoonShift,
-                'morning_status' => $morningShift?->status,
-                'afternoon_status' => $afternoonShift?->status,
+                'morning_from' => $morningShift?->worker_from_time !== null
+                    ? sprintf('%02d:%02d', $morningShift->worker_from_hour, $morningShift->worker_from_minute) : '',
+                'morning_to' => $morningShift?->worker_to_time !== null
+                    ? sprintf('%02d:%02d', $morningShift->worker_to_hour, $morningShift->worker_to_minute) : '',
+                'morning_source' => $morningShift?->hours_source ?? '',
+                'morning_minutes' => $morningShift?->minutes ?? '',
+                'afternoon_from' => $afternoonShift?->worker_from_time !== null
+                    ? sprintf('%02d:%02d', $afternoonShift->worker_from_hour, $afternoonShift->worker_from_minute) : '',
+                'afternoon_to' => $afternoonShift?->worker_to_time !== null
+                    ? sprintf('%02d:%02d', $afternoonShift->worker_to_hour, $afternoonShift->worker_to_minute) : '',
+                'afternoon_source' => $afternoonShift?->hours_source ?? '',
+                'afternoon_minutes' => $afternoonShift?->minutes ?? '',
+                'morning_status' => $morningShift?->status ?? '',
+                'afternoon_status' => $afternoonShift?->status ?? '',
             ];
         }
 
