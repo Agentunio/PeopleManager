@@ -85,20 +85,27 @@ class EndDayController extends Controller
 
         DB::transaction(function () use ($validated, $date) {
             foreach ($validated['workers'] ?? [] as $workerData) {
+                $minutes = $this->calculateMinutes($workerData);
+
                 if (!empty($workerData['is_substitute'])) {
+                    $attributes = [
+                        'status' => 'worked',
+                        'package_id' => !empty($workerData['package']) ? $workerData['package'] : null,
+                        'minutes' => $minutes ?? 0,
+                        'substituted_for_shift_id' => $workerData['substituted_for_shift_id'],
+                    ];
+
+                    if ($minutes !== null) {
+                        $attributes['hours_source'] = 'admin';
+                    }
+
                     WorkerShift::updateOrCreate(
                         [
                             'worker_id' => $workerData['id'],
                             'day' => $date,
                             'shift_type' => $workerData['shift_type'],
                         ],
-                        [
-                            'status' => 'worked',
-                            'package_id' => !empty($workerData['package']) ? $workerData['package'] : null,
-                            'minutes' => $this->calculateMinutes($workerData) ?? 0,
-                            'substituted_for_shift_id' => $workerData['substituted_for_shift_id'],
-                            'hours_source' => 'admin',
-                        ]
+                        $attributes
                     );
                     continue;
                 }
@@ -116,15 +123,15 @@ class EndDayController extends Controller
                     continue;
                 }
 
-                $updateData = ['status' => 'worked', 'hours_source' => 'admin'];
+                $updateData = ['status' => 'worked'];
 
                 if (!empty($workerData['package'])) {
                     $updateData['package_id'] = $workerData['package'];
                 }
 
-                $minutes = $this->calculateMinutes($workerData);
                 if ($minutes !== null) {
                     $updateData['minutes'] = $minutes;
+                    $updateData['hours_source'] = 'admin';
                 }
 
                 WorkerShift::where('worker_id', $workerData['id'])
