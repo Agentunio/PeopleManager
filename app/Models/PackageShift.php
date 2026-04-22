@@ -15,6 +15,10 @@ class PackageShift extends Model
         'package_id',
     ];
 
+    protected $casts = [
+        'day' => 'date',
+    ];
+
     public function packageRate(): BelongsTo
     {
         return $this->belongsTo(Package::class, 'package_id');

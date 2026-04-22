@@ -116,6 +116,9 @@
                                 <i class="fas fa-box"></i>
                             </div>
                             <h2>Paczki</h2>
+                            <button type="button" class="btn-export" id="exportPackages" title="Eksportuj paczki do PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
                         </div>
                         <div class="section-content">
                             <div class="packages-stats">

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\PlannerAvailableController;
 use App\Http\Controllers\Admin\PlannerController;
 use App\Http\Controllers\Admin\EndDayController;
+use App\Http\Controllers\Admin\PackageCountExportController;
 use App\Http\Controllers\Admin\WeeklyExportController;
 use App\Http\Controllers\Admin\WorkerCostExportController;
 use App\Http\Controllers\Admin\WorkerAccountController;
@@ -33,6 +34,7 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
     Route::get('/panel', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/panel/data', [DashboardController::class, 'data'])->name('dashboard.data');
     Route::post('/panel/eksport-kosztow', [WorkerCostExportController::class, 'export'])->name('dashboard.export.costs');
+    Route::post('/panel/eksport-paczek', [PackageCountExportController::class, 'export'])->name('dashboard.export.packages');
 
     Route::prefix('pracownicy')->name('workers.')->group(function () {
         Route::get('/', [WorkerController::class, 'index'])->name('index');

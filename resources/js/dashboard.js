@@ -8,6 +8,7 @@ flatpickr.localize(Polish);
 document.addEventListener('DOMContentLoaded', function() {
     const dataUrl = '/panel/data';
     const exportUrl = '/panel/eksport-kosztow';
+    const exportPackagesUrl = '/panel/eksport-paczek';
     const LONG_PRESS_MS = 500;
 
     const comparison = {
@@ -63,7 +64,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportBtn = document.getElementById('exportWorkerCosts');
     if (exportBtn) {
         exportBtn.addEventListener('click', function() {
-            exportWorkerCostsPdf();
+            submitExportForm(exportUrl);
+        });
+    }
+
+    const exportPackagesBtn = document.getElementById('exportPackages');
+    if (exportPackagesBtn) {
+        exportPackagesBtn.addEventListener('click', function() {
+            submitExportForm(exportPackagesUrl);
         });
     }
 
@@ -199,13 +207,13 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.reload();
     }
 
-    function exportWorkerCostsPdf() {
+    function submitExportForm(actionUrl) {
         const primaryDates = dateRangePicker.selectedDates;
         if (primaryDates.length !== 2) return;
 
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = exportUrl;
+        form.action = actionUrl;
         form.style.display = 'none';
 
         const csrf = document.querySelector('meta[name="csrf-token"]');
@@ -235,8 +243,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function toggleExportButton(hasComparison) {
-        const btn = document.getElementById('exportWorkerCosts');
-        if (btn) btn.style.display = hasComparison ? 'none' : '';
+        ['exportWorkerCosts', 'exportPackages'].forEach(function(id) {
+            const btn = document.getElementById(id);
+            if (btn) btn.style.display = hasComparison ? 'none' : '';
+        });
     }
 
     function initComparisonTip() {
