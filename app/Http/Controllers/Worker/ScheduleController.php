@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Worker;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Worker\StoreAvailabilityRequest;
 use App\Http\Requests\Worker\StoreHoursRequest;
+use App\Models\Package;
 use App\Models\Schedule;
 use App\Models\WorkerAvailability;
 use App\Models\WorkerShift;
@@ -188,11 +189,20 @@ class ScheduleController extends Controller
         $fromMinutes = WorkerShift::parseTimeToMinutes($request->input('from_time'));
         $toMinutes = WorkerShift::parseTimeToMinutes($request->input('to_time'));
 
-        $shift->update([
+        $updates = [
             'worker_from_time' => $fromMinutes,
             'worker_to_time' => $toMinutes,
             'hours_source' => 'worker',
-        ]);
+        ];
+
+        if ($shift->package_id === null) {
+            $defaultPackageId = Package::where('is_default', true)->value('id');
+            if ($defaultPackageId) {
+                $updates['package_id'] = $defaultPackageId;
+            }
+        }
+
+        $shift->update($updates);
 
         $shiftData = [
             'status' => $shift->status,

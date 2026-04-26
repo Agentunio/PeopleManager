@@ -48,11 +48,12 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
         Route::post('/{worker}/account/toggle', [WorkerAccountController::class, 'toggle'])->name('account.toggle');
     });
 
-    Route::prefix('ustawienia')->name('settings.')->group(function () {
+    Route::prefix('stawki')->name('settings.')->group(function () {
         Route::get('/', [PackageController::class, 'index'])->name('index');
-        Route::post('/stawki', [PackageController::class, 'store'])->name('packages.store');
-        Route::put('/stawki/{package}', [PackageController::class, 'update'])->name('packages.update');
-        Route::delete('/stawki/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
+        Route::post('/', [PackageController::class, 'store'])->name('packages.store');
+        Route::put('/{package}', [PackageController::class, 'update'])->name('packages.update');
+        Route::delete('/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
+        Route::post('/domyslna', [PackageController::class, 'setDefault'])->name('packages.default');
     });
 
     Route::prefix('grafik')->name('planner.')->group(function () {

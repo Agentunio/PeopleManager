@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Package;
 use App\Models\Schedule;
 use App\Models\User;
 use App\Models\Worker;
@@ -851,5 +852,103 @@ class WorkerScheduleTest extends TestCase
             'morning_shift' => true,
             'afternoon_shift' => true,
         ]);
+    }
+
+    private function pastDateInCurrentWeek(): string
+    {
+        $yesterday = now()->subDay();
+        if ($yesterday->lt(now()->startOfWeek())) {
+            $yesterday = now()->startOfWeek();
+        }
+        return $yesterday->toDateString();
+    }
+
+    public function test_store_hours_assigns_default_package_when_shift_has_no_package(): void
+    {
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+
+        $defaultPackage = Package::create([
+            'name' => 'Domyslna',
+            'price' => 50.00,
+            'is_default' => true,
+        ]);
+        Package::create(['name' => 'Inna', 'price' => 70.00]);
+
+        $date = $this->pastDateInCurrentWeek();
+        $shift = WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+            'package_id' => null,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.hours', $date),
+            ['shift_type' => 'morning', 'from_time' => '08:00', 'to_time' => '14:00']
+        );
+
+        $response->assertOk();
+        $shift->refresh();
+        $this->assertEquals($defaultPackage->id, $shift->package_id);
+        $this->assertEquals('worker', $shift->hours_source);
+    }
+
+    public function test_store_hours_does_not_overwrite_existing_package(): void
+    {
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+
+        $defaultPackage = Package::create([
+            'name' => 'Domyslna',
+            'price' => 50.00,
+            'is_default' => true,
+        ]);
+        $assignedPackage = Package::create(['name' => 'Przypisana', 'price' => 70.00]);
+
+        $date = $this->pastDateInCurrentWeek();
+        $shift = WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+            'package_id' => $assignedPackage->id,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.hours', $date),
+            ['shift_type' => 'morning', 'from_time' => '08:00', 'to_time' => '14:00']
+        );
+
+        $response->assertOk();
+        $shift->refresh();
+        $this->assertEquals($assignedPackage->id, $shift->package_id);
+        $this->assertNotEquals($defaultPackage->id, $shift->package_id);
+    }
+
+    public function test_store_hours_leaves_package_null_when_no_default_set(): void
+    {
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+
+        Package::create(['name' => 'Pakiet A', 'price' => 50.00]);
+        Package::create(['name' => 'Pakiet B', 'price' => 70.00]);
+
+        $date = $this->pastDateInCurrentWeek();
+        $shift = WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+            'package_id' => null,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.hours', $date),
+            ['shift_type' => 'morning', 'from_time' => '08:00', 'to_time' => '14:00']
+        );
+
+        $response->assertOk();
+        $shift->refresh();
+        $this->assertNull($shift->package_id);
+        $this->assertEquals('worker', $shift->hours_source);
     }
 }

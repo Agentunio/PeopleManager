@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\PackageSetDefaultRequest;
 use App\Http\Requests\Admin\PackageStoreRequest;
 use App\Http\Requests\Admin\PackageUpdateRequest;
 use App\Models\Package;
@@ -14,9 +15,11 @@ class PackageController extends Controller
     public function index(): View
     {
         $packages = Package::orderBy('name')->get();
+        $defaultPackageId = $packages->firstWhere('is_default', true)?->id;
 
         return view('admin.settings.index', [
             'packages' => $packages,
+            'defaultPackageId' => $defaultPackageId,
         ]);
     }
 
@@ -40,5 +43,12 @@ class PackageController extends Controller
         $package->delete();
 
         return back()->with('success', "Pakiet {$name} został usunięty.");
+    }
+
+    public function setDefault(PackageSetDefaultRequest $request): RedirectResponse
+    {
+        Package::setAsDefault($request->input('package_id'));
+
+        return back()->with('success', 'Domyślna stawka została zaktualizowana.');
     }
 }

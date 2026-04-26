@@ -14,6 +14,11 @@ class Package extends Model
     protected $fillable = [
         'name',
         'price',
+        'is_default',
+    ];
+
+    protected $casts = [
+        'is_default' => 'boolean',
     ];
 
     public function shifts(): HasMany
@@ -24,5 +29,14 @@ class Package extends Model
     public function shift_package(): HasMany
     {
         return $this->hasMany(PackageShift::class);
+    }
+
+    public static function setAsDefault(?int $id): void
+    {
+        static::where('is_default', true)->update(['is_default' => false]);
+
+        if ($id) {
+            static::where('id', $id)->update(['is_default' => true]);
+        }
     }
 }

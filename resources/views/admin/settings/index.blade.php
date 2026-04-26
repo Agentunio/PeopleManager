@@ -47,6 +47,34 @@
 
         @if($packages->count() > 0)
             <div class="settings-container">
+                <div class="settings-section">
+                    <h2>Domyślna stawka dla godzin pracownika</h2>
+                    <p class="settings-hint">Wybrana stawka zostanie automatycznie przypisana do zmiany, gdy pracownik wpisze swoje godziny, a admin nie ustawił wcześniej stawki dla tej zmiany.</p>
+
+                    <form action="{{ route('settings.packages.default') }}" method="post" class="default-package-form">
+                        @csrf
+                        <div class="form-group">
+                            <label for="default-package-select" class="form-label">Wybierz stawkę</label>
+                            <select id="default-package-select" name="package_id" class="form-input">
+                                <option value="" @selected(is_null($defaultPackageId))>Brak domyślnej stawki</option>
+                                @foreach($packages as $package)
+                                    <option value="{{ $package->id }}" @selected($defaultPackageId === $package->id)>
+                                        {{ $package->name }} — {{ number_format($package->price, 2) }} PLN
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-submit">
+                                <i class="fas fa-check"></i>
+                                Zapisz domyślną stawkę
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="settings-container">
                 <h2>Lista istniejących stawek</h2>
             </div>
 
