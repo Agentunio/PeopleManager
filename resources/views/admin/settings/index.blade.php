@@ -49,7 +49,7 @@
             <div class="settings-container">
                 <div class="settings-section">
                     <h2>Domyślna stawka dla godzin pracownika</h2>
-                    <p class="settings-hint">Wybrana stawka zostanie automatycznie przypisana do zmiany, gdy pracownik wpisze swoje godziny, a admin nie ustawił wcześniej stawki dla tej zmiany.</p>
+                    <p class="settings-hint">Wybrana stawka zostanie automatycznie przypisana do zmiany, gdzie pracownik wpisał sam swoje godziny</p>
 
                     <form action="{{ route('settings.packages.default') }}" method="post" class="default-package-form">
                         @csrf
