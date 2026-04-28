@@ -26,3 +26,8 @@ Thumbs.db
 /database/seeders/WorkerSeeder.php
 .claude
 CLAUDE.md
+zrzut_bazy.sql
+docker/ssl/
+*.pem
+*.key
+!resources/**/*.key

@@ -35,8 +35,8 @@ class WorkerController extends Controller
 
         $this->statsService->getStatsForWorkers(
             $workers->getCollection(),
-            Carbon::now()->startOfMonth()->toDateString(),
-            Carbon::now()->toDateString()
+            Carbon::now()->startOfMonth(),
+            Carbon::now()
         );
 
         if ($request->ajax()) {
@@ -69,8 +69,8 @@ class WorkerController extends Controller
 
         $this->statsService->getStatsForWorkers(
             collect([$worker]),
-            Carbon::now()->startOfMonth()->toDateString(),
-            Carbon::now()->toDateString()
+            Carbon::now()->startOfMonth(),
+            Carbon::now()
         );
 
         return response()->json([
@@ -94,8 +94,8 @@ class WorkerController extends Controller
     {
         $stats = $this->statsService->getStatsForWorker(
             $worker,
-            $request->validated('dateFrom'),
-            $request->validated('dateTo')
+            Carbon::parse($request->validated('dateFrom')),
+            Carbon::parse($request->validated('dateTo'))
         );
 
         return response()->json([

@@ -4,11 +4,25 @@ namespace App\Services;
 
 use App\Models\Worker;
 use App\Models\WorkerShift;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class WorkerStatsService
 {
     public function calculateStats(Collection $shifts): array
+    {
+        $byShiftType = $shifts->groupBy('shift_type');
+
+        $stats = $this->buildStats($shifts);
+        $stats['byShift'] = [
+            'morning' => $this->buildStats($byShiftType->get('morning', collect())),
+            'afternoon' => $this->buildStats($byShiftType->get('afternoon', collect())),
+        ];
+
+        return $stats;
+    }
+
+    private function buildStats(Collection $shifts): array
     {
         $absentShifts = $shifts->where('status', 'absent');
         $workedShifts = $shifts->where('status', '!=', 'absent');
@@ -56,7 +70,7 @@ class WorkerStatsService
         return $formatted ?: '0h';
     }
 
-    public function getStatsForWorker(Worker $worker, string $dateFrom, string $dateTo): array
+    public function getStatsForWorker(Worker $worker, Carbon $dateFrom, Carbon $dateTo): array
     {
         $shifts = $worker->shifts()
             ->published()
@@ -67,7 +81,7 @@ class WorkerStatsService
         return $this->calculateStats($shifts);
     }
 
-    public function getStatsForWorkers(Collection $workers, string $dateFrom, string $dateTo): Collection
+    public function getStatsForWorkers(Collection $workers, Carbon $dateFrom, Carbon $dateTo): Collection
     {
         $workerIds = $workers->pluck('id');
 

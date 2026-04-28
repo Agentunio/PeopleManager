@@ -22,6 +22,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let longPressTriggered = false;
     let primarySelected = false;
 
+    let currentShift = 'total';
+    let lastData = null;
+
+    const dashboardContent = document.getElementById('dashboardContent');
+    if (window.dashboardData) {
+        lastData = window.dashboardData;
+    }
+
+    initShiftToggle();
+
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     const dateRangePicker = flatpickr("#dateRangePicker", {
@@ -309,16 +319,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function setLoading(isLoading) {
-        const loader = document.getElementById('dashboardLoading');
-        const content = document.getElementById('dashboardContent');
+    const dashboardLoader = document.getElementById('dashboardLoading');
 
-        if (isLoading) {
-            loader.style.display = 'flex';
-            content.classList.add('is-loading');
-        } else {
-            loader.style.display = 'none';
-            content.classList.remove('is-loading');
+    function setLoading(isLoading) {
+        if (dashboardLoader) {
+            dashboardLoader.style.display = isLoading ? 'flex' : 'none';
+        }
+        if (dashboardContent) {
+            dashboardContent.classList.toggle('is-loading', isLoading);
         }
     }
 
@@ -457,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!worker.absences || worker.absences === 0) {
             return '<span class="no-absences">0</span>';
         }
-        const daysJson = escapeHtml(JSON.stringify(worker.absentDays));
+        const daysJson = JSON.stringify(worker.absentDays).replace(/"/g, '&quot;');
         return `<span class="absence-badge" data-absent-days="${daysJson}">${worker.absences}</span>`;
     }
 
@@ -478,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalCost = 0;
         tbody.innerHTML = workers.map(worker => {
             totalCost += worker.salary;
-            const hoursDisplay = (worker.hours === '0' || worker.hours === '0h 0min') ? 'Brak danych' : escapeHtml(worker.hours);
+            const hoursDisplay = worker.totalMinutes > 0 ? escapeHtml(worker.hours) : 'Brak danych';
             const costDisplay = worker.salary > 0 ? `${formatNumber(worker.salary)} zł` : 'Brak danych';
             return `<tr>
                 <td class="worker-name">${escapeHtml(worker.name)}</td>
@@ -493,27 +501,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateDashboard(data) {
-        document.getElementById('statRevenue').textContent = formatNumber(data.totalRevenue);
-        document.getElementById('statCost').textContent = formatNumber(data.totalCost);
-        document.getElementById('statProfit').textContent = formatNumber(data.totalProfit);
+        lastData = data;
+        renderForShift();
+    }
 
-        if (data.changes) {
-            renderIndicator(data.changes.revenue, 'revenue');
-            renderIndicator(data.changes.cost, 'cost');
-            renderIndicator(data.changes.profit, 'profit');
-        } else {
-            renderIndicator(null, 'revenue');
-            renderIndicator(null, 'cost');
-            renderIndicator(null, 'profit');
-        }
+    function renderForShift() {
+        if (!lastData) return;
 
-        renderBreakdown('morningBreakdown', data.packageStats.morning.breakdown);
-        document.getElementById('morningPackages').textContent = formatInteger(data.packageStats.morning.packages);
-        renderBreakdown('afternoonBreakdown', data.packageStats.afternoon.breakdown);
-        document.getElementById('afternoonPackages').textContent = formatInteger(data.packageStats.afternoon.packages);
-        document.getElementById('totalPackages').textContent = formatInteger(data.packageStats.total.packages);
+        const data = lastData;
+        const isTotal = currentShift === 'total';
 
-        renderWorkers(data.workers);
+        const totals = isTotal ? { revenue: data.totalRevenue, cost: data.totalCost, profit: data.totalProfit } : data.byShift[currentShift];
+
+        document.getElementById('statRevenue').textContent = formatNumber(totals.revenue);
+        document.getElementById('statCost').textContent = formatNumber(totals.cost);
+        document.getElementById('statProfit').textContent = formatNumber(totals.profit);
+
+        const changesSet = isTotal
+            ? data.changes
+            : (data.changes && data.changes.byShift ? data.changes.byShift[currentShift] : null);
+
+        renderIndicator(changesSet ? changesSet.revenue : null, 'revenue');
+        renderIndicator(changesSet ? changesSet.cost : null, 'cost');
+        renderIndicator(changesSet ? changesSet.profit : null, 'profit');
+
+        renderPackages(data.packageStats);
+        renderWorkers(filterWorkersForShift(data.workers));
 
         removeComparisonUI();
 
@@ -521,11 +534,81 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleExportButton(hasComparison);
 
         if (data.comparison) {
-            renderComparisonInCard('revenue', data.comparison.totalRevenue);
-            renderComparisonInCard('cost', data.comparison.totalCost);
-            renderComparisonInCard('profit', data.comparison.totalProfit);
+            const compTotals = isTotal
+                ? {
+                    revenue: data.comparison.totalRevenue,
+                    cost: data.comparison.totalCost,
+                    profit: data.comparison.totalProfit,
+                  }
+                : data.comparison.byShift[currentShift];
+
+            renderComparisonInCard('revenue', compTotals.revenue);
+            renderComparisonInCard('cost', compTotals.cost);
+            renderComparisonInCard('profit', compTotals.profit);
             renderPackageComparison(data.comparison.packageStats);
         }
+    }
+
+    function renderPackages(packageStats) {
+        renderBreakdown('morningBreakdown', packageStats.morning.breakdown);
+        document.getElementById('morningPackages').textContent = formatInteger(packageStats.morning.packages);
+        renderBreakdown('afternoonBreakdown', packageStats.afternoon.breakdown);
+        document.getElementById('afternoonPackages').textContent = formatInteger(packageStats.afternoon.packages);
+
+        const morningCard = document.getElementById('morningPackageStat');
+        const afternoonCard = document.getElementById('afternoonPackageStat');
+        if (morningCard) morningCard.style.display = (currentShift === 'afternoon') ? 'none' : '';
+        if (afternoonCard) afternoonCard.style.display = (currentShift === 'morning') ? 'none' : '';
+
+        const totalPackages = currentShift === 'total'
+            ? packageStats.total.packages
+            : packageStats[currentShift].packages;
+        document.getElementById('totalPackages').textContent = formatInteger(totalPackages);
+    }
+
+    function filterWorkersForShift(workers) {
+        if (currentShift === 'total') return workers;
+
+        return workers
+            .map(worker => {
+                const shiftStats = worker.byShift && worker.byShift[currentShift];
+                if (!shiftStats) return null;
+
+                const hasActivity = shiftStats.totalMinutes > 0 || shiftStats.absences > 0;
+                if (!hasActivity) return null;
+
+                return {
+                    name: worker.name,
+                    hours: shiftStats.hours,
+                    salary: shiftStats.salary,
+                    totalMinutes: shiftStats.totalMinutes,
+                    absences: shiftStats.absences,
+                    absentDays: shiftStats.absentDays,
+                };
+            })
+            .filter(Boolean);
+    }
+
+    function initShiftToggle() {
+        const toggle = document.getElementById('shiftToggle');
+        if (!toggle) return;
+
+        toggle.addEventListener('click', function(e) {
+            const btn = e.target.closest('.shift-toggle-btn');
+            if (!btn || btn.classList.contains('active')) return;
+
+            const shift = btn.dataset.shift;
+            if (!shift) return;
+
+            toggle.querySelectorAll('.shift-toggle-btn').forEach(b => {
+                const isActive = b === btn;
+                b.classList.toggle('active', isActive);
+                b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            currentShift = shift;
+            renderForShift();
+        });
     }
 
     function fetchDashboardData(startDate, endDate) {

@@ -50,6 +50,21 @@
                     </div>
                 </div>
 
+                <div class="shift-toggle" id="shiftToggle" role="tablist" aria-label="Filtr zmian">
+                    <button type="button" class="shift-toggle-btn active" data-shift="total" role="tab" aria-selected="true">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Łącznie</span>
+                    </button>
+                    <button type="button" class="shift-toggle-btn" data-shift="morning" role="tab" aria-selected="false">
+                        <i class="fas fa-sun"></i>
+                        <span>Ranna</span>
+                    </button>
+                    <button type="button" class="shift-toggle-btn" data-shift="afternoon" role="tab" aria-selected="false">
+                        <i class="fas fa-cloud-sun"></i>
+                        <span>Popołudniowa</span>
+                    </button>
+                </div>
+
                 <div class="stats-grid">
                     <div class="stat-card stat-revenue">
                         <div class="stat-icon">
@@ -122,7 +137,7 @@
                         </div>
                         <div class="section-content">
                             <div class="packages-stats">
-                                <div class="package-stat" id="morningPackageStat">
+                                <div class="package-stat" id="morningPackageStat" data-shift="morning">
                                     <div class="package-stat-header">
                                         <i class="fas fa-sun"></i>
                                         <span>Zmiana ranna</span>
@@ -143,7 +158,7 @@
                                     </div>
                                 </div>
 
-                                <div class="package-stat" id="afternoonPackageStat">
+                                <div class="package-stat" id="afternoonPackageStat" data-shift="afternoon">
                                     <div class="package-stat-header">
                                         <i class="fas fa-cloud-sun"></i>
                                         <span>Zmiana popołudniowa</span>
@@ -199,20 +214,18 @@
                                     <tbody id="workersTableBody">
                                     @forelse($workers as $worker)
                                         <tr>
-                                            <td class="worker-name">
-                                                {{ $worker->first_name }} {{ $worker->last_name  }}
-                                            </td>
-                                            <td class="worker-hours">{{ $worker->stats['totalMinutes'] > 0 ? $worker->stats['hours'] : 'Brak danych' }}</td>
+                                            <td class="worker-name">{{ $worker['name'] }}</td>
+                                            <td class="worker-hours">{{ $worker['totalMinutes'] > 0 ? $worker['hours'] : 'Brak danych' }}</td>
                                             <td class="worker-absences">
-                                                @if($worker->stats['absences'] > 0)
-                                                    <span class="absence-badge" data-absent-days="{{ json_encode($worker->stats['absentDays']) }}">
-                                                        {{ $worker->stats['absences'] }}
+                                                @if($worker['absences'] > 0)
+                                                    <span class="absence-badge" data-absent-days="{{ json_encode($worker['absentDays'], JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS) }}">
+                                                        {{ $worker['absences'] }}
                                                     </span>
                                                 @else
                                                     <span class="no-absences">0</span>
                                                 @endif
                                             </td>
-                                            <td class="worker-cost">{{ $worker->stats['salary'] > 0 ? number_format($worker->stats['salary'], 2, ',', '') . ' zł' : 'Brak danych' }}</td>
+                                            <td class="worker-cost">{{ $worker['salary'] > 0 ? number_format($worker['salary'], 2, ',', '') . ' zł' : 'Brak danych' }}</td>
                                         </tr>
                                     @empty
                                         <tr><td colspan="4" style="text-align: center; color: #888; padding: 20px;">Brak pracowników</td></tr>
@@ -236,5 +249,6 @@
 @endsection
 
 @push('scripts')
+    <script>window.dashboardData = @json($dashboardData);</script>
     @vite(['resources/js/dashboard.js'])
 @endpush

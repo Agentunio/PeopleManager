@@ -3,16 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\DashboardDataRequest;
 use App\Models\Worker;
 use App\Services\PackageStatsService;
 use App\Services\WorkerStatsService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    private const SHIFTS = ['morning', 'afternoon'];
 
     public function __construct(
         private WorkerStatsService $workerStatsService,
@@ -29,33 +31,13 @@ class DashboardController extends Controller
         return view('admin.dashboard.index', $data);
     }
 
-    public function data(Request $request): JsonResponse
+    public function data(DashboardDataRequest $request): JsonResponse
     {
-        $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'compare_start_date' => 'nullable|date',
-            'compare_end_date' => 'nullable|date|after_or_equal:compare_start_date|required_with:compare_start_date',
-        ]);
-
         $startDate = Carbon::parse($request->start_date)->startOfDay();
         $endDate = Carbon::parse($request->end_date)->endOfDay();
 
         $data = $this->getMainData($startDate, $endDate);
-
-        $response = [
-            'totalRevenue' => $data['totalRevenue'],
-            'totalCost' => $data['totalCost'],
-            'totalProfit' => $data['totalProfit'],
-            'packageStats' => $data['packageStats'],
-            'workers' => $data['workers']->map(fn($worker) => [
-                'name' => $worker->first_name . ' ' . $worker->last_name,
-                'hours' => $worker->stats['hours'],
-                'salary' => $worker->stats['salary'],
-                'absences' => $worker->stats['absences'],
-                'absentDays' => $worker->stats['absentDays'],
-            ])->values(),
-        ];
+        $response = $this->buildPayload($data, withWorkers: true);
 
         if ($request->filled('compare_start_date')) {
             $compStart = Carbon::parse($request->compare_start_date)->startOfDay();
@@ -63,18 +45,8 @@ class DashboardController extends Controller
 
             $compData = $this->getMainData($compStart, $compEnd);
 
-            $response['comparison'] = [
-                'totalRevenue' => $compData['totalRevenue'],
-                'totalCost' => $compData['totalCost'],
-                'totalProfit' => $compData['totalProfit'],
-                'packageStats' => $compData['packageStats'],
-            ];
-
-            $response['changes'] = [
-                'cost' => $this->calculateChange($data['totalCost'], $compData['totalCost']),
-                'revenue' => $this->calculateChange($data['totalRevenue'], $compData['totalRevenue']),
-                'profit' => $this->calculateChange($data['totalProfit'], $compData['totalProfit']),
-            ];
+            $response['comparison'] = $this->buildPayload($compData, withWorkers: false);
+            $response['changes'] = $this->buildAllChanges($data, $compData);
         }
 
         return response()->json($response);
@@ -89,13 +61,27 @@ class DashboardController extends Controller
         $mainData = $this->getMainData($startDate, $endDate);
         $prevData = $this->getMainData($prevStartDate, $prevEndDate);
 
-        $mainData['changes'] = [
-            'cost' => $this->calculateChange($mainData['totalCost'], $prevData['totalCost']),
-            'revenue' => $this->calculateChange($mainData['totalRevenue'], $prevData['totalRevenue']),
-            'profit' => $this->calculateChange($mainData['totalProfit'], $prevData['totalProfit']),
+        $dashboardData = $this->buildPayload($mainData, withWorkers: true);
+        $dashboardData['changes'] = $this->buildAllChanges($mainData, $prevData);
+
+        return [...$dashboardData, 'dashboardData' => $dashboardData];
+    }
+
+    private function buildPayload(array $data, bool $withWorkers): array
+    {
+        $payload = [
+            'totalRevenue' => $data['totalRevenue'],
+            'totalCost'    => $data['totalCost'],
+            'totalProfit'  => $data['totalProfit'],
+            'byShift'      => $data['byShift'],
+            'packageStats' => $data['packageStats'],
         ];
 
-        return $mainData;
+        if ($withWorkers) {
+            $payload['workers'] = $this->mapWorkers($data['workers']);
+        }
+
+        return $payload;
     }
 
     private function getMainData(Carbon $startDate, Carbon $endDate): array
@@ -108,13 +94,24 @@ class DashboardController extends Controller
         $workersWithStats = $this->workerStatsService
             ->getStatsForWorkers($workers, $startDate, $endDate);
 
-        $totalCost = $workersWithStats->sum(fn($worker) => $worker->stats['salary']);
+        $totalCost = round((float) $workersWithStats->sum(fn($worker) => $worker->stats['salary']), 2);
 
         $packageStats = $this->packageStatsService
             ->getStatsForPackages($startDate, $endDate);
 
         $totalRevenue = $packageStats['total']['revenue'];
-        $totalProfit = $totalRevenue - $totalCost;
+        $totalProfit = round($totalRevenue - $totalCost, 2);
+
+        $byShift = [];
+        foreach (self::SHIFTS as $shift) {
+            $shiftCost = round((float) $workersWithStats->sum(fn($worker) => $worker->stats['byShift'][$shift]['salary']), 2);
+            $shiftRevenue = $packageStats[$shift]['revenue'];
+            $byShift[$shift] = [
+                'revenue' => $shiftRevenue,
+                'cost' => $shiftCost,
+                'profit' => round($shiftRevenue - $shiftCost, 2),
+            ];
+        }
 
         return [
             'workers' => $workersWithStats,
@@ -122,7 +119,45 @@ class DashboardController extends Controller
             'totalRevenue' => $totalRevenue,
             'totalProfit' => $totalProfit,
             'packageStats' => $packageStats,
+            'byShift' => $byShift,
         ];
+    }
+
+    private function mapWorkers(Collection $workers): array
+    {
+        return $workers->map(function ($worker) {
+            $stats = $worker->stats;
+
+            return [
+                'name' => $worker->first_name . ' ' . $worker->last_name,
+                'hours' => $stats['hours'],
+                'salary' => $stats['salary'],
+                'totalMinutes' => $stats['totalMinutes'],
+                'absences' => $stats['absences'],
+                'absentDays' => $stats['absentDays'],
+                'byShift' => $stats['byShift'],
+            ];
+        })->values()->all();
+    }
+
+    private function buildAllChanges(array $current, array $previous): array
+    {
+        $changes = [
+            'cost' => $this->calculateChange($current['totalCost'], $previous['totalCost']),
+            'revenue' => $this->calculateChange($current['totalRevenue'], $previous['totalRevenue']),
+            'profit' => $this->calculateChange($current['totalProfit'], $previous['totalProfit']),
+            'byShift' => [],
+        ];
+
+        foreach (self::SHIFTS as $shift) {
+            $changes['byShift'][$shift] = [
+                'cost' => $this->calculateChange($current['byShift'][$shift]['cost'], $previous['byShift'][$shift]['cost']),
+                'revenue' => $this->calculateChange($current['byShift'][$shift]['revenue'], $previous['byShift'][$shift]['revenue']),
+                'profit' => $this->calculateChange($current['byShift'][$shift]['profit'], $previous['byShift'][$shift]['profit']),
+            ];
+        }
+
+        return $changes;
     }
 
     private function calculateChange(float $current, float $previous): ?array

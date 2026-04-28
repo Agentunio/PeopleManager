@@ -26,8 +26,8 @@ class DashboardController extends Controller
         $scheduleStatus = $schedule?->toStatusArray() ?? ['is_active' => false, 'text' => ''];
         $stats = $this->workerStatsService->getStatsForWorker(
             $worker,
-            now()->startOfMonth()->toDateString(),
-            now()->toDateString()
+            now()->startOfMonth(),
+            now()
         );
 
         $minDate = now()->hour >= 21 ? now()->addDay()->toDateString() : now()->toDateString();

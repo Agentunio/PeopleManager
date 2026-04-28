@@ -3,10 +3,11 @@
 namespace App\Services;
 
 use App\Models\PackageShift;
+use Carbon\Carbon;
 
 class PackageStatsService
 {
-    public function getStatsForPackages(string $startDate, string $endDate): array
+    public function getStatsForPackages(Carbon $startDate, Carbon $endDate): array
     {
         $packages = PackageShift::with('packageRate:id,name,price')
             ->whereBetween('day', [$startDate, $endDate])
@@ -36,8 +37,13 @@ class PackageStatsService
             ];
         })->sortByDesc('packages')->values()->all();
 
+        $revenue = round($shifts->sum(function ($shift) {
+            return $shift->packages_count * ($shift->packageRate?->price ?? 0);
+        }), 2);
+
         return [
             'packages' => $shifts->sum('packages_count'),
+            'revenue' => $revenue,
             'breakdown' => $breakdown,
         ];
     }
