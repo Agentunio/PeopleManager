@@ -91,22 +91,27 @@ class EndDayController extends Controller
                     $attributes = [
                         'status' => 'worked',
                         'package_id' => !empty($workerData['package']) ? $workerData['package'] : null,
-                        'minutes' => $minutes ?? 0,
                         'substituted_for_shift_id' => $workerData['substituted_for_shift_id'],
                     ];
 
                     if ($minutes !== null) {
+                        $attributes['minutes'] = $minutes;
                         $attributes['hours_source'] = 'admin';
                     }
 
-                    WorkerShift::updateOrCreate(
-                        [
-                            'worker_id' => $workerData['id'],
-                            'day' => $date,
-                            'shift_type' => $workerData['shift_type'],
-                        ],
-                        $attributes
-                    );
+                    $substituteShift = WorkerShift::firstOrNew([
+                        'worker_id' => $workerData['id'],
+                        'day' => $date,
+                        'shift_type' => $workerData['shift_type'],
+                    ]);
+
+                    $substituteShift->fill($attributes);
+
+                    if ($minutes === null && $substituteShift->minutes === 0 && $substituteShift->hours_source === null) {
+                        $substituteShift->minutes = null;
+                    }
+
+                    $substituteShift->save();
                     continue;
                 }
 

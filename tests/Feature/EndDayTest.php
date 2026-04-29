@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Package;
+use App\Models\PackageShift;
 use App\Models\User;
 use App\Models\Worker;
 use App\Models\WorkerShift;
@@ -201,5 +202,144 @@ class EndDayTest extends TestCase
         $shift = WorkerShift::where('worker_id', $worker->id)->first();
         $this->assertEquals('admin', $shift->hours_source);
         $this->assertEquals(8 * 60 + 30, $shift->minutes);
+    }
+
+    public function test_substitute_without_hours_keeps_minutes_null_and_prevents_day_from_being_settled(): void
+    {
+        $admin = $this->createAdmin();
+        $absentWorker = $this->createWorker('Michal', 'Lewandowski');
+        $substitute = $this->createWorker('Mateusz', 'Kierschke');
+        $package = Package::create(['name' => 'Test 10', 'price' => 10]);
+        $date = '2026-04-25';
+
+        $absentShift = $this->shift($absentWorker->id, $date, 'morning', [
+            'status' => 'absent',
+            'minutes' => 0,
+        ]);
+
+        PackageShift::create([
+            'day' => $date,
+            'shift_type' => 'morning',
+            'packages_count' => 21,
+            'package_id' => $package->id,
+        ]);
+        PackageShift::create([
+            'day' => $date,
+            'shift_type' => 'afternoon',
+            'packages_count' => 421,
+            'package_id' => $package->id,
+        ]);
+
+        $response = $this->actingAs($admin)->patch(route('planner.day.update', $date), [
+            'workers' => [
+                "{$substitute->id}_morning" => [
+                    'id' => $substitute->id,
+                    'shift_type' => 'morning',
+                    'status' => 'worked',
+                    'is_substitute' => 1,
+                    'substituted_for_shift_id' => $absentShift->id,
+                    'from_hour' => '',
+                    'from_minute' => '',
+                    'to_hour' => '',
+                    'to_minute' => '',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+
+        $substituteShift = WorkerShift::where('worker_id', $substitute->id)
+            ->where('day', $date)
+            ->where('shift_type', 'morning')
+            ->first();
+
+        $this->assertNull($substituteShift->minutes);
+        $this->assertNull($substituteShift->hours_source);
+
+        $calendar = $this->actingAs($admin)->get(route('planner.index', ['month' => '2026-04']));
+
+        $this->assertNotContains($date, $calendar->viewData('settled'));
+    }
+
+    public function test_resaving_existing_substitute_without_hours_keeps_saved_minutes(): void
+    {
+        $admin = $this->createAdmin();
+        $absentWorker = $this->createWorker('Michal', 'Lewandowski');
+        $substitute = $this->createWorker('Mateusz', 'Kierschke');
+        $package = Package::create(['name' => 'Test 10', 'price' => 10]);
+        $date = '2026-04-25';
+
+        $absentShift = $this->shift($absentWorker->id, $date, 'morning', [
+            'status' => 'absent',
+            'minutes' => 0,
+        ]);
+
+        $this->shift($substitute->id, $date, 'morning', [
+            'status' => 'worked',
+            'package_id' => $package->id,
+            'minutes' => 300,
+            'hours_source' => 'admin',
+            'substituted_for_shift_id' => $absentShift->id,
+        ]);
+
+        $this->actingAs($admin)->patch(route('planner.day.update', $date), [
+            'workers' => [
+                "{$substitute->id}_morning" => [
+                    'id' => $substitute->id,
+                    'shift_type' => 'morning',
+                    'status' => 'worked',
+                    'is_substitute' => 1,
+                    'substituted_for_shift_id' => $absentShift->id,
+                    'package' => $package->id,
+                ],
+            ],
+        ]);
+
+        $substituteShift = WorkerShift::where('worker_id', $substitute->id)
+            ->where('day', $date)
+            ->where('shift_type', 'morning')
+            ->first();
+
+        $this->assertEquals(300, $substituteShift->minutes);
+        $this->assertEquals('admin', $substituteShift->hours_source);
+    }
+
+    public function test_resaving_legacy_substitute_without_hours_clears_zero_minutes(): void
+    {
+        $admin = $this->createAdmin();
+        $absentWorker = $this->createWorker('Michal', 'Lewandowski');
+        $substitute = $this->createWorker('Mateusz', 'Kierschke');
+        $date = '2026-04-25';
+
+        $absentShift = $this->shift($absentWorker->id, $date, 'morning', [
+            'status' => 'absent',
+            'minutes' => 0,
+        ]);
+
+        $this->shift($substitute->id, $date, 'morning', [
+            'status' => 'worked',
+            'minutes' => 0,
+            'substituted_for_shift_id' => $absentShift->id,
+        ]);
+
+        $this->actingAs($admin)->patch(route('planner.day.update', $date), [
+            'workers' => [
+                "{$substitute->id}_morning" => [
+                    'id' => $substitute->id,
+                    'shift_type' => 'morning',
+                    'status' => 'worked',
+                    'is_substitute' => 1,
+                    'substituted_for_shift_id' => $absentShift->id,
+                ],
+            ],
+        ]);
+
+        $substituteShift = WorkerShift::where('worker_id', $substitute->id)
+            ->where('day', $date)
+            ->where('shift_type', 'morning')
+            ->first();
+
+        $this->assertNull($substituteShift->minutes);
+        $this->assertNull($substituteShift->hours_source);
     }
 }

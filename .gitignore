@@ -31,3 +31,6 @@ docker/ssl/
 *.pem
 *.key
 !resources/**/*.key
+/memory/*.md
+AGENTS.md
+MEMORY.md
