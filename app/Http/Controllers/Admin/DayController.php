@@ -8,12 +8,18 @@ use App\Http\Requests\Admin\WorkerStoreAvailabilityRequest;
 use App\Models\Worker;
 use App\Models\WorkerAvailability;
 use App\Models\WorkerShift;
+use App\Services\ShiftStartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DayController extends Controller
 {
+    public function __construct(
+        private readonly ShiftStartService $shiftStartService
+    ) {}
+
     public function index(): View
     {
         $day = request()->route('date');
@@ -22,6 +28,7 @@ class DayController extends Controller
         }])->get();
         $workers_on_shift = WorkerShift::with('worker')->where('day', $day)->get();
         $isDraft = $workers_on_shift->isNotEmpty() && $workers_on_shift->every(fn($s) => $s->is_draft);
+        $shiftStartTimes = $this->shiftStartService->inputValuesForDate($day);
 
         $workersJson = $workers->map(fn($w) => [
             'id' => $w->id,
@@ -36,6 +43,7 @@ class DayController extends Controller
             'workers_on_shift' => $workers_on_shift,
             'workersJson' => $workersJson,
             'isDraft' => $isDraft,
+            'shiftStartTimes' => $shiftStartTimes,
         ]);
     }
 
@@ -82,30 +90,35 @@ class DayController extends Controller
 
     public function storeShift(WorkerShiftStoreRequest $request, $date): RedirectResponse
     {
-        $submitted = collect($request->validated()['workers'] ?? []);
+        $validated = $request->validated();
+        $submitted = collect($validated['workers'] ?? []);
         $isDraft = (bool) $request->input('is_draft', false);
 
-        $existing = WorkerShift::where('day', $date)->get();
+        DB::transaction(function () use ($date, $validated, $submitted, $isDraft) {
+            $this->shiftStartService->saveForDate($date, $validated);
 
-        $toDelete = $existing->filter(function($shift) use ($submitted) {
-            return !$submitted->contains(fn($s) =>
-                $s['worker_id'] == $shift->worker_id &&
-                $s['shift_type'] == $shift->shift_type
-            );
+            $existing = WorkerShift::where('day', $date)->get();
+
+            $toDelete = $existing->filter(function($shift) use ($submitted) {
+                return !$submitted->contains(fn($s) =>
+                    $s['worker_id'] == $shift->worker_id &&
+                    $s['shift_type'] == $shift->shift_type
+                );
+            });
+
+            WorkerShift::whereIn('id', $toDelete->pluck('id'))->delete();
+
+            foreach ($submitted as $data) {
+                WorkerShift::updateOrCreate(
+                    [
+                        'worker_id' => $data['worker_id'],
+                        'day' => $date,
+                        'shift_type' => $data['shift_type'],
+                    ],
+                    ['is_draft' => $isDraft]
+                );
+            }
         });
-
-        WorkerShift::whereIn('id', $toDelete->pluck('id'))->delete();
-
-        foreach ($submitted as $data) {
-            WorkerShift::updateOrCreate(
-                [
-                    'worker_id' => $data['worker_id'],
-                    'day' => $date,
-                    'shift_type' => $data['shift_type'],
-                ],
-                ['is_draft' => $isDraft]
-            );
-        }
 
         $message = $isDraft ? 'Grafik zapisany jako szkic' : 'Grafik został zapisany';
 

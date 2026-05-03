@@ -66,7 +66,7 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
         });
 
 
-        Route::prefix('/{date}')->name('day.')->group(function () {
+        Route::prefix('/{date}')->where(['date' => '\d{4}-\d{2}-\d{2}'])->name('day.')->group(function () {
             Route::get('/', [DayController::class, 'index'])->name('index');
             Route::get('/rozliczenie', [EndDayController::class, 'index'])->name('end-day');
             Route::get('/zastepstwo-dostepni', [EndDayController::class, 'availableForSubstitution'])->name('substitution.available');

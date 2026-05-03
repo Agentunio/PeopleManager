@@ -9,6 +9,7 @@ use App\Models\Package;
 use App\Models\Schedule;
 use App\Models\WorkerAvailability;
 use App\Models\WorkerShift;
+use App\Services\ShiftStartService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -16,6 +17,10 @@ use Illuminate\View\View;
 
 class ScheduleController extends Controller
 {
+    public function __construct(
+        private readonly ShiftStartService $shiftStartService
+    ) {}
+
     public function index(?string $week = null): View
     {
         $worker = auth()->user()->worker;
@@ -36,6 +41,8 @@ class ScheduleController extends Controller
         }
 
         $weekEnd = $weekStart->copy()->endOfWeek();
+        $weekDates = $this->dateStringsBetween($weekStart, $weekEnd);
+        $shiftStartData = $this->shiftStartService->scheduleDataForDates($weekDates);
 
         $availabilities = WorkerAvailability::where('worker_id', $worker->id)
             ->whereBetween('day', [$weekStart->toDateString(), $weekEnd->toDateString()])
@@ -62,7 +69,7 @@ class ScheduleController extends Controller
                 ->keyBy(fn ($s) => $s->day . '_' . $s->shift_type);
         }
 
-        $days = $this->buildDaysArray($weekStart, $weekEnd, $worker, $schedule, $availabilities, $allShifts, $myShifts, $isCurrentWeek);
+        $days = $this->buildDaysArray($weekStart, $weekEnd, $worker, $schedule, $availabilities, $allShifts, $myShifts, $isCurrentWeek, $shiftStartData);
         $canOpenModal = collect($days)->contains(fn ($d) => $d['is_clickable']);
 
         return view('worker.schedule.index', [
@@ -155,18 +162,6 @@ class ScheduleController extends Controller
 
         $shiftType = $request->input('shift_type');
 
-        if ($parsedDate->isToday()) {
-            $currentMinutes = now()->hour * 60 + now()->minute;
-            $allowedFrom = WorkerShift::hoursAvailableFrom($shiftType);
-
-            if ($currentMinutes < $allowedFrom) {
-                $label = WorkerShift::hoursAvailableLabel($shiftType);
-                return response()->json([
-                    'message' => "Godziny dla tej zmiany można wpisać dopiero po $label",
-                ], 422);
-            }
-        }
-
         $shift = WorkerShift::published()
             ->where('worker_id', $worker->id)
             ->where('day', $date)
@@ -184,6 +179,18 @@ class ScheduleController extends Controller
 
         if ($shift->hours_source === 'admin') {
             return response()->json(['message' => 'Godziny zostały już zatwierdzone przez administratora'], 422);
+        }
+
+        if ($parsedDate->isToday()) {
+            $currentMinutes = now()->hour * 60 + now()->minute;
+            $allowedFrom = $this->shiftStartService->resolveStartMinutes($date, $shiftType);
+
+            if ($currentMinutes < $allowedFrom) {
+                $label = $this->shiftStartService->label($allowedFrom);
+                return response()->json([
+                    'message' => "Godziny dla tej zmiany można wpisać dopiero po $label",
+                ], 422);
+            }
         }
 
         $fromMinutes = WorkerShift::parseTimeToMinutes($request->input('from_time'));
@@ -224,6 +231,17 @@ class ScheduleController extends Controller
         ]);
     }
 
+    private function dateStringsBetween(Carbon $start, Carbon $end): array
+    {
+        $dates = [];
+
+        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+            $dates[] = $date->toDateString();
+        }
+
+        return $dates;
+    }
+
     private function buildDaysArray(
         Carbon $weekStart,
         Carbon $weekEnd,
@@ -232,7 +250,8 @@ class ScheduleController extends Controller
         $availabilities,
         $allShifts,
         $myShifts,
-        bool $isCurrentWeek
+        bool $isCurrentWeek,
+        array $shiftStartData
     ): array {
         $days = [];
         $scheduleActive = $schedule && $schedule->isActive();
@@ -241,6 +260,9 @@ class ScheduleController extends Controller
             $dateStr = $date->toDateString();
             $availability = $availabilities->get($dateStr);
             $dayShifts = $allShifts->get($dateStr, collect());
+            $dayStartData = $shiftStartData[$dateStr] ?? [];
+            $morningStart = $dayStartData['morning'] ?? [];
+            $afternoonStart = $dayStartData['afternoon'] ?? [];
 
             $myAssigned = [
                 'morning' => $dayShifts->contains(fn ($s) => $s->worker_id === $worker->id && $s->shift_type === 'morning'),
@@ -277,6 +299,12 @@ class ScheduleController extends Controller
                 'can_input_hours' => $canInputHours,
                 'morning' => $availability?->morning_shift ?? false,
                 'afternoon' => $availability?->afternoon_shift ?? false,
+                'morning_start_label' => $morningStart['configured_label'] ?? null,
+                'afternoon_start_label' => $afternoonStart['configured_label'] ?? null,
+                'morning_unlock_minutes' => $morningStart['unlock_minutes'],
+                'morning_unlock_label' => $morningStart['unlock_label'],
+                'afternoon_unlock_minutes' => $afternoonStart['unlock_minutes'],
+                'afternoon_unlock_label' => $afternoonStart['unlock_label'],
                 'assigned_morning' => $myAssigned['morning'],
                 'assigned_afternoon' => $myAssigned['afternoon'],
                 'assigned_workers' => $assignedWorkers,

@@ -37,12 +37,18 @@
                                         <div class="next-shift-card-item morning">
                                             <i class="fa-solid fa-sun"></i>
                                             <span>Zmiana ranna</span>
+                                            @if($nextShift['start_labels']['morning'])
+                                                <span class="shift-start-label"><span class="shift-start-label-text">Godzina rozpoczęcia zmiany:</span> <span class="shift-start-label-time">{{ $nextShift['start_labels']['morning'] }}</span></span>
+                                            @endif
                                         </div>
                                     @endif
                                     @if(in_array('afternoon', $nextShift['shifts']))
                                         <div class="next-shift-card-item afternoon">
                                             <i class="fa-solid fa-cloud-sun"></i>
                                             <span>Zmiana popołudniowa</span>
+                                            @if($nextShift['start_labels']['afternoon'])
+                                                <span class="shift-start-label"><span class="shift-start-label-text">Godzina rozpoczęcia zmiany:</span> <span class="shift-start-label-time">{{ $nextShift['start_labels']['afternoon'] }}</span></span>
+                                            @endif
                                         </div>
                                     @endif
                                 </div>
@@ -76,8 +82,10 @@
                                         <div class="shift-type-badge {{ $type === 'morning' ? 'morning-label' : 'afternoon-label' }}">
                                             <i class="fa-solid {{ $type === 'morning' ? 'fa-sun' : 'fa-cloud-sun' }}"></i>
                                             {{ $type === 'morning' ? 'Zmiana ranna' : 'Zmiana popołudniowa' }}
+                                            @if($shift['start_label'])
+                                                <span class="shift-start-label"><span class="shift-start-label-text">Godzina rozpoczęcia zmiany:</span> <span class="shift-start-label-time">{{ $shift['start_label'] }}</span></span>
+                                            @endif
                                         </div>
-
                                         <div class="dashboard-shift-content" data-shift-type="{{ $type }}">
                                             @include('worker.dashboard.partials.shift-hours', ['shift' => $shift, 'type' => $type])
                                         </div>
@@ -114,7 +122,7 @@
                         <i class="fa-solid fa-wallet"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-label">Przewidywane wynagrodzenie</span>
+                        <span class="stat-label">Przewidywane wynagrodzenie brutto</span>
                         <span class="stat-value">{{ number_format($stats['salary'], 2, ',', ' ') }} zł</span>
                     </div>
                 </div>

@@ -11,6 +11,8 @@ class WorkerShiftStoreRequest extends FormRequest
     {
         return [
             'workers' => 'array',
+            'morning_start_time' => 'nullable|date_format:H:i',
+            'afternoon_start_time' => 'nullable|date_format:H:i',
             'workers.*.worker_id' => [
                 'required',
                 'exists:workers,id',

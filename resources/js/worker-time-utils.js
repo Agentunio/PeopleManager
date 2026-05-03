@@ -1,13 +1,3 @@
-export var SHIFT_HOURS_AVAILABLE_FROM = {
-    morning: 540,
-    afternoon: 1260
-};
-
-export var SHIFT_HOURS_LABELS = {
-    morning: '9:00',
-    afternoon: '21:00'
-};
-
 export function padTime(n) {
     return n < 10 ? '0' + n : '' + n;
 }

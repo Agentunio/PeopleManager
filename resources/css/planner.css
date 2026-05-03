@@ -530,9 +530,14 @@
 .shift-box .shift-header {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 15px;
     padding: 20px;
     border-bottom: 1px solid var(--border-color);
+}
+
+.shift-box .shift-title {
+    min-width: 0;
 }
 
 .shift-box .shift-header.shift-morning {
@@ -575,6 +580,77 @@
     font-size: 1.2rem;
     font-weight: 600;
     margin: 0;
+}
+
+.shift-start-time {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 220px;
+    max-width: 260px;
+}
+
+.shift-start-time label {
+    color: #ddd;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.25;
+    text-transform: none;
+}
+
+.shift-start-time .time-input-wrapper {
+    align-items: center;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    display: inline-flex;
+    gap: 10px;
+    padding: 8px 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    width: fit-content;
+}
+
+.shift-start-time .time-input-wrapper:hover {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: rgba(229, 9, 20, 0.45);
+}
+
+.shift-start-time .time-input-wrapper:focus-within {
+    background: rgba(0, 0, 0, 0.75);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.18);
+}
+
+.shift-start-time .time-input-wrapper i {
+    color: var(--accent-color);
+    font-size: 1rem;
+    pointer-events: none;
+}
+
+.shift-start-time input[type="time"] {
+    background: transparent;
+    border: 0;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    min-width: 90px;
+    outline: none;
+    padding: 0;
+}
+
+.shift-start-time input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(1) brightness(1.4);
+    opacity: 0.55;
+    transition: opacity 0.15s ease;
+}
+
+.shift-start-time input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
 }
 
 .shift-count {
@@ -1226,6 +1302,20 @@
 
     .shift-title h3 {
         font-size: 1rem;
+    }
+
+    .shift-start-time {
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .shift-start-time .time-input-wrapper {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .shift-start-time input[type="time"] {
+        flex: 1;
     }
 
     .shift-count {

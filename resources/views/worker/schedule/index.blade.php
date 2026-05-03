@@ -63,6 +63,9 @@
                             <div class="cal-shift-section">
                                 <div class="cal-shift-label morning-label">
                                     <i class="fa-solid fa-sun"></i> Zmiana ranna
+                                    @if($day['morning_start_label'])
+                                        <span class="shift-start-label"><span class="shift-start-label-text">Godzina rozpoczęcia zmiany:</span> <span class="shift-start-label-time">{{ $day['morning_start_label'] }}</span></span>
+                                    @endif
                                 </div>
                                 @foreach($morningWorkers as $w)
                                     <div @class(['cal-worker', 'mine' => $w['is_me']])>
@@ -80,6 +83,9 @@
                             <div class="cal-shift-section">
                                 <div class="cal-shift-label afternoon-label">
                                     <i class="fa-solid fa-cloud-sun"></i> Zmiana popołudniowa
+                                    @if($day['afternoon_start_label'])
+                                        <span class="shift-start-label"><span class="shift-start-label-text">Godzina rozpoczęcia zmiany:</span> <span class="shift-start-label-time">{{ $day['afternoon_start_label'] }}</span></span>
+                                    @endif
                                 </div>
                                 @foreach($afternoonWorkers as $w)
                                     <div @class(['cal-worker', 'mine' => $w['is_me']])>
@@ -138,6 +144,10 @@
                 'afternoonMinutes' => $day['afternoon_minutes'],
                 'morningStatus' => $day['morning_status'],
                 'afternoonStatus' => $day['afternoon_status'],
+                'morningUnlockMinutes' => $day['morning_unlock_minutes'],
+                'morningUnlockLabel' => $day['morning_unlock_label'],
+                'afternoonUnlockMinutes' => $day['afternoon_unlock_minutes'],
+                'afternoonUnlockLabel' => $day['afternoon_unlock_label'],
             ];
         }
         $scheduleConfigJs = [

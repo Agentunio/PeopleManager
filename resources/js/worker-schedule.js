@@ -3,9 +3,7 @@ import {
     validateHoursInputs,
     formatMinutesToHours,
     setupTimeInputAutopad,
-    padTime,
-    SHIFT_HOURS_AVAILABLE_FROM,
-    SHIFT_HOURS_LABELS
+    padTime
 } from './worker-time-utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -181,8 +179,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (data.isToday) {
             var now = new Date();
             var currentMins = now.getHours() * 60 + now.getMinutes();
-            var allowedFrom = SHIFT_HOURS_AVAILABLE_FROM[data.shiftType];
-            var label = SHIFT_HOURS_LABELS[data.shiftType];
+            var allowedFrom = data.unlockMinutes;
+            var label = data.unlockLabel;
 
             if (currentMins < allowedFrom) {
                 setTimeInputsDisabled(s, true);
@@ -250,7 +248,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     to: dayData.morningTo,
                     minutes: dayData.morningMinutes,
                     isToday: isToday,
-                    shiftType: 'morning'
+                    shiftType: 'morning',
+                    unlockMinutes: dayData.morningUnlockMinutes,
+                    unlockLabel: dayData.morningUnlockLabel
                 });
                 setupHoursGroup(shifts.afternoon, {
                     assigned: assignedAfternoon,
@@ -260,7 +260,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     to: dayData.afternoonTo,
                     minutes: dayData.afternoonMinutes,
                     isToday: isToday,
-                    shiftType: 'afternoon'
+                    shiftType: 'afternoon',
+                    unlockMinutes: dayData.afternoonUnlockMinutes,
+                    unlockLabel: dayData.afternoonUnlockLabel
                 });
                 hasAnyHoursToShow = true;
             } else {

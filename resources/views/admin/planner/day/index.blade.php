@@ -53,6 +53,13 @@
                             <div class="shift-title">
                                 <h3>Zmiana ranna</h3>
                             </div>
+                            <div class="shift-start-time">
+                                <label for="morning_start_time">Godzina rozpoczęcia zmiany</label>
+                                <div class="time-input-wrapper">
+                                    <i class="fa-regular fa-clock"></i>
+                                    <input type="time" id="morning_start_time" name="morning_start_time" value="{{ $shiftStartTimes['morning'] ?? '' }}">
+                                </div>
+                            </div>
                             <div class="shift-count">
                                 Liczba pracowników aktualnie przypisanych <span id="morning-count">0</span>
                             </div>
@@ -88,6 +95,13 @@
                             </div>
                             <div class="shift-title">
                                 <h3>Zmiana popołudniowa</h3>
+                            </div>
+                            <div class="shift-start-time">
+                                <label for="afternoon_start_time">Godzina rozpoczęcia zmiany</label>
+                                <div class="time-input-wrapper">
+                                    <i class="fa-regular fa-clock"></i>
+                                    <input type="time" id="afternoon_start_time" name="afternoon_start_time" value="{{ $shiftStartTimes['afternoon'] ?? '' }}">
+                                </div>
                             </div>
                             <div class="shift-count">
                                 Liczba pracowników aktualnie przypisanych <span id="afternoon-count">0</span>

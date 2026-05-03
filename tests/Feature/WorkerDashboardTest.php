@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Package;
 use App\Models\Schedule;
+use App\Models\ShiftStart;
 use App\Models\User;
 use App\Models\Worker;
 use App\Models\WorkerShift;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -237,6 +239,119 @@ class WorkerDashboardTest extends TestCase
         $response->assertSee('Zmiana ranna');
         $response->assertSee('Zmiana popołudniowa');
         $response->assertDontSee('Brak zaplanowanych zmian');
+    }
+
+    public function test_dashboard_shows_next_shift_start_time(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 08:00:00'));
+
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+        $date = now()->addDay()->toDateString();
+
+        WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+
+        ShiftStart::create([
+            'day' => $date,
+            'shift_type' => 'morning',
+            'start_time' => 630,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('worker.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Start: 10:30');
+    }
+
+    public function test_dashboard_block_label_uses_configured_shift_start_time(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 10:00:00'));
+
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+        $date = now()->toDateString();
+
+        WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+
+        ShiftStart::create([
+            'day' => $date,
+            'shift_type' => 'morning',
+            'start_time' => 630,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('worker.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Godziny można wpisać po 10:30');
+    }
+
+    public function test_dashboard_keeps_today_as_next_when_configured_afternoon_start_not_passed(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 21:30:00'));
+
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+        $today = now()->toDateString();
+        $tomorrow = now()->addDay()->toDateString();
+
+        ShiftStart::create([
+            'day' => $today,
+            'shift_type' => 'afternoon',
+            'start_time' => 1320,
+        ]);
+
+        WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $today,
+            'shift_type' => 'afternoon',
+        ]);
+
+        WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $tomorrow,
+            'shift_type' => 'morning',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('worker.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee(Carbon::parse($today)->translatedFormat('j'));
+        $response->assertDontSee(Carbon::parse($tomorrow)->translatedFormat('j') . ' ');
+    }
+
+    public function test_dashboard_skips_today_when_default_afternoon_start_passed(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 21:30:00'));
+
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+        $today = now()->toDateString();
+        $tomorrow = now()->addDay()->toDateString();
+
+        WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $today,
+            'shift_type' => 'afternoon',
+        ]);
+
+        WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $tomorrow,
+            'shift_type' => 'morning',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('worker.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee(Carbon::parse($tomorrow)->translatedFormat('j'));
     }
 
     public function test_dashboard_shows_empty_state_when_no_shifts(): void

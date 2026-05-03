@@ -75,7 +75,7 @@ class WorkerStatsService
         $shifts = $worker->shifts()
             ->published()
             ->with(['package', 'substitute.worker'])
-            ->whereBetween('day', [$dateFrom, $dateTo])
+            ->whereBetween('day', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->get();
 
         return $this->calculateStats($shifts);
@@ -88,7 +88,7 @@ class WorkerStatsService
         $shifts = WorkerShift::with(['package', 'substitute.worker'])
             ->published()
             ->whereIn('worker_id', $workerIds)
-            ->whereBetween('day', [$dateFrom, $dateTo])
+            ->whereBetween('day', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->get()
             ->groupBy('worker_id');
 

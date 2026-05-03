@@ -9,19 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class WorkerShift extends Model
 {
-    public const MORNING_HOURS_AVAILABLE_FROM = 540;
-    public const AFTERNOON_HOURS_AVAILABLE_FROM = 1260;
-
-    public static function hoursAvailableFrom(string $shiftType): int
-    {
-        return $shiftType === 'morning' ? self::MORNING_HOURS_AVAILABLE_FROM : self::AFTERNOON_HOURS_AVAILABLE_FROM;
-    }
-
-    public static function hoursAvailableLabel(string $shiftType): string
-    {
-        return $shiftType === 'morning' ? '9:00' : '21:00';
-    }
-
     public static function parseTimeToMinutes(string $time): int
     {
         [$h, $m] = array_map('intval', explode(':', $time));

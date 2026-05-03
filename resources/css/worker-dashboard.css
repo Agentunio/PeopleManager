@@ -118,6 +118,44 @@
     font-size: 0.95rem;
 }
 
+.next-shift-card-item .shift-start-label,
+.shift-type-badge .shift-start-label {
+    margin-left: auto;
+    color: var(--w-text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.next-shift-card-item .shift-start-label .shift-start-label-text,
+.shift-type-badge .shift-start-label .shift-start-label-text {
+    opacity: 0.85;
+}
+
+.next-shift-card-item .shift-start-label .shift-start-label-time,
+.shift-type-badge .shift-start-label .shift-start-label-time {
+    color: var(--w-text);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.next-shift-card-item,
+.shift-type-badge {
+    flex-wrap: wrap;
+    row-gap: 4px;
+}
+
+@media (max-width: 640px) {
+    .next-shift-card-item .shift-start-label,
+    .shift-type-badge .shift-start-label {
+        margin-left: 0;
+        flex-basis: 100%;
+    }
+}
+
 .last-shift-info {
     display: flex;
     align-items: baseline;

@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\Package;
 use App\Models\Schedule;
+use App\Models\ShiftStart;
 use App\Models\User;
 use App\Models\Worker;
 use App\Models\WorkerAvailability;
 use App\Models\WorkerShift;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -457,6 +459,34 @@ class WorkerScheduleTest extends TestCase
         $response->assertSee('Jan Kowalski');
     }
 
+    public function test_schedule_shows_shift_start_time(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 08:00:00'));
+
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+        $date = now()->toDateString();
+
+        WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+
+        ShiftStart::create([
+            'day' => $date,
+            'shift_type' => 'morning',
+            'start_time' => 630,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('worker.schedule'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Start: 10:30');
+        $response->assertSee('"morningUnlockMinutes":630', false);
+        $response->assertSee('"morningUnlockLabel":"10:30"', false);
+    }
+
     public function test_past_week_shows_only_own_shifts(): void
     {
         $user = $this->createWorkerUser();
@@ -519,6 +549,110 @@ class WorkerScheduleTest extends TestCase
         $this->assertEquals(14 * 60 + 30, $shift->worker_to_time);
         $this->assertEquals('worker', $shift->hours_source);
         $this->assertNull($shift->minutes);
+    }
+
+    public function test_store_hours_rejected_before_configured_shift_start_time_for_today(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 10:00:00'));
+
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+        $date = now()->toDateString();
+
+        WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+
+        ShiftStart::create([
+            'day' => $date,
+            'shift_type' => 'morning',
+            'start_time' => 630,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.hours', $date),
+            ['shift_type' => 'morning', 'from_time' => '08:00', 'to_time' => '14:00']
+        );
+
+        $response->assertStatus(422);
+        $response->assertJson(['message' => 'Godziny dla tej zmiany można wpisać dopiero po 10:30']);
+    }
+
+    public function test_store_hours_allowed_after_configured_shift_start_time_for_today(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 10:30:00'));
+
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+        $date = now()->toDateString();
+
+        $shift = WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+
+        ShiftStart::create([
+            'day' => $date,
+            'shift_type' => 'morning',
+            'start_time' => 630,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.hours', $date),
+            ['shift_type' => 'morning', 'from_time' => '08:00', 'to_time' => '14:00']
+        );
+
+        $response->assertOk();
+        $shift->refresh();
+        $this->assertEquals('worker', $shift->hours_source);
+    }
+
+    public function test_store_hours_uses_default_fallback_when_shift_start_time_is_missing(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 08:59:00'));
+
+        $user = $this->createWorkerUser();
+        $worker = $user->worker;
+        $date = now()->toDateString();
+
+        WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.hours', $date),
+            ['shift_type' => 'morning', 'from_time' => '08:00', 'to_time' => '14:00']
+        );
+
+        $response->assertStatus(422);
+        $response->assertJson(['message' => 'Godziny dla tej zmiany można wpisać dopiero po 9:00']);
+    }
+
+    public function test_store_hours_checks_assignment_before_shift_start_time(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 10:00:00'));
+
+        $user = $this->createWorkerUser();
+        $date = now()->toDateString();
+
+        ShiftStart::create([
+            'day' => $date,
+            'shift_type' => 'morning',
+            'start_time' => 630,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.hours', $date),
+            ['shift_type' => 'morning', 'from_time' => '08:00', 'to_time' => '14:00']
+        );
+
+        $response->assertStatus(403);
+        $response->assertJson(['message' => 'Brak przypisanej zmiany']);
     }
 
     public function test_store_hours_rejected_for_other_week(): void

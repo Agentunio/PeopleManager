@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Worker;
 use App\Http\Controllers\Controller;
 use App\Models\Schedule;
 use App\Models\WorkerShift;
+use App\Services\ShiftStartService;
 use App\Services\WorkerStatsService;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -13,7 +14,8 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     public function __construct(
-        private WorkerStatsService $workerStatsService
+        private WorkerStatsService $workerStatsService,
+        private ShiftStartService $shiftStartService
     ) {}
 
     public function index(): View
@@ -30,7 +32,10 @@ class DashboardController extends Controller
             now()
         );
 
-        $minDate = now()->hour >= 21 ? now()->addDay()->toDateString() : now()->toDateString();
+        $today = now()->toDateString();
+        $currentMinutes = now()->hour * 60 + now()->minute;
+        $afternoonStartToday = $this->shiftStartService->resolveStartMinutes($today, 'afternoon');
+        $minDate = $currentMinutes >= $afternoonStartToday ? now()->addDay()->toDateString() : $today;
 
         $nextDay = WorkerShift::published()
             ->where('worker_id', $worker->id)
@@ -46,11 +51,16 @@ class DashboardController extends Controller
         if ($nextShiftDay && $nextShiftDay->isNotEmpty()) {
             $firstShift = $nextShiftDay->first();
             $date = Carbon::parse($firstShift->day);
+            $nextStartData = $this->shiftStartService->scheduleDataForDates([$firstShift->day])[$firstShift->day] ?? [];
             $nextShift = [
                 'date' => $firstShift->day,
                 'weekday' => Str::ucfirst($date->translatedFormat('l')),
                 'short_date' => $date->translatedFormat('j') . ' ' . Str::ucfirst($date->translatedFormat('F')) . ' ' . $date->format('Y'),
                 'shifts' => $nextShiftDay->pluck('shift_type')->toArray(),
+                'start_labels' => [
+                    'morning' => $nextStartData['morning']['configured_label'] ?? null,
+                    'afternoon' => $nextStartData['afternoon']['configured_label'] ?? null,
+                ],
             ];
         }
 
@@ -77,12 +87,15 @@ class DashboardController extends Controller
 
         $latestDay = $shifts->first()->day;
         $dayShifts = $shifts->where('day', $latestDay);
+        $startData = $this->shiftStartService->scheduleDataForDates([$latestDay])[$latestDay] ?? [];
 
         $date = Carbon::parse($latestDay);
         $isToday = $date->isToday();
 
         $shiftsData = [];
         foreach ($dayShifts as $shift) {
+            $shiftStart = $startData[$shift->shift_type] ?? [];
+
             $shiftsData[$shift->shift_type] = [
                 'status' => $shift->status,
                 'hours_source' => $shift->hours_source,
@@ -93,6 +106,9 @@ class DashboardController extends Controller
                 'to' => $shift->worker_to_time !== null
                     ? sprintf('%02d:%02d', $shift->worker_to_hour, $shift->worker_to_minute)
                     : null,
+                'start_label' => $shiftStart['configured_label'] ?? null,
+                'unlock_minutes' => $shiftStart['unlock_minutes'],
+                'unlock_label' => $shiftStart['unlock_label'],
             ];
         }
 
@@ -107,10 +123,10 @@ class DashboardController extends Controller
 
             if ($shift['status'] !== 'absent' && $shift['hours_source'] !== 'admin') {
                 if ($isToday) {
-                    $allowedFrom = WorkerShift::hoursAvailableFrom($type);
+                    $allowedFrom = $shift['unlock_minutes'];
                     if ($currentMinutes < $allowedFrom) {
                         $shift['blocked'] = true;
-                        $shift['block_label'] = WorkerShift::hoursAvailableLabel($type);
+                        $shift['block_label'] = $shift['unlock_label'];
                     } else {
                         $allBlocked = false;
                     }
