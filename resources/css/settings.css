@@ -197,6 +197,24 @@
     display: block;
 }
 
+.form-group-toggle .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-color);
+    cursor: pointer;
+    line-height: 1.5;
+}
+
+.settings-section input.settings-toggle-input[type="checkbox"] {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
 .edit-form {
     display: none;
     padding: 25px;

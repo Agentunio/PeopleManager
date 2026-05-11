@@ -18,31 +18,35 @@
         <div class="dash-saved-status">
             Oczekuje na akceptację administratora
         </div>
-        <button type="button" class="dash-edit-btn">
-            Edytuj
-        </button>
+        @if($workerSelfHoursEnabled)
+            <button type="button" class="dash-edit-btn">
+                Edytuj
+            </button>
+        @endif
     </div>
-    <div class="dash-hours-inputs" data-shift-type="{{ $type }}" style="display: none;">
-        <div class="dash-hours-field">
-            <label>Od</label>
-            <div class="dash-time-pair">
-                <input type="number" class="dash-from-hour" placeholder="00" min="0" max="23" value="{{ substr($shift['from'], 0, 2) }}">
-                <span class="time-colon">:</span>
-                <input type="number" class="dash-from-minute" placeholder="00" min="0" max="59" value="{{ substr($shift['from'], 3, 2) }}">
+    @if($workerSelfHoursEnabled)
+        <div class="dash-hours-inputs" data-shift-type="{{ $type }}" style="display: none;">
+            <div class="dash-hours-field">
+                <label>Od</label>
+                <div class="dash-time-pair">
+                    <input type="number" class="dash-from-hour" placeholder="00" min="0" max="23" value="{{ substr($shift['from'], 0, 2) }}">
+                    <span class="time-colon">:</span>
+                    <input type="number" class="dash-from-minute" placeholder="00" min="0" max="59" value="{{ substr($shift['from'], 3, 2) }}">
+                </div>
+            </div>
+            <span class="dash-hours-separator">-</span>
+            <div class="dash-hours-field">
+                <label>Do</label>
+                <div class="dash-time-pair">
+                    <input type="number" class="dash-to-hour" placeholder="00" min="0" max="23" value="{{ substr($shift['to'], 0, 2) }}">
+                    <span class="time-colon">:</span>
+                    <input type="number" class="dash-to-minute" placeholder="00" min="0" max="59" value="{{ substr($shift['to'], 3, 2) }}">
+                </div>
             </div>
         </div>
-        <span class="dash-hours-separator">-</span>
-        <div class="dash-hours-field">
-            <label>Do</label>
-            <div class="dash-time-pair">
-                <input type="number" class="dash-to-hour" placeholder="00" min="0" max="23" value="{{ substr($shift['to'], 0, 2) }}">
-                <span class="time-colon">:</span>
-                <input type="number" class="dash-to-minute" placeholder="00" min="0" max="59" value="{{ substr($shift['to'], 3, 2) }}">
-            </div>
-        </div>
-    </div>
-    <button type="button" class="dash-cancel-btn" style="display: none;">Anuluj</button>
-@else
+        <button type="button" class="dash-cancel-btn" style="display: none;">Anuluj</button>
+    @endif
+@elseif($workerSelfHoursEnabled)
     @if($shift['blocked'])
         <div class="dash-time-note">
             Godziny można wpisać po {{ $shift['block_label'] }}

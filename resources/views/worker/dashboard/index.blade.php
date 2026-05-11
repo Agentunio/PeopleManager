@@ -62,12 +62,13 @@
                     </div>
                 </div>
 
+                @if($showLastShiftCard)
                 <div class="section-card enter-hours">
                     <div class="section-header">
                         <div class="section-icon">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </div>
-                        <h2>Wpisz godziny z ostatniej zmiany</h2>
+                        <h2>{{ $workerSelfHoursEnabled ? 'Wpisz godziny z ostatniej zmiany' : 'Twoja ostatnia zmiana' }}</h2>
                     </div>
                     <div class="section-body">
                         @if($lastShift)
@@ -87,25 +88,21 @@
                                             @endif
                                         </div>
                                         <div class="dashboard-shift-content" data-shift-type="{{ $type }}">
-                                            @include('worker.dashboard.partials.shift-hours', ['shift' => $shift, 'type' => $type])
+                                            @include('worker.dashboard.partials.shift-hours', ['shift' => $shift, 'type' => $type, 'workerSelfHoursEnabled' => $workerSelfHoursEnabled])
                                         </div>
                                     </div>
                                 @endforeach
 
-                                @if(collect($lastShift['shifts'])->contains(fn($s) => $s['status'] !== 'absent' && $s['hours_source'] !== 'admin'))
+                                @if($workerSelfHoursEnabled && collect($lastShift['shifts'])->contains(fn($s) => $s['status'] !== 'absent' && $s['hours_source'] !== 'admin'))
                                     @unless($lastShift['all_blocked'])
                                         <button class="btn-submit-hours" id="dashboardSaveHours">Zapisz godziny</button>
                                     @endunless
                                 @endif
                             </div>
-                        @else
-                            <div class="empty-state">
-                                <i class="fa-regular fa-clock"></i>
-                                <p>Brak zmian do rozliczenia</p>
-                            </div>
                         @endif
                     </div>
                 </div>
+                @endif
 
                 <div class="stat-card hours-card">
                     <div class="stat-icon">

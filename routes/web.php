@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DayController;
 use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\PlannerAvailableController;
 use App\Http\Controllers\Admin\PlannerController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\EndDayController;
 use App\Http\Controllers\Admin\PackageCountExportController;
 use App\Http\Controllers\Admin\WeeklyExportController;
@@ -54,6 +55,11 @@ Route::middleware(['auth',  'check.user.role:admin'])->group(function () {
         Route::put('/{package}', [PackageController::class, 'update'])->name('packages.update');
         Route::delete('/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
         Route::post('/domyslna', [PackageController::class, 'setDefault'])->name('packages.default');
+    });
+
+    Route::prefix('ustawienia')->name('app-settings.')->group(function () {
+        Route::get('/', [SettingsController::class, 'index'])->name('index');
+        Route::post('/', [SettingsController::class, 'update'])->name('update');
     });
 
     Route::prefix('grafik')->name('planner.')->group(function () {

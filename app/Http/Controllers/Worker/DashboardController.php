@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Worker;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Models\Schedule;
 use App\Models\WorkerShift;
 use App\Services\ShiftStartService;
@@ -65,8 +66,34 @@ class DashboardController extends Controller
         }
 
         $lastShift = $this->getLastShiftData($worker->id);
+        $workerSelfHoursEnabled = AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS);
+        $showLastShiftCard = $this->shouldShowLastShiftCard($lastShift, $workerSelfHoursEnabled);
 
-        return view('worker.dashboard.index', compact('worker', 'schedule', 'scheduleStatus', 'stats', 'nextShift', 'lastShift'));
+        return view('worker.dashboard.index', compact(
+            'worker',
+            'schedule',
+            'scheduleStatus',
+            'stats',
+            'nextShift',
+            'lastShift',
+            'workerSelfHoursEnabled',
+            'showLastShiftCard'
+        ));
+    }
+
+    private function shouldShowLastShiftCard(?array $lastShift, bool $workerSelfHoursEnabled): bool
+    {
+        if (!$lastShift) {
+            return false;
+        }
+
+        if ($workerSelfHoursEnabled) {
+            return true;
+        }
+
+        return collect($lastShift['shifts'])->contains(
+            fn ($s) => $s['status'] === 'absent' || in_array($s['hours_source'], ['admin', 'worker'], true)
+        );
     }
 
     private function getLastShiftData(int $workerId): ?array

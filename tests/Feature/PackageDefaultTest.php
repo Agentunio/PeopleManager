@@ -77,12 +77,14 @@ class PackageDefaultTest extends TestCase
         $response->assertSee('Domyślna stawka dla godzin pracownika', false);
     }
 
-    public function test_old_url_no_longer_works(): void
+    public function test_app_settings_url_is_not_package_settings_page(): void
     {
         $admin = $this->createAdmin();
 
         $response = $this->actingAs($admin)->get('/ustawienia');
 
-        $response->assertNotFound();
+        $response->assertOk();
+        $response->assertSee('Samodzielne wpisywanie czasu pracy');
+        $response->assertDontSee('stawka dla godzin pracownika', false);
     }
 }

@@ -32,6 +32,11 @@
             </a>
         </li>
         <li>
+            <a href="{{ route('app-settings.index') }}" class="{{ request()->routeIs('app-settings.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-gear"></i> Ustawienia
+            </a>
+        </li>
+        <li>
             <i class="fa-solid fa-sign-out-alt"></i>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf

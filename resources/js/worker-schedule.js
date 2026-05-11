@@ -128,11 +128,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function setupHoursGroup(s, data) {
+        var selfHoursEnabled = window.scheduleConfig.workerSelfHoursEnabled;
         s.cancelBtn.style.display = 'none';
 
         if (!data.assigned) {
             s.group.style.display = 'none';
-            return;
+            return false;
+        }
+
+        var hasReadOnlyContent = data.status === 'absent'
+            || data.source === 'admin'
+            || (data.source === 'worker' && data.from && data.to);
+
+        if (!selfHoursEnabled && !hasReadOnlyContent) {
+            s.group.style.display = 'none';
+            return false;
         }
 
         s.group.style.display = '';
@@ -144,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
             s.inputs.style.display = 'none';
             s.timeNote.style.display = 'none';
             setTimeInputsDisabled(s, true);
-            return;
+            return true;
         }
 
         s.absentInfo.style.display = 'none';
@@ -156,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function () {
             s.timeNote.style.display = 'none';
             s.adminHours.textContent = data.minutes ? formatMinutesToHours(parseInt(data.minutes)) : '—';
             setTimeInputsDisabled(s, true);
-            return;
+            return true;
         }
 
         s.adminInfo.style.display = 'none';
@@ -167,8 +177,20 @@ document.addEventListener('DOMContentLoaded', function () {
             s.inputs.style.display = 'none';
             s.timeNote.style.display = 'none';
             prefillTimeInputs(s, data.from, data.to);
-            setTimeInputsDisabled(s, false);
-            return;
+
+            if (selfHoursEnabled) {
+                s.editBtn.style.display = '';
+                setTimeInputsDisabled(s, false);
+            } else {
+                s.editBtn.style.display = 'none';
+                setTimeInputsDisabled(s, true);
+            }
+            return true;
+        }
+
+        if (!selfHoursEnabled) {
+            s.group.style.display = 'none';
+            return false;
         }
 
         s.savedInfo.style.display = 'none';
@@ -186,11 +208,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 setTimeInputsDisabled(s, true);
                 s.timeNote.textContent = 'Godziny można wpisać po ' + label;
                 s.timeNote.style.display = '';
-                return;
+                return true;
             }
         }
 
         s.timeNote.style.display = 'none';
+        return true;
     }
 
     ['morning', 'afternoon'].forEach(function (type) {
@@ -240,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var hasAnyHoursToShow = false;
             if (showHours) {
-                setupHoursGroup(shifts.morning, {
+                var morningVisible = setupHoursGroup(shifts.morning, {
                     assigned: assignedMorning,
                     source: dayData.morningSource,
                     status: dayData.morningStatus,
@@ -252,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     unlockMinutes: dayData.morningUnlockMinutes,
                     unlockLabel: dayData.morningUnlockLabel
                 });
-                setupHoursGroup(shifts.afternoon, {
+                var afternoonVisible = setupHoursGroup(shifts.afternoon, {
                     assigned: assignedAfternoon,
                     source: dayData.afternoonSource,
                     status: dayData.afternoonStatus,
@@ -264,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     unlockMinutes: dayData.afternoonUnlockMinutes,
                     unlockLabel: dayData.afternoonUnlockLabel
                 });
-                hasAnyHoursToShow = true;
+                hasAnyHoursToShow = morningVisible || afternoonVisible;
             } else {
                 shifts.morning.group.style.display = 'none';
                 shifts.afternoon.group.style.display = 'none';
@@ -272,21 +295,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
             hoursSection.style.display = hasAnyHoursToShow ? '' : 'none';
 
+            var selfHoursEnabled = window.scheduleConfig.workerSelfHoursEnabled;
             var allAdminApproved = showHours
                 && (!assignedMorning || dayData.morningSource === 'admin' || dayData.morningStatus === 'absent')
                 && (!assignedAfternoon || dayData.afternoonSource === 'admin' || dayData.afternoonStatus === 'absent');
 
             var readonly = isPastDay || ((assignedMorning && assignedAfternoon) || isToday);
             var hideAvailabilitySave = readonly && !showHours;
-            var hideSaveCompletely = hideAvailabilitySave && allAdminApproved;
+            var noHoursSubmitPossible = !selfHoursEnabled || allAdminApproved;
+            var hideSaveCompletely = hideAvailabilitySave && noHoursSubmitPossible;
 
             saveBtn.style.display = hideSaveCompletely ? 'none' : '';
 
             if (isPastDay && showHours) {
                 modalTitle.textContent = 'Wpisz godziny pracy';
-                saveBtn.style.display = allAdminApproved ? 'none' : '';
+                saveBtn.style.display = (allAdminApproved || !selfHoursEnabled) ? 'none' : '';
             } else if (readonly && showHours) {
                 modalTitle.textContent = 'Twoje zmiany';
+                if (!selfHoursEnabled) {
+                    saveBtn.style.display = 'none';
+                }
             } else if (readonly) {
                 modalTitle.textContent = 'Twoje zmiany';
                 saveBtn.style.display = 'none';
@@ -350,6 +378,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function canSubmitShift(dateStr, type) {
+        if (!window.scheduleConfig.workerSelfHoursEnabled) return false;
         var dayData = getDayData(dateStr);
         var s = shifts[type];
         return dayData[type + 'Source'] !== 'admin'
@@ -366,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var isCurrentWeek = dayData.currentWeek === '1';
         var assignedMorning = dayData.assignedMorning === '1';
         var assignedAfternoon = dayData.assignedAfternoon === '1';
-        var shouldSubmitHours = isCurrentWeek && (isPast || isToday);
+        var shouldSubmitHours = window.scheduleConfig.workerSelfHoursEnabled && isCurrentWeek && (isPast || isToday);
 
         if (shouldSubmitHours) {
             var shiftChecks = [

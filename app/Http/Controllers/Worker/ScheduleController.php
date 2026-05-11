@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Worker;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Worker\StoreAvailabilityRequest;
 use App\Http\Requests\Worker\StoreHoursRequest;
+use App\Models\AppSetting;
 use App\Models\Package;
 use App\Models\Schedule;
 use App\Models\WorkerAvailability;
@@ -69,7 +70,8 @@ class ScheduleController extends Controller
                 ->keyBy(fn ($s) => $s->day . '_' . $s->shift_type);
         }
 
-        $days = $this->buildDaysArray($weekStart, $weekEnd, $worker, $schedule, $availabilities, $allShifts, $myShifts, $isCurrentWeek, $shiftStartData);
+        $workerSelfHoursEnabled = AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS);
+        $days = $this->buildDaysArray($weekStart, $weekEnd, $worker, $schedule, $availabilities, $allShifts, $myShifts, $isCurrentWeek, $shiftStartData, $workerSelfHoursEnabled);
         $canOpenModal = collect($days)->contains(fn ($d) => $d['is_clickable']);
 
         return view('worker.schedule.index', [
@@ -81,6 +83,7 @@ class ScheduleController extends Controller
             'prevWeek' => $weekStart->copy()->subWeek()->format('d-m-Y'),
             'nextWeek' => $weekStart->copy()->addWeek()->format('d-m-Y'),
             'worker' => $worker,
+            'workerSelfHoursEnabled' => $workerSelfHoursEnabled,
         ]);
     }
 
@@ -147,6 +150,10 @@ class ScheduleController extends Controller
         $worker = auth()->user()->worker;
 
         abort_unless($worker, 403, 'Brak powiązanego profilu pracownika');
+
+        if (!AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS)) {
+            return response()->json(['message' => 'Wpisywanie godzin zostalo wylaczone przez administratora'], 403);
+        }
 
         $parsedDate = Carbon::parse($date);
         $weekStart = now()->startOfWeek();
@@ -227,6 +234,7 @@ class ScheduleController extends Controller
             'html' => view('worker.dashboard.partials.shift-hours', [
                 'shift' => $shiftData,
                 'type' => $shiftType,
+                'workerSelfHoursEnabled' => true,
             ])->render(),
         ]);
     }
@@ -251,7 +259,8 @@ class ScheduleController extends Controller
         $allShifts,
         $myShifts,
         bool $isCurrentWeek,
-        array $shiftStartData
+        array $shiftStartData,
+        bool $workerSelfHoursEnabled
     ): array {
         $days = [];
         $scheduleActive = $schedule && $schedule->isActive();
@@ -279,10 +288,11 @@ class ScheduleController extends Controller
             $isToday = $date->isToday();
             $isPast = $date->lte(now()->startOfDay());
 
-            $canInputHours = $isCurrentWeek && $isPast && ($myAssigned['morning'] || $myAssigned['afternoon']);
+            $canViewHours = $isCurrentWeek && $isPast && ($myAssigned['morning'] || $myAssigned['afternoon']);
+            $canInputHours = $canViewHours && $workerSelfHoursEnabled;
             $isClickable = ($scheduleActive && !$isPast && $inSchedule)
                 || ($isToday && $scheduleActive)
-                || $canInputHours;
+                || $canViewHours;
 
             $morningShift = $myShifts->get($dateStr . '_morning');
             $afternoonShift = $myShifts->get($dateStr . '_afternoon');
@@ -296,6 +306,7 @@ class ScheduleController extends Controller
                 'is_current_week' => $isCurrentWeek,
                 'in_schedule' => $inSchedule,
                 'is_clickable' => $isClickable,
+                'can_view_hours' => $canViewHours,
                 'can_input_hours' => $canInputHours,
                 'morning' => $availability?->morning_shift ?? false,
                 'afternoon' => $availability?->afternoon_shift ?? false,

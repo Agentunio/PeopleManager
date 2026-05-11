@@ -153,6 +153,7 @@
         $scheduleConfigJs = [
             'hoursUrl' => route('worker.schedule.hours', ':date'),
             'availabilityUrl' => route('worker.schedule.availability', ':date'),
+            'workerSelfHoursEnabled' => $workerSelfHoursEnabled,
         ];
     @endphp
     <script>
