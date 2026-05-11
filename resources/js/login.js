@@ -1,6 +1,9 @@
 import Swal from 'sweetalert2';
+import { guardGuestSubmitForms } from './guest-submit-guard';
 
 document.addEventListener('DOMContentLoaded', function () {
+    guardGuestSubmitForms();
+
     const flashError = document.querySelector('meta[name="flash-error"]');
     if (flashError) {
         Swal.fire({

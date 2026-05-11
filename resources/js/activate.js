@@ -3,8 +3,11 @@ import { Polish } from 'flatpickr/dist/l10n/pl.js';
 import 'flatpickr/dist/flatpickr.min.css';
 import 'flatpickr/dist/themes/dark.css';
 import Swal from 'sweetalert2';
+import { guardGuestSubmitForms } from './guest-submit-guard';
 
 document.addEventListener('DOMContentLoaded', function () {
+    guardGuestSubmitForms();
+
     const dobDisplay = document.getElementById('date_of_birth_display');
     const dobHidden = document.getElementById('date_of_birth');
     const passwordInput = document.getElementById('password');

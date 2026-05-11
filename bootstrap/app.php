@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,5 +19,29 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->respond(function ($response, \Throwable $e, Request $request) {
+            $isGuestFormRequest = $request->is('/')
+                || $request->routeIs('account.verify', 'account.activate.store');
+
+            if (
+                $response->getStatusCode() !== 419
+                || ! $e->getPrevious() instanceof TokenMismatchException
+                || ! $request->isMethod('post')
+                || ! $isGuestFormRequest
+            ) {
+                return $response;
+            }
+
+            if (auth()->check()) {
+                return match (auth()->user()->role) {
+                    'worker' => redirect()->route('worker.dashboard'),
+                    'admin' => redirect()->route('dashboard'),
+                    default => redirect()->route('login'),
+                };
+            }
+
+            return redirect()->route('login')->withErrors([
+                'login' => 'Sesja wygasła. Odśwież formularz i spróbuj ponownie.',
+            ]);
+        });
     })->create();
