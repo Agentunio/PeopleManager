@@ -32,7 +32,7 @@ COMPOSE=(docker compose -f "$COMPOSE_FILE")
 
 run_artisan() {
     if [ "$MAINTENANCE_TARGET" = "docker" ]; then
-        "${COMPOSE[@]}" exec -T app php artisan "$@"
+        "${COMPOSE[@]}" exec -T -u www-data app php artisan "$@"
         return
     fi
 
@@ -44,7 +44,7 @@ run_artisan() {
 
 show_status() {
     if [ "$MAINTENANCE_TARGET" = "docker" ]; then
-        "${COMPOSE[@]}" exec -T app sh -lc 'if test -f storage/framework/down; then echo down; else echo up; fi'
+        "${COMPOSE[@]}" exec -T -u www-data app sh -lc 'if test -f storage/framework/down; then echo down; else echo up; fi'
         return
     fi
 
