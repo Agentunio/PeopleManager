@@ -13,6 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(
+            at: array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))),
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         $middleware->alias([
             'check.login.attempts' => \App\Http\Middleware\CheckLoginAttempts::class,
             'check.user.role' => \App\Http\Middleware\CheckUserRole::class,

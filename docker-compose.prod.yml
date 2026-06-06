@@ -1,0 +1,331 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_ENV: production
+    image: ${APP_IMAGE:-peoplemanager-app:latest}
+    container_name: peoplemanager-app
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    read_only: true
+    shm_size: 512m
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /var/run:size=8m
+      - /var/www/html/bootstrap/cache:size=32m,uid=33,gid=33,mode=775
+      - /var/www/.cache:size=128m,uid=33,gid=33,mode=755
+      - /var/www/.config:size=16m,uid=33,gid=33,mode=755
+    environment:
+      CONTAINER_ROLE: app
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY must be set in .env}
+      APP_URL: ${APP_URL:?APP_URL must be set in .env}
+      APP_NAME: ${APP_NAME:-PeopleManager}
+      APP_LOCALE: ${APP_LOCALE:-pl}
+      APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-en}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Warsaw}
+      LOG_CHANNEL: stack
+      LOG_STACK: ${LOG_STACK:-daily}
+      LOG_DAILY_DAYS: ${LOG_DAILY_DAYS:-14}
+      LOG_LEVEL: ${LOG_LEVEL:-warning}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:?DB_DATABASE must be set in .env}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME must be set in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      SESSION_DRIVER: ${SESSION_DRIVER:-database}
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+      SESSION_SECURE_COOKIE: "true"
+      SESSION_SAME_SITE: lax
+      CACHE_STORE: ${CACHE_STORE:-database}
+      QUEUE_CONNECTION: database
+      FILESYSTEM_DISK: local
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-PeopleManager}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      HOME: /var/www
+      CHROME_PATH: /usr/bin/chromium
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
+    volumes:
+      - app_storage:/var/www/html/storage
+      - app_public:/var/www/html/public
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - internal
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  queue:
+    image: ${APP_IMAGE:-peoplemanager-app:latest}
+    container_name: peoplemanager-queue
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /var/www/html/bootstrap/cache:size=32m,uid=33,gid=33,mode=775
+      - /var/www/.cache:size=128m,uid=33,gid=33,mode=755
+      - /var/www/.config:size=16m,uid=33,gid=33,mode=755
+    command: php artisan queue:work --tries=3 --backoff=60 --sleep=3
+    environment:
+      CONTAINER_ROLE: queue
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY must be set in .env}
+      APP_URL: ${APP_URL:?APP_URL must be set in .env}
+      APP_NAME: ${APP_NAME:-PeopleManager}
+      APP_LOCALE: ${APP_LOCALE:-pl}
+      APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-en}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Warsaw}
+      LOG_CHANNEL: stack
+      LOG_STACK: ${LOG_STACK:-daily}
+      LOG_DAILY_DAYS: ${LOG_DAILY_DAYS:-14}
+      LOG_LEVEL: ${LOG_LEVEL:-warning}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:?DB_DATABASE must be set in .env}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME must be set in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      HOME: /var/www
+      SESSION_DRIVER: ${SESSION_DRIVER:-database}
+      CACHE_STORE: ${CACHE_STORE:-database}
+      QUEUE_CONNECTION: database
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-PeopleManager}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+    volumes:
+      - app_storage:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    networks:
+      - internal
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  scheduler:
+    image: ${APP_IMAGE:-peoplemanager-app:latest}
+    container_name: peoplemanager-scheduler
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /var/www/html/bootstrap/cache:size=32m,uid=33,gid=33,mode=775
+      - /var/www/.cache:size=64m,uid=33,gid=33,mode=755
+      - /var/www/.config:size=16m,uid=33,gid=33,mode=755
+    command: sh -c "while true; do php artisan schedule:run --no-interaction; sleep 60; done"
+    environment:
+      CONTAINER_ROLE: scheduler
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY must be set in .env}
+      APP_URL: ${APP_URL:?APP_URL must be set in .env}
+      APP_NAME: ${APP_NAME:-PeopleManager}
+      APP_LOCALE: ${APP_LOCALE:-pl}
+      APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-en}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Warsaw}
+      LOG_CHANNEL: stack
+      LOG_STACK: ${LOG_STACK:-daily}
+      LOG_DAILY_DAYS: ${LOG_DAILY_DAYS:-14}
+      LOG_LEVEL: ${LOG_LEVEL:-warning}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:?DB_DATABASE must be set in .env}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME must be set in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      HOME: /var/www
+      SESSION_DRIVER: ${SESSION_DRIVER:-database}
+      CACHE_STORE: ${CACHE_STORE:-database}
+      QUEUE_CONNECTION: database
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-PeopleManager}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+    volumes:
+      - app_storage:/var/www/html/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - internal
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: peoplemanager-nginx
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - NET_BIND_SERVICE
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+      - /var/run:size=8m
+      - /etc/nginx/conf.d:size=1m,mode=755
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN must be set in .env}
+      NGINX_ENVSUBST_TEMPLATE_SUFFIX: .template
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx/conf.d
+    volumes:
+      - ./docker/nginx/prod.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ${SSL_CERT_DIR:-/etc/ssl/peoplemanager}:/etc/nginx/ssl:ro
+      - app_public:/var/www/html/public:ro
+      - app_storage:/var/www/html/storage:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - internal
+      - public
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  mysql:
+    image: mariadb:10.11
+    container_name: peoplemanager-mysql
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD must be set in .env}
+      MARIADB_DATABASE: ${DB_DATABASE:?DB_DATABASE must be set in .env}
+      MARIADB_USER: ${DB_USERNAME:?DB_USERNAME must be set in .env}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-name-resolve
+      - --max-connections=200
+      - --innodb-buffer-pool-size=512M
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -u$${MARIADB_USER} -p$${MARIADB_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - internal
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  mysql_data:
+  app_storage:
+  app_public:
+  nginx_cache:
+
+networks:
+  internal:
+    driver: bridge
+    # Not Docker-internal: app/queue need outbound SMTP and notification delivery.
+    internal: false
+  public:
+    driver: bridge

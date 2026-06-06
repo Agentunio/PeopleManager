@@ -1,0 +1,71 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+.github
+
+# IDE / editor
+.idea
+.vscode
+.fleet
+.nova
+.zed
+.phpactor.json
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies (installed in image)
+node_modules
+vendor
+
+# Build / cache / local state
+/public/build
+/public/hot
+/public/storage
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/down
+/storage/*.key
+/storage/pail
+/bootstrap/cache/*
+.phpunit.result.cache
+.phpunit.cache
+
+# Tests / CI / tooling (not needed in runtime image)
+tests
+phpunit.xml
+phpstan.neon
+.editorconfig
+
+# Docs / project files
+README.md
+Readme.md
+CLAUDE.md
+AGENTS.md
+MEMORY.md
+memory
+LICENSE*
+docs
+
+# Docker orchestration (not needed inside image)
+docker-compose*.yml
+docker/ssl
+docker/*.bak
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Misc / agent artifacts
+auth.json
+Homestead.json
+Homestead.yaml
+*.log
+zrzut_bazy.sql
+.claude
+/peoplemanager

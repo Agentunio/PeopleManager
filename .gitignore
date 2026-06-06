@@ -18,6 +18,8 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/framework/down
+/storage/framework/testing-views-*
 /vendor
 Homestead.json
 Homestead.yaml
@@ -34,3 +36,7 @@ docker/ssl/
 /memory/*.md
 AGENTS.md
 MEMORY.md
+/peoplemanager
+/peoplemanager.sqlite*
+/backups/
+_design
