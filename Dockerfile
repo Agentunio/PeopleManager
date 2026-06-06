@@ -1,8 +1,5 @@
 # syntax=docker/dockerfile:1.7
 
-# =========================================================
-# Stage 1: Build frontend assets
-# =========================================================
 FROM node:22-alpine AS node-builder
 
 WORKDIR /app
@@ -16,9 +13,6 @@ COPY public ./public
 
 RUN npm run build
 
-# =========================================================
-# Stage 2: PHP dependencies (cacheable composer layer)
-# =========================================================
 FROM composer:2 AS composer-deps
 
 WORKDIR /app
@@ -33,18 +27,13 @@ RUN if [ "$APP_ENV" = "production" ]; then \
         composer install --no-scripts --no-autoloader --prefer-dist --no-interaction; \
     fi
 
-# =========================================================
-# Stage 3: PHP application runtime
-# =========================================================
 FROM php:8.2-fpm-bookworm AS app
 
-# OCI label scopes `docker image prune --filter "label=..."` to this project.
 LABEL org.opencontainers.image.source="https://github.com/agentunio/peoplemanager"
 
 ARG APP_ENV=production
 ENV APP_ENV=${APP_ENV}
 
-# System dependencies + Chromium for Browsershot + fcgi for healthcheck + gosu for privilege drop
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         curl \
@@ -85,16 +74,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Composer binary (for post-build commands if ever needed)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy prebuilt vendor (from composer-deps stage)
 COPY --from=composer-deps --chown=www-data:www-data /app/vendor ./vendor
 
-# Copy application source — whitelist only what the runtime needs.
-# Anything not listed here is excluded from the image regardless of .dockerignore.
 COPY --chown=www-data:www-data app                ./app
 COPY --chown=www-data:www-data bootstrap          ./bootstrap
 COPY --chown=www-data:www-data config             ./config
@@ -111,18 +96,13 @@ COPY --chown=www-data:www-data package.json       ./package.json
 COPY --chown=www-data:www-data package-lock.json  ./package-lock.json
 COPY --chown=www-data:www-data vite.config.js     ./vite.config.js
 
-# Regenerate optimized autoloader with full sources
 RUN composer dump-autoload --optimize --classmap-authoritative --no-interaction
 
-# Copy built frontend assets (overrides anything from source public/build)
 COPY --from=node-builder --chown=www-data:www-data /app/public/build public/build
 
-# Immutable snapshot of public/ used by entrypoint to (re)populate the shared
-# named volume in production where /var/www/html/public is mounted from app_public.
 RUN cp -a public /opt/app-public \
     && chown -R www-data:www-data /opt/app-public
 
-# Install Puppeteer (uses system Chromium instead of downloading its own)
 ENV PUPPETEER_SKIP_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
     CHROME_PATH=/usr/bin/chromium
@@ -130,16 +110,12 @@ RUN npm ci --omit=dev --no-audit --no-fund \
     && npm cache clean --force \
     && chown -R www-data:www-data node_modules
 
-# PHP runtime config
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 
-# Run php-fpm master as www-data (no privileged actions needed)
 RUN sed -i 's/^user = .*/user = www-data/; s/^group = .*/group = www-data/' /usr/local/etc/php-fpm.d/www.conf \
     && echo "ping.path = /ping" >> /usr/local/etc/php-fpm.d/zz-docker.conf \
     && echo "ping.response = pong" >> /usr/local/etc/php-fpm.d/zz-docker.conf
 
-# Tune php-fpm pool. Sized for mem_limit: 1g (≈ 40MB per worker incl. opcache).
-# Override-only — keeps other defaults from /usr/local/etc/php-fpm.d/www.conf.
 COPY <<EOF /usr/local/etc/php-fpm.d/zz-pool.conf
 [www]
 pm = dynamic
@@ -150,17 +126,14 @@ pm.max_spare_servers = 5
 pm.max_requests = 500
 EOF
 
-# Dev: enable OPcache timestamp validation so file changes are picked up immediately
 RUN if [ "$APP_ENV" != "production" ]; then \
         echo "opcache.validate_timestamps=1" > /usr/local/etc/php/conf.d/zz-opcache-dev.ini; \
     fi
 
-# Writable dirs for Laravel
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && find storage -type d -exec chmod 775 {} \; \
     && find bootstrap/cache -type d -exec chmod 775 {} \;
 
-# Entrypoint (still launched as root so it can fix volume perms, then drops to www-data via gosu)
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
