@@ -283,7 +283,7 @@ class WorkerScheduleTest extends TestCase
         $response->assertStatus(422);
     }
 
-    public function test_modal_not_rendered_when_schedule_inactive(): void
+    public function test_signup_buttons_hidden_when_schedule_inactive(): void
     {
         $user = $this->createWorkerUser();
         Schedule::create(['type' => 'disabled']);
@@ -291,18 +291,20 @@ class WorkerScheduleTest extends TestCase
         $response = $this->actingAs($user)->get(route('worker.schedule'));
 
         $response->assertStatus(200);
-        $response->assertDontSee('shiftModalOverlay');
+        $response->assertDontSee('gr-signup');
     }
 
-    public function test_modal_rendered_when_schedule_active(): void
+    public function test_signup_buttons_rendered_when_schedule_active(): void
     {
         $user = $this->createWorkerUser();
         Schedule::create(['type' => 'always']);
 
-        $response = $this->actingAs($user)->get(route('worker.schedule'));
+        // Przyszły tydzień => wszystkie dni są przyszłe i w zakresie grafiku.
+        $response = $this->actingAs($user)->get(route('worker.schedule', ['week' => now()->addWeek()->format('d-m-Y')]));
 
         $response->assertStatus(200);
-        $response->assertSee('shiftModalOverlay');
+        $response->assertSee('gr-signup');
+        $response->assertSee('Zapisz się');
     }
 
     public function test_store_availability_rejected_for_today(): void

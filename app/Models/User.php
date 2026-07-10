@@ -48,6 +48,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'activation_token',
+        'remember_token',
     ];
 
     protected function casts(): array

@@ -66,6 +66,6 @@ auth.json
 Homestead.json
 Homestead.yaml
 *.log
-zrzut_bazy.sql
+db_backups_local/zrzut_bazy.sql
 .claude
 /peoplemanager

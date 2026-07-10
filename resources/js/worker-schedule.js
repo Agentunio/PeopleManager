@@ -1,484 +1,232 @@
 import {
     buildTimeString,
     validateHoursInputs,
-    formatMinutesToHours,
     setupTimeInputAutopad,
-    padTime
 } from './worker-time-utils.js';
 
 document.addEventListener('DOMContentLoaded', function () {
-    var overlay = document.getElementById('shiftModalOverlay');
+    // --- baner zapisów: format jak w design + licznik dni do deadline ------
+    (function () {
+        var info = document.querySelector('[data-signup-info]');
+        if (!info) return;
+        var t = info.textContent;
+        var dl = t.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2})/);       // deadline z godziną
+        if (!dl) return;
+        var rg = t.match(/(\d{1,2}\.\d{1,2})\.\d{4}\s*[–-]\s*(\d{1,2}\.\d{1,2})\.\d{4}/); // zakres zapisu
+        var wk = t.match(/\((bieżący|następny) tydzień\)/);
 
-    function getDayData(dateStr) {
-        return window.scheduleDays[dateStr];
-    }
-
-    document.querySelectorAll('.cal-day:not(.clickable)').forEach(function (day) {
-        day.addEventListener('click', function () {
-            if (this.classList.contains('locked')) {
-                showToast.error('Nie można edytować dostępności dla przeszłych dni');
-            } else if (this.classList.contains('out-of-schedule')) {
-                showToast.error('Ten dzień wykracza poza zakres aktywnego grafiku');
-            } else {
-                showToast.error('Grafik jest nieaktywny');
-            }
-        });
-    });
-
-    if (!overlay || !window.scheduleConfig) return;
-
-    var hoursUrl = window.scheduleConfig.hoursUrl;
-    var availabilityUrl = window.scheduleConfig.availabilityUrl;
-
-    var modalDate = document.getElementById('shiftModalDate');
-    var modalTitle = document.getElementById('shiftModalTitle');
-    var closeBtn = document.getElementById('shiftModalClose');
-    var cancelBtn = document.getElementById('shiftModalCancel');
-    var saveBtn = document.getElementById('shiftModalSave');
-    var morningCheckbox = document.getElementById('shiftMorning');
-    var afternoonCheckbox = document.getElementById('shiftAfternoon');
-    var morningOption = morningCheckbox.closest('.shift-option');
-    var afternoonOption = afternoonCheckbox.closest('.shift-option');
-    var hoursSection = document.getElementById('shiftHoursSection');
-
-    function buildShiftEls(prefix) {
-        return {
-            group: document.getElementById(prefix + 'HoursGroup'),
-            inputs: document.getElementById(prefix + 'HoursInputs'),
-            adminInfo: document.getElementById(prefix + 'AdminInfo'),
-            adminHours: document.getElementById(prefix + 'AdminHours'),
-            absentInfo: document.getElementById(prefix + 'AbsentInfo'),
-            savedInfo: document.getElementById(prefix + 'SavedInfo'),
-            savedTimes: document.getElementById(prefix + 'SavedTimes'),
-            cancelBtn: document.getElementById(prefix + 'CancelBtn'),
-            timeNote: document.getElementById(prefix + 'TimeNote'),
-            fromH: document.getElementById(prefix + 'FromHour'),
-            fromM: document.getElementById(prefix + 'FromMinute'),
-            toH: document.getElementById(prefix + 'ToHour'),
-            toM: document.getElementById(prefix + 'ToMinute'),
-            editBtn: document.getElementById(prefix + 'EditBtn'),
-        };
-    }
-
-    var shifts = {
-        morning: buildShiftEls('morning'),
-        afternoon: buildShiftEls('afternoon'),
-    };
-
-    var months = [
-        'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
-        'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'
-    ];
-
-    var selectedDate = null;
-    var selectedDayEl = null;
-
-    setupTimeInputAutopad(overlay);
-
-    [morningOption, afternoonOption].forEach(function (option) {
-        option.addEventListener('click', function (e) {
-            if (option.classList.contains('assigned')) {
-                e.preventDefault();
-                if (selectedDayEl && selectedDayEl.classList.contains('today')) {
-                    showToast.error('Nie można edytować dostępności dla dnia dzisiejszego');
-                } else {
-                    showToast.error('Zostałeś przypisany na tę zmianę i nie możesz się wypisać');
-                }
-            }
-        });
-    });
-
-    function setOptionLocked(option, checkbox, locked) {
-        if (locked) {
-            checkbox.disabled = true;
-            option.classList.add('assigned');
-        } else {
-            checkbox.disabled = false;
-            option.classList.remove('assigned');
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        var deadlineStr = pad(dl[1]) + '.' + pad(dl[2]) + ', ' + pad(dl[4]) + ':' + dl[5];
+        var html = 'Dostępne do <strong>' + deadlineStr + '</strong>';
+        if (rg) {
+            html += ' · <span>zakres zapisu ' + rg[1] + ' — ' + rg[2] + (wk ? ' (' + wk[1] + ' tydzień)' : '') + '</span>';
         }
-    }
+        info.innerHTML = html;
 
-    function parseTimeValue(str) {
-        if (!str) return null;
-        var parts = str.split(':');
-        return { hour: parseInt(parts[0], 10), minute: parseInt(parts[1], 10) };
-    }
-
-    function setTimeInputsDisabled(s, disabled) {
-        s.fromH.disabled = disabled;
-        s.fromM.disabled = disabled;
-        s.toH.disabled = disabled;
-        s.toM.disabled = disabled;
-    }
-
-    function clearTimeInputs(s) {
-        s.fromH.value = '';
-        s.fromM.value = '';
-        s.toH.value = '';
-        s.toM.value = '';
-    }
-
-    function prefillTimeInputs(s, fromStr, toStr) {
-        var from = parseTimeValue(fromStr);
-        var to = parseTimeValue(toStr);
-        s.fromH.value = from ? padTime(from.hour) : '';
-        s.fromM.value = from ? padTime(from.minute) : '';
-        s.toH.value = to ? padTime(to.hour) : '';
-        s.toM.value = to ? padTime(to.minute) : '';
-    }
-
-    function setupHoursGroup(s, data) {
-        var selfHoursEnabled = window.scheduleConfig.workerSelfHoursEnabled;
-        s.cancelBtn.style.display = 'none';
-
-        if (!data.assigned) {
-            s.group.style.display = 'none';
-            return false;
-        }
-
-        var hasReadOnlyContent = data.status === 'absent'
-            || data.source === 'admin'
-            || (data.source === 'worker' && data.from && data.to);
-
-        if (!selfHoursEnabled && !hasReadOnlyContent) {
-            s.group.style.display = 'none';
-            return false;
-        }
-
-        s.group.style.display = '';
-
-        if (data.status === 'absent') {
-            s.absentInfo.style.display = '';
-            s.adminInfo.style.display = 'none';
-            s.savedInfo.style.display = 'none';
-            s.inputs.style.display = 'none';
-            s.timeNote.style.display = 'none';
-            setTimeInputsDisabled(s, true);
-            return true;
-        }
-
-        s.absentInfo.style.display = 'none';
-
-        if (data.source === 'admin') {
-            s.adminInfo.style.display = '';
-            s.savedInfo.style.display = 'none';
-            s.inputs.style.display = 'none';
-            s.timeNote.style.display = 'none';
-            s.adminHours.textContent = data.minutes ? formatMinutesToHours(parseInt(data.minutes)) : '—';
-            setTimeInputsDisabled(s, true);
-            return true;
-        }
-
-        s.adminInfo.style.display = 'none';
-
-        if (data.source === 'worker' && data.from && data.to) {
-            s.savedInfo.style.display = '';
-            s.savedTimes.textContent = data.from + ' — ' + data.to;
-            s.inputs.style.display = 'none';
-            s.timeNote.style.display = 'none';
-            prefillTimeInputs(s, data.from, data.to);
-
-            if (selfHoursEnabled) {
-                s.editBtn.style.display = '';
-                setTimeInputsDisabled(s, false);
-            } else {
-                s.editBtn.style.display = 'none';
-                setTimeInputsDisabled(s, true);
-            }
-            return true;
-        }
-
-        if (!selfHoursEnabled) {
-            s.group.style.display = 'none';
-            return false;
-        }
-
-        s.savedInfo.style.display = 'none';
-        s.inputs.style.display = '';
-        setTimeInputsDisabled(s, false);
-        clearTimeInputs(s);
-
-        if (data.isToday) {
+        var pill = document.querySelector('[data-signup-countdown]');
+        if (pill) {
             var now = new Date();
-            var currentMins = now.getHours() * 60 + now.getMinutes();
-            var allowedFrom = data.unlockMinutes;
-            var label = data.unlockLabel;
-
-            if (currentMins < allowedFrom) {
-                setTimeInputsDisabled(s, true);
-                s.timeNote.textContent = 'Godziny można wpisać po ' + label;
-                s.timeNote.style.display = '';
-                return true;
+            var deadline = new Date(+dl[3], +dl[2] - 1, +dl[1], +dl[4], +dl[5]);
+            if (deadline > now) {
+                var dMid = new Date(+dl[3], +dl[2] - 1, +dl[1]);
+                var nMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                var daysLeft = Math.round((dMid - nMid) / 86400000);
+                pill.textContent = daysLeft <= 0 ? 'OSTATNI DZIEŃ'
+                    : (daysLeft === 1 ? 'POZOSTAŁ 1 DZIEŃ' : 'POZOSTAŁO ' + daysLeft + ' DNI');
+                pill.hidden = false;
             }
         }
+    })();
 
-        s.timeNote.style.display = 'none';
-        return true;
+    var root = document.querySelector('.gr-days');
+    var config = window.scheduleConfig;
+    var days = window.scheduleDays;
+    if (!root || !config || !days) return;
+
+    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+    // --- helpers -----------------------------------------------------------
+    function ctx(el) {
+        var slot = el.closest('.gr-slot');
+        var dayEl = el.closest('.gr-day');
+        return { slot: slot, dayEl: dayEl, type: slot.dataset.type, date: dayEl.dataset.date };
     }
 
-    ['morning', 'afternoon'].forEach(function (type) {
-        var s = shifts[type];
-
-        s.editBtn.addEventListener('click', function () {
-            s.savedInfo.style.display = 'none';
-            s.inputs.style.display = '';
-            s.cancelBtn.style.display = '';
-        });
-
-        s.cancelBtn.addEventListener('click', function () {
-            s.inputs.style.display = 'none';
-            s.cancelBtn.style.display = 'none';
-            s.savedInfo.style.display = '';
-        });
-    });
-
-    document.querySelectorAll('.cal-day.clickable').forEach(function (day) {
-        day.addEventListener('click', function () {
-            selectedDate = this.dataset.date;
-            selectedDayEl = this;
-            var dayData = getDayData(selectedDate);
-            var d = new Date(selectedDate + 'T00:00:00');
-            modalDate.textContent = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
-
-            var assignedMorning = dayData.assignedMorning === '1';
-            var assignedAfternoon = dayData.assignedAfternoon === '1';
-            var isToday = this.classList.contains('today');
-            var isPast = dayData.isPast === '1';
-            var isCurrentWeek = dayData.currentWeek === '1';
-
-            morningCheckbox.checked = dayData.morning === '1';
-            afternoonCheckbox.checked = dayData.afternoon === '1';
-
-            var isPastDay = isPast && !isToday;
-
-            if (isPastDay) {
-                setOptionLocked(morningOption, morningCheckbox, true);
-                setOptionLocked(afternoonOption, afternoonCheckbox, true);
-            } else {
-                setOptionLocked(morningOption, morningCheckbox, assignedMorning || isToday);
-                setOptionLocked(afternoonOption, afternoonCheckbox, assignedAfternoon || isToday);
-            }
-
-            var showHours = isCurrentWeek && (isPast || isToday) && (assignedMorning || assignedAfternoon);
-
-            var hasAnyHoursToShow = false;
-            if (showHours) {
-                var morningVisible = setupHoursGroup(shifts.morning, {
-                    assigned: assignedMorning,
-                    source: dayData.morningSource,
-                    status: dayData.morningStatus,
-                    from: dayData.morningFrom,
-                    to: dayData.morningTo,
-                    minutes: dayData.morningMinutes,
-                    isToday: isToday,
-                    shiftType: 'morning',
-                    unlockMinutes: dayData.morningUnlockMinutes,
-                    unlockLabel: dayData.morningUnlockLabel
-                });
-                var afternoonVisible = setupHoursGroup(shifts.afternoon, {
-                    assigned: assignedAfternoon,
-                    source: dayData.afternoonSource,
-                    status: dayData.afternoonStatus,
-                    from: dayData.afternoonFrom,
-                    to: dayData.afternoonTo,
-                    minutes: dayData.afternoonMinutes,
-                    isToday: isToday,
-                    shiftType: 'afternoon',
-                    unlockMinutes: dayData.afternoonUnlockMinutes,
-                    unlockLabel: dayData.afternoonUnlockLabel
-                });
-                hasAnyHoursToShow = morningVisible || afternoonVisible;
-            } else {
-                shifts.morning.group.style.display = 'none';
-                shifts.afternoon.group.style.display = 'none';
-            }
-
-            hoursSection.style.display = hasAnyHoursToShow ? '' : 'none';
-
-            var selfHoursEnabled = window.scheduleConfig.workerSelfHoursEnabled;
-            var allAdminApproved = showHours
-                && (!assignedMorning || dayData.morningSource === 'admin' || dayData.morningStatus === 'absent')
-                && (!assignedAfternoon || dayData.afternoonSource === 'admin' || dayData.afternoonStatus === 'absent');
-
-            var readonly = isPastDay || ((assignedMorning && assignedAfternoon) || isToday);
-            var hideAvailabilitySave = readonly && !showHours;
-            var noHoursSubmitPossible = !selfHoursEnabled || allAdminApproved;
-            var hideSaveCompletely = hideAvailabilitySave && noHoursSubmitPossible;
-
-            saveBtn.style.display = hideSaveCompletely ? 'none' : '';
-
-            if (isPastDay && showHours) {
-                modalTitle.textContent = 'Wpisz godziny pracy';
-                saveBtn.style.display = (allAdminApproved || !selfHoursEnabled) ? 'none' : '';
-            } else if (readonly && showHours) {
-                modalTitle.textContent = 'Twoje zmiany';
-                if (!selfHoursEnabled) {
-                    saveBtn.style.display = 'none';
-                }
-            } else if (readonly) {
-                modalTitle.textContent = 'Twoje zmiany';
-                saveBtn.style.display = 'none';
-            } else {
-                modalTitle.textContent = 'Zapisz się na zmianę';
-            }
-
-            overlay.classList.add('active');
-        });
-    });
-
-    function closeModal() {
-        overlay.classList.remove('active');
-        selectedDate = null;
-        selectedDayEl = null;
-    }
-
-    closeBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
-
-    overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) {
-            closeModal();
-        }
-    });
-
-    function submitHours(s, shiftType) {
-        var fromTime = buildTimeString(s.fromH, s.fromM);
-        var toTime = buildTimeString(s.toH, s.toM);
-
-        if (!fromTime || !toTime || s.fromH.disabled) return Promise.resolve(null);
-
+    function post(url, payload) {
         return $.ajax({
-            url: hoursUrl.replace(':date', selectedDate),
+            url: url,
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
+            headers: { 'X-CSRF-TOKEN': csrf },
             contentType: 'application/json',
-            data: JSON.stringify({
-                shift_type: shiftType,
-                from_time: fromTime,
-                to_time: toTime,
-            }),
+            data: JSON.stringify(payload),
         });
     }
 
-    function submitAvailability() {
-        return $.ajax({
-            url: availabilityUrl.replace(':date', selectedDate),
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            contentType: 'application/json',
-            data: JSON.stringify({
-                morning_shift: morningCheckbox.checked,
-                afternoon_shift: afternoonCheckbox.checked,
-            }),
-        });
+    function fail(xhr) {
+        var message = (xhr && xhr.responseJSON && xhr.responseJSON.message) || 'Wystąpił błąd';
+        showToast.error(message);
     }
 
-    function canSubmitShift(dateStr, type) {
-        if (!window.scheduleConfig.workerSelfHoursEnabled) return false;
-        var dayData = getDayData(dateStr);
-        var s = shifts[type];
-        return dayData[type + 'Source'] !== 'admin'
-            && dayData[type + 'Status'] !== 'absent'
-            && !s.fromH.disabled;
-    }
+    // Blokada czasowa dla dnia dzisiejszego (przed godziną startu zmiany).
+    function applyUnlockGating(slot) {
+        var form = slot.querySelector('.gr-hours-form');
+        if (!form) return;
+        var note = form.querySelector('.gr-hours-note');
+        var save = form.querySelector('.gr-hours-save');
+        var inputs = form.querySelectorAll('input');
 
-    saveBtn.addEventListener('click', function () {
-        if (!selectedDate) return;
-
-        var dayData = getDayData(selectedDate);
-        var isPast = dayData.isPast === '1';
-        var isToday = selectedDayEl.classList.contains('today');
-        var isCurrentWeek = dayData.currentWeek === '1';
-        var assignedMorning = dayData.assignedMorning === '1';
-        var assignedAfternoon = dayData.assignedAfternoon === '1';
-        var shouldSubmitHours = window.scheduleConfig.workerSelfHoursEnabled && isCurrentWeek && (isPast || isToday);
-
-        if (shouldSubmitHours) {
-            var shiftChecks = [
-                { type: 'morning', assigned: assignedMorning, label: 'Zmiana ranna' },
-                { type: 'afternoon', assigned: assignedAfternoon, label: 'Zmiana popołudniowa' },
-            ];
-
-            for (var i = 0; i < shiftChecks.length; i++) {
-                var check = shiftChecks[i];
-                if (check.assigned && canSubmitShift(selectedDate, check.type)) {
-                    var s = shifts[check.type];
-                    var val = validateHoursInputs(s.fromH, s.fromM, s.toH, s.toM);
-                    if (!val.valid) {
-                        showToast.error(check.label + ': ' + val.error);
-                        return;
-                    }
-                }
+        if (slot.closest('.gr-day').classList.contains('is-today')) {
+            var unlock = parseInt(slot.dataset.startMinutes || '0', 10);
+            var now = new Date();
+            var current = now.getHours() * 60 + now.getMinutes();
+            if (unlock && current < unlock) {
+                inputs.forEach(function (i) { i.disabled = true; });
+                if (save) save.disabled = true;
+                note.textContent = 'Godziny można wpisać po ' + (slot.dataset.startLabel || '');
+                note.hidden = false;
+                return;
             }
         }
 
-        saveBtn.disabled = true;
+        inputs.forEach(function (i) { i.disabled = false; });
+        if (save) save.disabled = false;
+        note.hidden = true;
+    }
 
-        var hoursPromises = [];
-        if (shouldSubmitHours) {
-            [{ type: 'morning', assigned: assignedMorning },
-             { type: 'afternoon', assigned: assignedAfternoon }].forEach(function (item) {
-                if (!item.assigned || !canSubmitShift(selectedDate, item.type)) return;
-                var s = shifts[item.type];
-                var result = validateHoursInputs(s.fromH, s.fromM, s.toH, s.toM);
-                if (result.empty) return;
+    // --- availability (Zapisz się / Wypisz się) ----------------------------
+    function submitAvailability(date, type, value, btn) {
+        var day = days[date] || {};
+        var otherType = type === 'morning' ? 'afternoon' : 'morning';
+        var otherValue = day[otherType] === '1';
 
-                hoursPromises.push(
-                    submitHours(s, item.type).then(function () {
-                        var dayData = getDayData(selectedDate);
-                        dayData[item.type + 'From'] = result.from;
-                        dayData[item.type + 'To'] = result.to;
-                        dayData[item.type + 'Source'] = 'worker';
-                    })
-                );
-            });
+        var payload = {
+            morning_shift: type === 'morning' ? value : otherValue,
+            afternoon_shift: type === 'afternoon' ? value : otherValue,
+        };
+
+        if (btn) btn.disabled = true;
+
+        post(config.availabilityUrl.replace(':date', date), payload)
+            .then(function () { window.location.reload(); })
+            .catch(function (xhr) { if (btn) btn.disabled = false; fail(xhr); });
+    }
+
+    // --- hours -------------------------------------------------------------
+    function submitHours(slot, date, type, btn) {
+        var form = slot.querySelector('.gr-hours-form');
+        var fromH = form.querySelector('.gr-h-from-h');
+        var fromM = form.querySelector('.gr-h-from-m');
+        var toH = form.querySelector('.gr-h-to-h');
+        var toM = form.querySelector('.gr-h-to-m');
+
+        if (fromH.disabled) return;
+
+        var validation = validateHoursInputs(fromH, fromM, toH, toM);
+        if (!validation.valid) {
+            showToast.error(validation.error);
+            return;
+        }
+        if (validation.empty) {
+            showToast.error('Wypełnij godziny (start i koniec)');
+            return;
         }
 
-        var skipAvailability = isPast || isToday;
-        var availabilityPromise = skipAvailability
-            ? Promise.resolve(null)
-            : submitAvailability().then(function () {
-                var morning = morningCheckbox.checked;
-                var afternoon = afternoonCheckbox.checked;
+        btn.disabled = true;
 
-                var dayData = getDayData(selectedDate);
-                dayData.morning = morning ? '1' : '0';
-                dayData.afternoon = afternoon ? '1' : '0';
+        post(config.hoursUrl.replace(':date', date), {
+            shift_type: type,
+            from_time: buildTimeString(fromH, fromM),
+            to_time: buildTimeString(toH, toM),
+        })
+            .then(function () { window.location.reload(); })
+            .catch(function (xhr) { btn.disabled = false; fail(xhr); });
+    }
 
-                var badges = selectedDayEl.querySelector('.shift-badges');
-                while (badges.firstChild) {
-                    badges.removeChild(badges.firstChild);
-                }
+    // --- delegated events --------------------------------------------------
+    root.addEventListener('click', function (e) {
+        var signup = e.target.closest('.gr-signup');
+        if (signup) {
+            var cSu = ctx(signup);
+            submitAvailability(cSu.date, cSu.type, true, signup);
+            return;
+        }
 
-                if (morning) {
-                    var morningBadge = document.createElement('span');
-                    morningBadge.className = 'shift-badge morning-badge';
-                    morningBadge.textContent = 'R';
-                    badges.appendChild(morningBadge);
-                }
-                if (afternoon) {
-                    var afternoonBadge = document.createElement('span');
-                    afternoonBadge.className = 'shift-badge afternoon-badge';
-                    afternoonBadge.textContent = 'P';
-                    badges.appendChild(afternoonBadge);
-                }
-            });
+        var unsign = e.target.closest('.gr-unsign');
+        if (unsign) {
+            var cUn = ctx(unsign);
+            submitAvailability(cUn.date, cUn.type, false, unsign);
+            return;
+        }
 
-        Promise.all([availabilityPromise].concat(hoursPromises))
-            .then(function () {
-                closeModal();
-                showToast.success('Zapisano');
-            })
-            .catch(function (xhr) {
-                var message = (xhr && xhr.responseJSON && xhr.responseJSON.message) || 'Wystąpił błąd';
-                showToast.error(message);
-            })
-            .finally(function () {
-                saveBtn.disabled = false;
-            });
+        var toggle = e.target.closest('.gr-hours-toggle');
+        if (toggle) {
+            var slotT = toggle.closest('.gr-slot');
+            var formT = slotT.querySelector('.gr-hours-form');
+            if (formT.hidden) {
+                formT.hidden = false;
+                toggle.textContent = 'Anuluj';
+                applyUnlockGating(slotT);
+            } else {
+                formT.hidden = true;
+                toggle.textContent = toggle.dataset.label;
+            }
+            return;
+        }
+
+        var save = e.target.closest('.gr-hours-save');
+        if (save) {
+            var cS = ctx(save);
+            submitHours(cS.slot, cS.date, cS.type, save);
+            return;
+        }
     });
+
+    setupTimeInputAutopad(root);
+
+    // --- roster collapse (+N osób) ----------------------------------------
+    function pluralPeople(n) {
+        if (n === 1) return 'osoba';
+        return n < 5 ? 'osoby' : 'osób';
+    }
+
+    document.querySelectorAll('.gr-roster').forEach(function (roster) {
+        var names = Array.prototype.slice.call(roster.querySelectorAll('.gr-name'));
+        var max = 4;
+        if (names.length <= max) return;
+
+        var extra = names.length - max;
+        var collapse = function () {
+            names.forEach(function (n, i) { n.classList.toggle('is-hidden', i >= max); });
+            more.textContent = '+' + extra + ' ' + pluralPeople(extra);
+        };
+        var more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'gr-roster-more';
+        var expanded = false;
+        more.addEventListener('click', function () {
+            expanded = !expanded;
+            if (expanded) {
+                names.forEach(function (n) { n.classList.remove('is-hidden'); });
+                more.textContent = 'pokaż mniej';
+            } else {
+                collapse();
+            }
+        });
+        collapse();
+        roster.appendChild(more);
+    });
+
+    // --- podsumowanie tygodnia (twoich zmian / total) ----------------------
+    var summary = document.querySelector('[data-week-summary]');
+    if (summary) {
+        var mine = 0;
+        var total = 0;
+        Object.keys(days).forEach(function (d) {
+            var x = days[d];
+            total += 2;
+            if (x.assignedMorning === '1' || x.morning === '1') mine++;
+            if (x.assignedAfternoon === '1' || x.afternoon === '1') mine++;
+        });
+        summary.innerHTML = 'w tym tygodniu twoich zmian: <strong>' + mine + '</strong> / ' + total;
+    }
 });

@@ -1,8 +1,8 @@
 import flatpickr from 'flatpickr';
 import { Polish } from 'flatpickr/dist/l10n/pl.js';
 import 'flatpickr/dist/flatpickr.min.css';
-import Swal from 'sweetalert2';
 import 'flatpickr/dist/themes/dark.css';
+import { toast } from './notice';
 flatpickr.localize(Polish);
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -639,16 +639,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Dashboard fetch error:', error);
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'error',
-                    title: 'Nie udało się pobrać danych',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
-            }
+            toast.error('Nie udało się pobrać danych', { timer: 3000 });
         })
         .finally(() => {
             setLoading(false);

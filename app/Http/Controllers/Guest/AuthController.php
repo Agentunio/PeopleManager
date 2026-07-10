@@ -26,7 +26,7 @@ class AuthController extends Controller
             'password' => $request->input('password'),
         ];
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
             LoginAttempt::record($ip, true);
             $request->session()->regenerate();
 

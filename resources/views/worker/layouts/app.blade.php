@@ -15,7 +15,7 @@
     @stack('styles')
 </head>
 <body>
-    <div class="worker-app">
+    <div class="worker-app @yield('app_class')">
         @yield('content')
 
         <nav class="bottom-bar">
