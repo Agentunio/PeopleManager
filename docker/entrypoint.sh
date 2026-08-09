@@ -4,18 +4,18 @@ set -euo pipefail
 ROLE="${CONTAINER_ROLE:-app}"
 echo "[entrypoint] Starting PeopleManager (APP_ENV=${APP_ENV:-local}, ROLE=${ROLE})..."
 
-mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views \
-         storage/logs storage/app/public bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-
-if [ "$ROLE" = "app" ] && [ "${APP_ENV:-local}" = "production" ] && [ -d /opt/app-public ] && [ -w /var/www/html/public ]; then
-    echo "[entrypoint] Syncing public/ from image snapshot into shared volume..."
-    find /var/www/html/public -mindepth 1 -delete
-    cp -a /opt/app-public/. /var/www/html/public/
-    chown -R www-data:www-data /var/www/html/public
-fi
-
 RUN_AS=(gosu www-data:www-data)
+
+chown -R www-data:www-data storage bootstrap/cache
+"${RUN_AS[@]}" mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views \
+                          storage/logs storage/app/public bootstrap/cache
+
+if [ "$ROLE" = "app" ] && [ "${APP_ENV:-local}" = "production" ] && [ -d /opt/app-public ]; then
+    echo "[entrypoint] Syncing public/ from image snapshot into shared volume..."
+    chown -R www-data:www-data /var/www/html/public
+    "${RUN_AS[@]}" find /var/www/html/public -mindepth 1 -delete
+    "${RUN_AS[@]}" cp -a /opt/app-public/. /var/www/html/public/
+fi
 
 if [ -n "${DB_HOST:-}" ]; then
     echo "[entrypoint] Waiting for database at ${DB_HOST}:${DB_PORT:-3306}..."

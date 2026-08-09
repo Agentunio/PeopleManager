@@ -52,7 +52,7 @@ trap '
     rc=$?
     if [ "$DEPLOY_SUCCESS" -ne 1 ]; then
         echo "DEPLOY FAILED (exit=$rc). Maintenance mode is left on if it was enabled." >&2
-        echo "Investigate, then run: ${COMPOSE} exec -T app php artisan up" >&2
+        echo "Investigate, then run: ${COMPOSE} exec -T -u www-data app php artisan up" >&2
     fi
     exit $rc
 ' EXIT
@@ -122,8 +122,8 @@ until [ "$(docker inspect -f '{{.State.Health.Status}}' peoplemanager-app 2>/dev
 done
 
 echo "==> [9/9] Restarting nginx + queue workers"
-${COMPOSE} up -d --no-deps nginx
-${COMPOSE} exec -T app php artisan queue:restart
+${COMPOSE} up -d --no-deps --force-recreate nginx
+${COMPOSE} exec -T -u www-data app php artisan queue:restart
 
 echo "==> Disabling maintenance mode + pruning project images"
 MAINTENANCE_TARGET=docker COMPOSE_FILE="$COMPOSE_FILE" bash docker/maintenance.sh up

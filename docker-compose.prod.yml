@@ -47,6 +47,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
       SESSION_DRIVER: ${SESSION_DRIVER:-database}
       SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+      SESSION_COOKIE: ${SESSION_COOKIE:-sortownia-session-v2}
       SESSION_SECURE_COOKIE: "true"
       SESSION_SAME_SITE: lax
       SESSION_DOMAIN: ${SESSION_DOMAIN:-}
@@ -100,6 +101,8 @@ services:
       - SETUID
       - SETGID
     read_only: true
+    healthcheck:
+      disable: true
     tmpfs:
       - /tmp:size=64m,mode=1777
       - /var/www/html/bootstrap/cache:size=32m,uid=33,gid=33,mode=775
@@ -171,6 +174,8 @@ services:
       - SETUID
       - SETGID
     read_only: true
+    healthcheck:
+      disable: true
     tmpfs:
       - /tmp:size=64m,mode=1777
       - /var/www/html/bootstrap/cache:size=32m,uid=33,gid=33,mode=775
