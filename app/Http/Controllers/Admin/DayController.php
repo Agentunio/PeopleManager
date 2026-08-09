@@ -8,7 +8,9 @@ use App\Http\Requests\Admin\WorkerStoreAvailabilityRequest;
 use App\Models\Worker;
 use App\Models\WorkerAvailability;
 use App\Models\WorkerShift;
+use App\Services\PlannerDayShiftSyncService;
 use App\Services\ShiftStartService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -17,25 +19,21 @@ use Illuminate\View\View;
 class DayController extends Controller
 {
     public function __construct(
-        private readonly ShiftStartService $shiftStartService
+        private readonly ShiftStartService $shiftStartService,
+        private readonly PlannerDayShiftSyncService $dayShiftSyncService,
     ) {}
 
     public function index(): View
     {
         $day = request()->route('date');
-        $workers = Worker::with(['availabilities' => function($query) use ($day) {
+        $workers = Worker::with(['availabilities' => function ($query) use ($day) {
             $query->where('day', $day);
         }])->get();
         $workers_on_shift = WorkerShift::with('worker')->where('day', $day)->get();
-        $isDraft = $workers_on_shift->isNotEmpty() && $workers_on_shift->every(fn($s) => $s->is_draft);
+        $isDraft = $workers_on_shift->isNotEmpty() && $workers_on_shift->every(fn ($s) => $s->is_draft);
         $shiftStartTimes = $this->shiftStartService->inputValuesForDate($day);
 
-        $workersJson = $workers->map(fn($w) => [
-            'id' => $w->id,
-            'name' => $w->first_name . ' ' . $w->last_name,
-            'morning' => $w->availabilities->first()?->morning_shift ?? false,
-            'afternoon' => $w->availabilities->first()?->afternoon_shift ?? false,
-        ]);
+        $workersJson = $workers->map(fn (Worker $worker) => $this->workerAvailabilityData($worker));
 
         return view('admin.planner.day.index', [
             'date' => $day,
@@ -44,31 +42,58 @@ class DayController extends Controller
             'workersJson' => $workersJson,
             'isDraft' => $isDraft,
             'shiftStartTimes' => $shiftStartTimes,
+            'assignedCounts' => $this->assignedCounts($workers_on_shift),
         ]);
     }
 
     public function storeAvailability(WorkerStoreAvailabilityRequest $request, $date): JsonResponse
     {
-        foreach ($request->validated()['workers'] as $data) {
-            $morning = isset($data['morning_shift']);
-            $afternoon = isset($data['afternoon_shift']);
+        $timestamp = now();
+        $validated = $request->validated();
+        $upserts = [];
+        $workerIdsToDelete = [];
+
+        foreach ($validated['workers'] as $data) {
+            $workerId = (int) $data['worker_id'];
+            $morning = (bool) $data['morning_shift'];
+            $afternoon = (bool) $data['afternoon_shift'];
 
             if ($morning || $afternoon) {
-                WorkerAvailability::updateOrCreate(
-                    ['worker_id' => $data['worker_id'], 'day' => $date],
-                    [
-                        'morning_shift' => $morning,
-                        'afternoon_shift' => $afternoon,
-                    ]
-                );
-            } else {
-                WorkerAvailability::where('worker_id', $data['worker_id'])
-                    ->where('day', $date)
-                    ->delete();
+                $upserts[$workerId] = [
+                    'worker_id' => $workerId,
+                    'day' => $date,
+                    'morning_shift' => $morning,
+                    'afternoon_shift' => $afternoon,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ];
+                unset($workerIdsToDelete[$workerId]);
+
+                continue;
             }
+
+            unset($upserts[$workerId]);
+            $workerIdsToDelete[$workerId] = true;
         }
 
-        $workers = Worker::with(['availabilities' => function($query) use ($date) {
+        DB::transaction(function () use ($date, $upserts, $workerIdsToDelete): void {
+            if ($upserts !== []) {
+                WorkerAvailability::query()->upsert(
+                    array_values($upserts),
+                    ['worker_id', 'day'],
+                    ['morning_shift', 'afternoon_shift', 'updated_at'],
+                );
+            }
+
+            if ($workerIdsToDelete !== []) {
+                WorkerAvailability::query()
+                    ->where('day', $date)
+                    ->whereIn('worker_id', array_keys($workerIdsToDelete))
+                    ->delete();
+            }
+        }, 3);
+
+        $workers = Worker::with(['availabilities' => function ($query) use ($date) {
             $query->where('day', $date);
         }])->get();
 
@@ -77,51 +102,56 @@ class DayController extends Controller
             'message' => 'Zaktualizowano poprawnie dostępności pracowników',
             'html' => view('admin.planner.partials.workeravailability', [
                 'workers' => $workers,
-                'workers_on_shift' => WorkerShift::where('day', $date)->get()
+                'workers_on_shift' => WorkerShift::where('day', $date)->get(),
             ])->render(),
-            'workers' => $workers->map(fn($w) => [
-                'id' => $w->id,
-                'name' => $w->first_name . ' ' . $w->last_name,
-                'morning' => $w->availabilities->first()?->morning_shift ?? false,
-                'afternoon' => $w->availabilities->first()?->afternoon_shift ?? false,
-            ])
+            'workers' => $workers->map(fn (Worker $worker) => $this->workerAvailabilityData($worker)),
         ]);
     }
 
     public function storeShift(WorkerShiftStoreRequest $request, $date): RedirectResponse
     {
         $validated = $request->validated();
-        $submitted = collect($validated['workers'] ?? []);
-        $isDraft = (bool) $request->input('is_draft', false);
+        $isDraft = (bool) ($validated['is_draft'] ?? false);
 
-        DB::transaction(function () use ($date, $validated, $submitted, $isDraft) {
-            $this->shiftStartService->saveForDate($date, $validated);
-
-            $existing = WorkerShift::where('day', $date)->get();
-
-            $toDelete = $existing->filter(function($shift) use ($submitted) {
-                return !$submitted->contains(fn($s) =>
-                    $s['worker_id'] == $shift->worker_id &&
-                    $s['shift_type'] == $shift->shift_type
-                );
-            });
-
-            WorkerShift::whereIn('id', $toDelete->pluck('id'))->delete();
-
-            foreach ($submitted as $data) {
-                WorkerShift::updateOrCreate(
-                    [
-                        'worker_id' => $data['worker_id'],
-                        'day' => $date,
-                        'shift_type' => $data['shift_type'],
-                    ],
-                    ['is_draft' => $isDraft]
-                );
-            }
-        });
+        $this->dayShiftSyncService->sync($date, $validated, $isDraft);
 
         $message = $isDraft ? 'Grafik zapisany jako szkic' : 'Grafik został zapisany';
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Liczba osób, które faktycznie wyjdą na zmianę — nieobecni się nie liczą,
+     * zastępcy tak. Ta sama semantyka co licznik „Przypisani” w projekcie.
+     *
+     * @param  Collection<int, WorkerShift>  $shifts
+     * @return array{morning: int, afternoon: int}
+     */
+    private function assignedCounts(Collection $shifts): array
+    {
+        $working = $shifts->reject(fn (WorkerShift $shift): bool => $shift->status === 'absent');
+
+        return [
+            'morning' => $working->where('shift_type', 'morning')->count(),
+            'afternoon' => $working->where('shift_type', 'afternoon')->count(),
+        ];
+    }
+
+    /**
+     * @return array{id: int, name: string, morning: bool, afternoon: bool}
+     */
+    private function workerAvailabilityData(Worker $worker): array
+    {
+        /** @var WorkerAvailability|null $availability */
+        $availability = $worker->availabilities->isNotEmpty()
+            ? $worker->availabilities->first()
+            : null;
+
+        return [
+            'id' => $worker->id,
+            'name' => $worker->first_name.' '.$worker->last_name,
+            'morning' => (bool) ($availability->morning_shift ?? false),
+            'afternoon' => (bool) ($availability->afternoon_shift ?? false),
+        ];
     }
 }

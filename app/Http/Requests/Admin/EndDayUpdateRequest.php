@@ -75,10 +75,24 @@ class EndDayUpdateRequest extends FormRequest
             $allWorkers = $this->input('workers', []);
 
             foreach ($allWorkers as $index => $worker) {
-                if (!empty($worker['is_substitute']) && !empty($worker['substituted_for_shift_id'])) {
+                if (! empty($worker['is_substitute']) && empty($worker['substituted_for_shift_id'])) {
+                    $validator->errors()->add(
+                        "workers.{$index}.substituted_for_shift_id",
+                        'Wybierz zmianę zastępowanego pracownika'
+                    );
+                }
+
+                if (! empty($worker['is_substitute']) && ! empty($worker['substituted_for_shift_id'])) {
                     $absentShift = WorkerShift::find($worker['substituted_for_shift_id']);
 
                     if ($absentShift) {
+                        if ($absentShift->shift_type !== ($worker['shift_type'] ?? null)) {
+                            $validator->errors()->add(
+                                "workers.{$index}.substituted_for_shift_id",
+                                'Zastępstwo musi dotyczyć tego samego typu zmiany'
+                            );
+                        }
+
                         if ($absentShift->worker_id == $worker['id']) {
                             $validator->errors()->add(
                                 "workers.{$index}.id",
@@ -90,7 +104,7 @@ class EndDayUpdateRequest extends FormRequest
                         $submittedStatus = $allWorkers[$submittedKey]['status'] ?? null;
                         $dbIsAbsent = $absentShift->status === 'absent';
 
-                        if ($submittedStatus !== 'absent' && !$dbIsAbsent) {
+                        if ($submittedStatus !== 'absent' && ! $dbIsAbsent) {
                             $validator->errors()->add(
                                 "workers.{$index}.substituted_for_shift_id",
                                 'Zastępstwo można przypisać tylko za nieobecnego pracownika'
@@ -127,7 +141,7 @@ class EndDayUpdateRequest extends FormRequest
                 $fromMinutes = (($worker['from_hour'] ?? 0) * 60) + ($worker['from_minute'] ?? 0);
                 $toMinutes = (($worker['to_hour'] ?? 0) * 60) + ($worker['to_minute'] ?? 0);
 
-                if ($toMinutes <= $fromMinutes && !empty($worker['to_hour'])) {
+                if ($toMinutes <= $fromMinutes && ! empty($worker['to_hour'])) {
                     $validator->errors()->add(
                         "workers.{$index}.to_hour",
                         'Godzina zakończenia musi być późniejsza niż rozpoczęcia'

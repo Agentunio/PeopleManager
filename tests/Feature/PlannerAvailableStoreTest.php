@@ -15,6 +15,7 @@ class PlannerAvailableStoreTest extends TestCase
     {
         return User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
             'role' => 'admin',
         ]);
@@ -153,6 +154,7 @@ class PlannerAvailableStoreTest extends TestCase
     {
         $user = User::create([
             'username' => 'worker1',
+            'email' => 'worker1@example.test',
             'password' => 'password',
             'role' => 'worker',
         ]);

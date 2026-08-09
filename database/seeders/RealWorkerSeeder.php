@@ -12,9 +12,17 @@ class RealWorkerSeeder extends Seeder
     {
         $username = env('WORKER_USERNAME');
         $password = env('WORKER_PASSWORD');
+        $email = mb_strtolower(trim((string) env('WORKER_EMAIL')));
 
-        if (!$username || !$password) {
-            $this->command->error('Ustaw WORKER_USERNAME i WORKER_PASSWORD w pliku .env');
+        if (! $username || ! $password || ! $email) {
+            $this->command->error('Ustaw WORKER_USERNAME, WORKER_PASSWORD i WORKER_EMAIL w pliku .env');
+
+            return;
+        }
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->command->error('WORKER_EMAIL musi być prawidłowym adresem e-mail.');
+
             return;
         }
 
@@ -29,6 +37,7 @@ class RealWorkerSeeder extends Seeder
         User::updateOrCreate(
             ['username' => $username],
             [
+                'email' => $email,
                 'password' => $password,
                 'role' => 'worker',
                 'worker_id' => $worker->id,

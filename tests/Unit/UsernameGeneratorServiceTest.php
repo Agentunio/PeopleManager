@@ -16,7 +16,7 @@ class UsernameGeneratorServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new UsernameGeneratorService();
+        $this->service = new UsernameGeneratorService;
     }
 
     public function test_generates_basic_username(): void
@@ -35,7 +35,7 @@ class UsernameGeneratorServiceTest extends TestCase
 
     public function test_expands_first_name_on_collision(): void
     {
-        User::create(['username' => 'j.kowalski', 'password' => 'pass']);
+        User::create(['username' => 'j.kowalski', 'email' => 'j.kowalski@example.test', 'password' => 'pass']);
 
         $username = $this->service->generate('Jan', 'Kowalski');
 
@@ -44,9 +44,9 @@ class UsernameGeneratorServiceTest extends TestCase
 
     public function test_expands_full_first_name_then_adds_number(): void
     {
-        User::create(['username' => 'j.kowalski', 'password' => 'pass']);
-        User::create(['username' => 'ja.kowalski', 'password' => 'pass']);
-        User::create(['username' => 'jan.kowalski', 'password' => 'pass']);
+        User::create(['username' => 'j.kowalski', 'email' => 'j.kowalski@example.test', 'password' => 'pass']);
+        User::create(['username' => 'ja.kowalski', 'email' => 'ja.kowalski@example.test', 'password' => 'pass']);
+        User::create(['username' => 'jan.kowalski', 'email' => 'jan.kowalski@example.test', 'password' => 'pass']);
 
         $username = $this->service->generate('Jan', 'Kowalski');
 
@@ -55,10 +55,10 @@ class UsernameGeneratorServiceTest extends TestCase
 
     public function test_increments_number_on_further_collisions(): void
     {
-        User::create(['username' => 'j.kowalski', 'password' => 'pass']);
-        User::create(['username' => 'ja.kowalski', 'password' => 'pass']);
-        User::create(['username' => 'jan.kowalski', 'password' => 'pass']);
-        User::create(['username' => 'jan.kowalski1', 'password' => 'pass']);
+        User::create(['username' => 'j.kowalski', 'email' => 'j.kowalski@example.test', 'password' => 'pass']);
+        User::create(['username' => 'ja.kowalski', 'email' => 'ja.kowalski@example.test', 'password' => 'pass']);
+        User::create(['username' => 'jan.kowalski', 'email' => 'jan.kowalski@example.test', 'password' => 'pass']);
+        User::create(['username' => 'jan.kowalski1', 'email' => 'jan.kowalski1@example.test', 'password' => 'pass']);
 
         $username = $this->service->generate('Jan', 'Kowalski');
 

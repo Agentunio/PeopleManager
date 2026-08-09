@@ -14,8 +14,8 @@ class PackageUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string'],
-            'price' => ['required', 'numeric'],
+            'name' => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
         ];
     }
 
@@ -23,8 +23,11 @@ class PackageUpdateRequest extends FormRequest
     {
         return [
             'name.required' => 'Nazwa pakietu jest wymagana.',
+            'name.max' => 'Nazwa stawki może mieć maksymalnie 255 znaków.',
             'price.required' => 'Cena jest wymagana.',
             'price.numeric' => 'Musisz podać poprawną liczbę.',
+            'price.min' => 'Cena nie może być ujemna.',
+            'price.max' => 'Cena jest zbyt wysoka.',
         ];
     }
 }

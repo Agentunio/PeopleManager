@@ -245,7 +245,10 @@ input[type="password"]:focus {
 }
 
 .forgot-password {
+    display: inline-flex;
+    min-height: 24px;
     flex: 0 0 auto;
+    align-items: center;
     color: var(--login-text);
     font-size: 13px;
     font-weight: 600;

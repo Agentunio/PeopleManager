@@ -1,0 +1,123 @@
+@import './design-system.css';
+
+/* =========================================================================
+   Motyw "paper" stref pracownika — WSPÓLNY dla Pulpitu i Grafiku.
+   Zmienne + dolny dock (menu) w jednym miejscu (DRY). Importowany przez
+   worker-dashboard.css i worker-schedule.css.
+   ========================================================================= */
+
+.worker-dashboard-shell,
+.worker-schedule-shell {
+    --w-bg: #f5f3ee;
+    --w-surface: #ffffff;
+    --w-field: #faf8f3;
+    --w-border: #e8e3d6;
+    --w-border-strong: #d4cdbe;
+    --w-text: #1a1612;
+    --w-text-muted: #6b6357;
+    --w-text-soft: #a8a094;
+    --w-accent: #dc2626;
+    --w-accent-dark: #991b1b;
+    --w-accent-light: rgba(220, 38, 38, 0.1);
+    --w-accent-medium: rgba(220, 38, 38, 0.25);
+    --w-green: #15803d;
+    --w-green-light: rgba(21, 128, 61, 0.1);
+    --w-amber: #b45309;
+    --w-amber-light: rgba(180, 83, 9, 0.1);
+    --w-shadow: 0 1px 0 rgba(26, 22, 18, 0.04);
+    min-height: 100vh;
+    background: var(--w-bg);
+    color: var(--w-text);
+    font-family: var(--pm-font-display);
+}
+
+/* ---- Dolny dock (menu) — Wariant A -------------------------------------- */
+
+.worker-dashboard-shell .bottom-bar,
+.worker-schedule-shell .bottom-bar {
+    position: static;
+    inset: auto;
+    width: auto;
+    height: auto;
+    transform: none;
+    align-self: center;
+    gap: 6px;
+    margin: 0 auto 22px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid var(--w-border);
+    border-radius: 20px;
+    box-shadow: 0 12px 32px rgba(26, 22, 18, 0.1), 0 2px 6px rgba(26, 22, 18, 0.04);
+}
+
+/* Forma "Wyloguj" znika z layoutu, by button był flex-itemem na równi z linkami */
+.worker-dashboard-shell .bar-item-form,
+.worker-schedule-shell .bar-item-form {
+    display: contents;
+}
+
+.worker-dashboard-shell .bar-item,
+.worker-schedule-shell .bar-item {
+    height: auto;
+    min-width: 104px;
+    gap: 5px;
+    padding: 11px 22px;
+    border-radius: 15px;
+    color: var(--w-text);
+    font-family: var(--pm-font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+.worker-dashboard-shell .bar-item i,
+.worker-schedule-shell .bar-item i {
+    font-size: 1.2rem;
+}
+
+.worker-dashboard-shell .bar-item.active,
+.worker-schedule-shell .bar-item.active {
+    background: var(--w-accent);
+    color: #fff;
+    font-weight: 600;
+}
+
+.worker-dashboard-shell .bar-item.active::after,
+.worker-schedule-shell .bar-item.active::after {
+    display: none;
+}
+
+.worker-dashboard-shell .bar-item:hover,
+.worker-schedule-shell .bar-item:hover {
+    color: var(--w-accent);
+}
+
+.worker-dashboard-shell .bar-item.active:hover,
+.worker-schedule-shell .bar-item.active:hover {
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .worker-dashboard-shell .bottom-bar,
+    .worker-schedule-shell .bottom-bar {
+        width: calc(100% - 24px);
+        margin: 0 12px 14px;
+        border-radius: 18px;
+        padding: 5px;
+        gap: 5px;
+    }
+
+    .worker-dashboard-shell .bar-item,
+    .worker-schedule-shell .bar-item {
+        flex: 1;
+        min-width: 0;
+        padding: 9px 4px;
+        border-radius: 13px;
+        font-size: 11px;
+    }
+
+    .worker-dashboard-shell .bar-item i,
+    .worker-schedule-shell .bar-item i {
+        font-size: 1.15rem;
+    }
+}

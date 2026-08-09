@@ -3,22 +3,37 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SettingsIndexRequest;
 use App\Http\Requests\Admin\SettingsUpdateRequest;
 use App\Models\AppSetting;
-use App\Models\WorkerShift;
-use Carbon\Carbon;
+use App\Services\PendingWorkerHoursService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class SettingsController extends Controller
 {
-    public function index(): View
+    public function __construct(
+        private readonly PendingWorkerHoursService $pendingWorkerHoursService,
+    ) {}
+
+    public function index(SettingsIndexRequest $request): View
     {
+        $workerSelfHoursEnabled = AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS);
+        $attemptedDisable = $workerSelfHoursEnabled && $request->boolean('pending');
+        $pendingWorkers = $attemptedDisable
+            ? $this->pendingWorkersPage($request->integer('page', 1))
+            : collect();
+
+        if ($attemptedDisable && $pendingWorkers->total() === 0) {
+            $attemptedDisable = false;
+            $pendingWorkers = collect();
+        }
+
         return view('admin.app-settings.index', [
-            'workerSelfHoursEnabled' => AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS),
-            'pendingWorkers' => collect(),
-            'attemptedDisable' => false,
+            'workerSelfHoursEnabled' => $workerSelfHoursEnabled,
+            'pendingWorkers' => $pendingWorkers,
+            'attemptedDisable' => $attemptedDisable,
         ]);
     }
 
@@ -26,20 +41,15 @@ class SettingsController extends Controller
     {
         $newValue = $request->boolean('worker_self_hours_enabled');
         $force = $request->boolean('force_disable_with_pending');
-        $disabling = !$newValue;
+        $disabling = ! $newValue;
 
-        if ($disabling && !$force) {
-            $pending = WorkerShift::published()
-                ->where('hours_source', 'worker')
-                ->whereNull('substituted_for_shift_id')
-                ->whereNotNull('worker_from_time')
-                ->with('worker:id,first_name,last_name')
-                ->get(['id', 'worker_id', 'day', 'shift_type']);
+        if ($disabling && ! $force) {
+            $pendingWorkers = $this->pendingWorkersPage();
 
-            if ($pending->isNotEmpty()) {
+            if ($pendingWorkers->total() > 0) {
                 return view('admin.app-settings.index', [
                     'workerSelfHoursEnabled' => true,
-                    'pendingWorkers' => $this->formatPendingWorkers($pending),
+                    'pendingWorkers' => $pendingWorkers,
                     'attemptedDisable' => true,
                 ]);
             }
@@ -50,12 +60,11 @@ class SettingsController extends Controller
         return redirect()->route('app-settings.index')->with('success', 'Ustawienia zostaly zapisane');
     }
 
-    private function formatPendingWorkers(Collection $pending): Collection
+    private function pendingWorkersPage(int $page = 1): LengthAwarePaginator
     {
-        return $pending->map(fn (WorkerShift $shift) => [
-            'name' => trim(($shift->worker?->first_name ?? '') . ' ' . ($shift->worker?->last_name ?? '')),
-            'date' => Carbon::parse($shift->day)->translatedFormat('d.m.Y'),
-            'shift' => $shift->shift_type === 'morning' ? 'Poranna' : 'Popoludniowa',
-        ]);
+        return $this->pendingWorkerHoursService
+            ->paginate($page)
+            ->withPath(route('app-settings.index'))
+            ->appends(['pending' => 1]);
     }
 }

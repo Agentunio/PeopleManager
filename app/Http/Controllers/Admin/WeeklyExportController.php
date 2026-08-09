@@ -2,27 +2,29 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Contracts\HtmlExportRenderer;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\WeeklyExportRequest;
 use App\Services\WeeklyScheduleExportService;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Spatie\Browsershot\Browsershot;
+use Illuminate\Support\Facades\File;
+use RuntimeException;
+use ZipArchive;
 
 class WeeklyExportController extends Controller
 {
     public function __construct(
-        private readonly WeeklyScheduleExportService $exportService
+        private readonly WeeklyScheduleExportService $exportService,
+        private readonly HtmlExportRenderer $renderer,
     ) {}
 
-    public function export(Request $request)
+    public function export(WeeklyExportRequest $request)
     {
-        $request->validate([
-            'week_start' => 'required|date',
-        ]);
+        $validated = $request->validated();
 
-        $weekStart = Carbon::parse($request->week_start)->startOfWeek();
+        $weekStart = Carbon::createFromFormat('Y-m-d', $validated['week_start'])->startOfWeek();
         $weekEnd = $weekStart->copy()->endOfWeek();
-        $weekLabel = $weekStart->format('d.m') . ' - ' . $weekEnd->format('d.m.Y');
+        $weekLabel = $weekStart->format('d.m').' - '.$weekEnd->format('d.m.Y');
 
         $weekData = $this->exportService->getWeekData($weekStart);
 
@@ -31,42 +33,41 @@ class WeeklyExportController extends Controller
         $htmlForPng = $this->exportService->generateHtmlTable($weekData, $weekLabel, false);
 
         $uniqueSuffix = bin2hex(random_bytes(8));
-        $filename = 'grafik_' . $weekStart->format('Y-m-d') . '_' . $uniqueSuffix;
+        $filename = 'grafik_'.$weekStart->format('Y-m-d').'_'.$uniqueSuffix;
 
         $tempDir = storage_path('app/temp');
-        if (!file_exists($tempDir)) {
-            mkdir($tempDir, 0755, true);
-        }
+        File::ensureDirectoryExists($tempDir);
 
-        $pdfPath = $tempDir . '/' . $filename . '.pdf';
-        $pngPath = $tempDir . '/' . $filename . '.png';
-        $zipPath = $tempDir . '/' . $filename . '.zip';
+        $pdfPath = $tempDir.'/'.$filename.'.pdf';
+        $pngPath = $tempDir.'/'.$filename.'.png';
+        $zipPath = $tempDir.'/'.$filename.'.zip';
 
         try {
-            Browsershot::html($htmlForPdf)
-                ->setChromePath(config('services.chrome.path'))
-                ->noSandbox()
-                ->setOption('landscape', true)
-                ->format('A4')
-                ->margins(0, 0, 0, 0)
-                ->save($pdfPath);
+            $this->renderer->saveWeeklyAssets($htmlForPdf, $htmlForPng, $pdfPath, $pngPath);
 
-            Browsershot::html($htmlForPng)
-                ->setChromePath(config('services.chrome.path'))
-                ->noSandbox()
-                ->windowSize(1600, 900)
-                ->fullPage()
-                ->save($pngPath);
+            $zip = new ZipArchive;
+            $zipResult = $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
-            $zip = new \ZipArchive();
-
-            if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
-                $zip->addFile($pdfPath, 'grafik_' . $weekStart->format('Y-m-d') . '.pdf');
-                $zip->addFile($pngPath, 'grafik_' . $weekStart->format('Y-m-d') . '.png');
-                $zip->close();
+            if ($zipResult !== true) {
+                throw new RuntimeException('Nie udało się utworzyć archiwum eksportu.');
             }
 
-            return response()->download($zipPath, 'grafik_' . $weekStart->format('Y-m-d') . '.zip')->deleteFileAfterSend(true);
+            $baseName = 'grafik_'.$weekStart->format('Y-m-d');
+            $pdfAdded = $zip->addFile($pdfPath, $baseName.'.pdf');
+            $pngAdded = $zip->addFile($pngPath, $baseName.'.png');
+            $zipClosed = $zip->close();
+
+            if (! $pdfAdded || ! $pngAdded || ! $zipClosed) {
+                throw new RuntimeException('Nie udało się zapisać plików w archiwum eksportu.');
+            }
+
+            return response()->download($zipPath, $baseName.'.zip')->deleteFileAfterSend(true);
+        } catch (\Throwable $exception) {
+            if (file_exists($zipPath)) {
+                unlink($zipPath);
+            }
+
+            throw $exception;
         } finally {
             if (file_exists($pdfPath)) {
                 unlink($pdfPath);

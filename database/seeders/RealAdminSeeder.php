@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class RealAdminSeeder extends Seeder
 {
@@ -12,9 +11,17 @@ class RealAdminSeeder extends Seeder
     {
         $username = env('ADMIN_USERNAME');
         $password = env('ADMIN_PASSWORD');
+        $email = mb_strtolower(trim((string) env('ADMIN_EMAIL')));
 
-        if (!$username || !$password) {
-            $this->command->error('Ustaw ADMIN_USERNAME i ADMIN_PASSWORD w pliku .env');
+        if (! $username || ! $password || ! $email) {
+            $this->command->error('Ustaw ADMIN_USERNAME, ADMIN_PASSWORD i ADMIN_EMAIL w pliku .env');
+
+            return;
+        }
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->command->error('ADMIN_EMAIL musi być prawidłowym adresem e-mail.');
+
             return;
         }
 
@@ -22,6 +29,7 @@ class RealAdminSeeder extends Seeder
             ['username' => $username],
             [
                 'password' => $password,
+                'email' => $email,
             ]
         );
 

@@ -1,581 +1,283 @@
 @extends('layouts.app')
 
 @section('title', 'Rozliczenie dnia - Panel administratora')
+@section('body_class', 'settlement-screen')
 
 @push('styles')
-    @vite(['resources/css/settings.css', 'resources/css/planner.css', 'resources/css/settlement.css'])
+    @vite(['resources/css/settlement.css'])
 @endpush
 
+@section('mobile_header_action')
+    <button type="submit" form="settlement-form" class="settlement-mobile-submit">
+        Zatwierdź
+    </button>
+@endsection
+
 @section('content')
-    <div class="admin-panel">
-        @include('partials.menu')
+<div class="admin-panel">
+    @include('partials.menu')
 
-        <main class="main-content">
-            <a href="{{ route('planner.day.index', $date ?? '---') }}" class="settings-back-link">
-                <i class="fas fa-arrow-left"></i> Powrót do grafiku dnia
-            </a>
+    <main class="main-content settlement-page" id="daySettlementPage">
+        <a href="{{ route('planner.day.index', $date) }}" class="settlement-back">
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Obsada dnia
+        </a>
 
-            <div class="header">
-                <h1><i class="fas fa-calculator"></i> Rozliczenie dnia</h1>
-                <p>Rozlicz pracowników za dzień: <strong>{{ date('d.m.Y', strtotime($date)) ?? '---' }}</strong></p>
+        <header class="settlement-head">
+            <div>
+                <h1>Rozliczenie dnia</h1>
+                <p class="settlement-subtitle">
+                    {{ $dateData['heading'] }}
+                    <span aria-hidden="true">·</span>
+                    <span class="settlement-subtitle__date">{{ $dateData['formatted'] }}</span>
+                </p>
             </div>
+            @if($isSettled)
+                <div class="settlement-status">Dzień rozliczony</div>
+            @endif
+        </header>
 
-            <div class="settlement-defaults-section">
-                <div class="defaults-header">
-                    <div class="defaults-icon">
-                        <i class="fas fa-sliders-h"></i>
+        <form id="settlement-form" class="settlement-form" action="{{ route('planner.day.update', $date) }}" method="POST">
+            @csrf
+            @method('PATCH')
+
+            <div class="settlement-layout">
+                <aside class="settlement-rail" aria-labelledby="settlement-rail-title">
+                    <div class="settlement-rail__header">
+                        <span class="settlement-mono" id="settlement-rail-title">Podsumowanie dnia</span>
+                        <p class="settlement-rail__hint">liczone na bieżąco</p>
                     </div>
-                    <h2>Ustawienia domyślne</h2>
-                    <p class="defaults-hint">Ustaw wartości i kliknij "Zastosuj" aby wypełnić pola wszystkich pracowników danej zmiany</p>
-                </div>
 
-                <div class="defaults-content">
-                    <div class="defaults-shift-group">
-                        <div class="defaults-shift-label shift-morning-label">
-                            <i class="fas fa-sun"></i>
-                            <span>Zmiana ranna</span>
+                    <div class="settlement-rail__body">
+                        <div class="settlement-stat">
+                            <span class="settlement-mono settlement-mono--sm">Paczki</span>
+                            <strong id="summaryPackageCount">{{ number_format($summary['packageCount'], 0, ',', ' ') }}</strong>
                         </div>
-                        <div class="defaults-fields">
-                            <div class="field-group">
-                                <span>Domyślna stawka</span>
-                                <select id="default-morning-rate">
-                                    <option value="">Wybierz stawkę</option>
-                                    @include('admin.planner.partials.allpackage')
-                                </select>
-                            </div>
-                            <div class="field-group field-time">
-                                <span>Domyślny czas pracy</span>
-                                <div class="time-range-inputs">
-                                    <div class="time-from">
-                                        <span class="time-label">Od</span>
-                                        <input type="number" id="default-morning-from-hour" placeholder="00" min="0" max="23">
-                                        <span class="time-colon">:</span>
-                                        <input type="number" id="default-morning-from-minute" placeholder="00" min="0" max="59">
-                                    </div>
-                                    <span class="time-range-separator">—</span>
-                                    <div class="time-to">
-                                        <span class="time-label">Do</span>
-                                        <input type="number" id="default-morning-to-hour" placeholder="00" min="0" max="23">
-                                        <span class="time-colon">:</span>
-                                        <input type="number" id="default-morning-to-minute" placeholder="00" min="0" max="59">
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="button" class="btn btn-apply-defaults" data-shift="morning">
-                                <i class="fas fa-check"></i> Zastosuj
-                            </button>
+                        <div class="settlement-stat settlement-stat--accent">
+                            <span class="settlement-mono settlement-mono--sm">Wartość paczek</span>
+                            <strong id="summaryPackageValue">{{ number_format($summary['packageValue'], 0, ',', ' ') }} zł</strong>
+                        </div>
+                        <div class="settlement-stat">
+                            <span class="settlement-mono settlement-mono--sm">Godziny łącznie</span>
+                            <strong id="summaryHours">{{ number_format($summary['minutes'] / 60, 1, ',', ' ') }} h</strong>
+                        </div>
+                        <div class="settlement-stat">
+                            <span class="settlement-mono settlement-mono--sm">Rozliczani pracownicy</span>
+                            <strong id="summaryWorkerCount">{{ $summary['workerCount'] }}</strong>
                         </div>
                     </div>
 
-                    <div class="defaults-shift-group">
-                        <div class="defaults-shift-label shift-afternoon-label">
-                            <i class="fas fa-cloud-sun"></i>
-                            <span>Zmiana popołudniowa</span>
-                        </div>
-                        <div class="defaults-fields">
-                            <div class="field-group">
-                                <span>Domyślna stawka</span>
-                                <select id="default-afternoon-rate">
-                                    <option value="">Wybierz stawkę</option>
-                                    @include('admin.planner.partials.allpackage')
-                                </select>
-                            </div>
-                            <div class="field-group field-time">
-                                <span>Domyślny czas pracy</span>
-                                <div class="time-range-inputs">
-                                    <div class="time-from">
-                                        <span class="time-label">Od</span>
-                                        <input type="number" id="default-afternoon-from-hour" placeholder="00" min="0" max="23">
-                                        <span class="time-colon">:</span>
-                                        <input type="number" id="default-afternoon-from-minute" placeholder="00" min="0" max="59">
-                                    </div>
-                                    <span class="time-range-separator">—</span>
-                                    <div class="time-to">
-                                        <span class="time-label">Do</span>
-                                        <input type="number" id="default-afternoon-to-hour" placeholder="00" min="0" max="23">
-                                        <span class="time-colon">:</span>
-                                        <input type="number" id="default-afternoon-to-minute" placeholder="00" min="0" max="59">
-                                    </div>
-                                </div>
-                            </div>
-                            <button type="button" class="btn btn-apply-defaults" data-shift="afternoon">
-                                <i class="fas fa-check"></i> Zastosuj
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <form id="settlement-form" action="{{ route('planner.day.update', $date) }}" method="POST">
-                @csrf
-                @method('PATCH')
-
-                <div class="settlement-container">
-                    <div class="settlement-shift">
-                        <div class="settlement-shift-header shift-morning">
-                            <div class="shift-icon">
-                                <i class="fas fa-sun"></i>
-                            </div>
-                            <h2>Zmiana ranna</h2>
-                            <span class="workers-count" id="morning-workers-count">Liczba pracowników na zmianie wynosiła: {{ $workers_morning->count() }}</span>
-                        </div>
-
-                        <div class="settlement-workers" data-shift="morning">
-                            @forelse($workers_morning as $worker_morning)
-                            <div class="settlement-worker-card {{ $worker_morning->status === 'absent' ? 'worker-absent' : '' }}" data-shift-id="{{ $worker_morning->id }}" data-worker-id="{{ $worker_morning->worker->id }}">
-                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][id]" value="{{ $worker_morning->worker->id }}"/>
-                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][shift_type]" value="{{ $worker_morning->shift_type }}">
-                                <input type="hidden" name="workers[{{ $worker_morning->worker->id }}_morning][status]" value="{{ $worker_morning->status === 'absent' ? 'absent' : 'worked' }}" class="worker-status-input">
-                                <div class="worker-info">
-                                    <span class="worker-name">{{ $worker_morning->worker->first_name }} {{ $worker_morning->worker->last_name }}</span>
-                                    <div class="worker-actions">
-                                        <button type="button" class="btn btn-absent {{ $worker_morning->status === 'absent' ? 'active' : '' }}">
-                                            <i class="fas fa-user-slash"></i> Nieobecny
-                                        </button>
-                                        <button type="button" class="btn btn-add-substitute" data-shift="morning" data-shift-id="{{ $worker_morning->id }}">
-                                            <i class="fas fa-user-plus"></i> Zastępstwo
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="worker-settlement-fields">
-                                    <div class="field-group">
-                                        <span>Stawka</span>
-                                        <select name="workers[{{ $worker_morning->worker->id }}_morning][package]" class="worker-rate">
-                                            <option value="">Wybierz stawkę</option>
-                                            @foreach($packages as $package)
-                                                <option value="{{ $package->id }}" @selected($worker_morning->package_id == $package->id)>
-                                                    {{ $package->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    <div class="field-group field-time">
-                                        <span>Czas pracy</span>
-
-                                        @if($worker_morning->hours_source === 'worker' && $worker_morning->worker_from_time !== null)
-                                            <div class="worker-hours-badge">
-                                                <i class="fas fa-user-clock"></i> wpisane przez pracownika
-                                            </div>
-                                        @endif
-
-                                        @if($worker_morning->minutes)
-                                            <div class="time-saved">
-                                                <span class="saved-hours">
-                                                    Zapisano: {{ floor($worker_morning->minutes / 60) }}h {{ $worker_morning->minutes % 60 }}min
-                                                </span>
-                                                <button type="button" class="btn btn-small btn-change-time">
-                                                    <i class="fas fa-edit"></i> Zmień
-                                                </button>
-                                            </div>
-                                        @endif
-
-                                        @php
-                                            $mPrefill = $worker_morning->hours_source === 'worker' && $worker_morning->worker_from_time !== null && !$worker_morning->minutes;
-                                        @endphp
-                                        <div class="time-range-inputs" @if($worker_morning->minutes) style="display: none;" @endif>
-                                            <div class="time-from">
-                                                <span class="time-label">Od</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23" value="{{ $mPrefill ? sprintf('%02d', $worker_morning->worker_from_hour) : '' }}">
-                                                <span class="time-colon">:</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59" value="{{ $mPrefill ? sprintf('%02d', $worker_morning->worker_from_minute) : '' }}">
-                                            </div>
-                                            <span class="time-range-separator">—</span>
-                                            <div class="time-to">
-                                                <span class="time-label">Do</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23" value="{{ $mPrefill ? sprintf('%02d', $worker_morning->worker_to_hour) : '' }}">
-                                                <span class="time-colon">:</span>
-                                                <input type="number" name="workers[{{ $worker_morning->worker->id }}_morning][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59" value="{{ $mPrefill ? sprintf('%02d', $worker_morning->worker_to_minute) : '' }}">
-                                            </div>
-                                            <div class="time-calculated">
-                                                <span class="calculated-hours">0h 0min</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-                            @empty
-                                <p>Brak pracowników</p>
-                            @endforelse
-
-                            @foreach($substitutes_morning as $sub)
-                                <div class="settlement-worker-card substitute-card" data-substitute-for-shift="{{ $sub->substituted_for_shift_id }}">
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][id]" value="{{ $sub->worker->id }}"/>
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][shift_type]" value="morning">
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][status]" value="worked" class="worker-status-input">
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][is_substitute]" value="1">
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_morning][substituted_for_shift_id]" value="{{ $sub->substituted_for_shift_id }}">
-                                    <div class="worker-info">
-                                        <span class="worker-name">{{ $sub->worker->first_name }} {{ $sub->worker->last_name }}</span>
-                                        <div class="worker-actions">
-                                            <div class="substitute-label">
-                                                <i class="fas fa-user-check"></i>
-                                                Zastępstwo za {{ $sub->substitutedForShift->worker->first_name ?? '' }} {{ $sub->substitutedForShift->worker->last_name ?? '' }}
-                                            </div>
-                                            <button type="button" class="btn btn-remove-substitute">
-                                                <i class="fas fa-times"></i> Usuń zastępstwo
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="worker-settlement-fields">
-                                        <div class="field-group">
-                                            <span>Stawka</span>
-                                            <select name="workers[{{ $sub->worker->id }}_morning][package]" class="worker-rate">
-                                                <option value="">Wybierz stawkę</option>
-                                                @foreach($packages as $package)
-                                                    <option value="{{ $package->id }}" @selected($sub->package_id == $package->id)>
-                                                        {{ $package->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="field-group field-time">
-                                            <span>Czas pracy</span>
-                                            @if($sub->minutes)
-                                                <div class="time-saved">
-                                                    <span class="saved-hours">
-                                                        Zapisano: {{ floor($sub->minutes / 60) }}h {{ $sub->minutes % 60 }}min
-                                                    </span>
-                                                    <button type="button" class="btn btn-small btn-change-time">
-                                                        <i class="fas fa-edit"></i> Zmień
-                                                    </button>
-                                                </div>
-                                            @endif
-                                            <div class="time-range-inputs" @if($sub->minutes) style="display: none;" @endif>
-                                                <div class="time-from">
-                                                    <span class="time-label">Od</span>
-                                                    <input type="number" name="workers[{{ $sub->worker->id }}_morning][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
-                                                    <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $sub->worker->id }}_morning][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
-                                                </div>
-                                                <span class="time-range-separator">—</span>
-                                                <div class="time-to">
-                                                    <span class="time-label">Do</span>
-                                                    <input type="number" name="workers[{{ $sub->worker->id }}_morning][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
-                                                    <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $sub->worker->id }}_morning][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
-                                                </div>
-                                                <div class="time-calculated">
-                                                    <span class="calculated-hours">0h 0min</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <div class="settlement-shift">
-                        <div class="settlement-shift-header shift-afternoon">
-                            <div class="shift-icon">
-                                <i class="fas fa-cloud-sun"></i>
-                            </div>
-                            <h2>Zmiana popołudniowa</h2>
-                            <span class="workers-count" id="afternoon-workers-count">Liczba pracowników na zmianie wynosiła: {{ $workers_afternoon->count() }}</span>
-                        </div>
-
-                        <div class="settlement-workers" data-shift="afternoon">
-                            @forelse($workers_afternoon as $worker_afternoon)
-                                <div class="settlement-worker-card {{ $worker_afternoon->status === 'absent' ? 'worker-absent' : '' }}" data-shift-id="{{ $worker_afternoon->id }}" data-worker-id="{{ $worker_afternoon->worker->id }}">
-                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][id]" value="{{ $worker_afternoon->worker->id }}"/>
-                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][shift_type]" value="{{ $worker_afternoon->shift_type }}">
-                                    <input type="hidden" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][status]" value="{{ $worker_afternoon->status === 'absent' ? 'absent' : 'worked' }}" class="worker-status-input">
-                                    <div class="worker-info">
-                                        <span class="worker-name">{{ $worker_afternoon->worker->first_name }} {{ $worker_afternoon->worker->last_name }}</span>
-                                        <div class="worker-actions">
-                                            <button type="button" class="btn btn-absent {{ $worker_afternoon->status === 'absent' ? 'active' : '' }}">
-                                                <i class="fas fa-user-slash"></i> Nieobecny
-                                            </button>
-                                            <button type="button" class="btn btn-add-substitute" data-shift="afternoon" data-shift-id="{{ $worker_afternoon->id }}">
-                                                <i class="fas fa-user-plus"></i> Zastępstwo
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="worker-settlement-fields">
-                                        <div class="field-group">
-                                            <span>Stawka</span>
-                                            <select name="workers[{{ $worker_afternoon->worker->id }}_afternoon][package]" class="worker-rate">
-                                                <option value="">Wybierz stawkę</option>
-                                                @foreach($packages as $package)
-                                                    <option value="{{ $package->id }}" @selected($worker_afternoon->package_id == $package->id)>
-                                                        {{ $package->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-
-                                        <div class="field-group field-time">
-                                            <span>Czas pracy</span>
-
-                                            @if($worker_afternoon->hours_source === 'worker' && $worker_afternoon->worker_from_time !== null)
-                                                <div class="worker-hours-badge">
-                                                    <i class="fas fa-user-clock"></i> wpisane przez pracownika
-                                                </div>
-                                            @endif
-
-                                            @if($worker_afternoon->minutes)
-                                                <div class="time-saved">
-                                                    <span class="saved-hours">
-                                                        Zapisano: {{ floor($worker_afternoon->minutes / 60) }}h {{ $worker_afternoon->minutes % 60 }}min
-                                                    </span>
-                                                    <button type="button" class="btn btn-small btn-change-time">
-                                                        <i class="fas fa-edit"></i> Zmień
-                                                    </button>
-                                                </div>
-                                            @endif
-
-                                            @php
-                                                $aPrefill = $worker_afternoon->hours_source === 'worker' && $worker_afternoon->worker_from_time !== null && !$worker_afternoon->minutes;
-                                            @endphp
-                                            <div class="time-range-inputs" @if($worker_afternoon->minutes) style="display: none;" @endif>
-                                                <div class="time-from">
-                                                    <span class="time-label">Od</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23" value="{{ $aPrefill ? sprintf('%02d', $worker_afternoon->worker_from_hour) : '' }}">
-                                                    <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59" value="{{ $aPrefill ? sprintf('%02d', $worker_afternoon->worker_from_minute) : '' }}">
-                                                </div>
-                                                <span class="time-range-separator">—</span>
-                                                <div class="time-to">
-                                                    <span class="time-label">Do</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23" value="{{ $aPrefill ? sprintf('%02d', $worker_afternoon->worker_to_hour) : '' }}">
-                                                    <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $worker_afternoon->worker->id }}_afternoon][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59" value="{{ $aPrefill ? sprintf('%02d', $worker_afternoon->worker_to_minute) : '' }}">
-                                                </div>
-                                                <div class="time-calculated">
-                                                    <span class="calculated-hours">0h 0min</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            @empty
-                                <p>Brak pracowników</p>
-                            @endforelse
-
-                            @foreach($substitutes_afternoon as $sub)
-                                <div class="settlement-worker-card substitute-card" data-substitute-for-shift="{{ $sub->substituted_for_shift_id }}">
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][id]" value="{{ $sub->worker->id }}"/>
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][shift_type]" value="afternoon">
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][status]" value="worked" class="worker-status-input">
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][is_substitute]" value="1">
-                                    <input type="hidden" name="workers[{{ $sub->worker->id }}_afternoon][substituted_for_shift_id]" value="{{ $sub->substituted_for_shift_id }}">
-                                    <div class="worker-info">
-                                        <span class="worker-name">{{ $sub->worker->first_name }} {{ $sub->worker->last_name }}</span>
-                                        <div class="worker-actions">
-                                            <div class="substitute-label">
-                                                <i class="fas fa-user-check"></i>
-                                                Zastępstwo za {{ $sub->substitutedForShift->worker->first_name ?? '' }} {{ $sub->substitutedForShift->worker->last_name ?? '' }}
-                                            </div>
-                                            <button type="button" class="btn btn-remove-substitute">
-                                                <i class="fas fa-times"></i> Usuń zastępstwo
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="worker-settlement-fields">
-                                        <div class="field-group">
-                                            <span>Stawka</span>
-                                            <select name="workers[{{ $sub->worker->id }}_afternoon][package]" class="worker-rate">
-                                                <option value="">Wybierz stawkę</option>
-                                                @foreach($packages as $package)
-                                                    <option value="{{ $package->id }}" @selected($sub->package_id == $package->id)>
-                                                        {{ $package->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="field-group field-time">
-                                            <span>Czas pracy</span>
-                                            @if($sub->minutes)
-                                                <div class="time-saved">
-                                                    <span class="saved-hours">
-                                                        Zapisano: {{ floor($sub->minutes / 60) }}h {{ $sub->minutes % 60 }}min
-                                                    </span>
-                                                    <button type="button" class="btn btn-small btn-change-time">
-                                                        <i class="fas fa-edit"></i> Zmień
-                                                    </button>
-                                                </div>
-                                            @endif
-                                            <div class="time-range-inputs" @if($sub->minutes) style="display: none;" @endif>
-                                                <div class="time-from">
-                                                    <span class="time-label">Od</span>
-                                                    <input type="number" name="workers[{{ $sub->worker->id }}_afternoon][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
-                                                    <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $sub->worker->id }}_afternoon][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
-                                                </div>
-                                                <span class="time-range-separator">—</span>
-                                                <div class="time-to">
-                                                    <span class="time-label">Do</span>
-                                                    <input type="number" name="workers[{{ $sub->worker->id }}_afternoon][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
-                                                    <span class="time-colon">:</span>
-                                                    <input type="number" name="workers[{{ $sub->worker->id }}_afternoon][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
-                                                </div>
-                                                <div class="time-calculated">
-                                                    <span class="calculated-hours">0h 0min</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <div class="settlement-global-section">
-                        <div class="global-section-header">
-                            <div class="global-icon">
-                                <i class="fas fa-box"></i>
-                            </div>
-                            <h2>Paczki</h2>
-                        </div>
-
-                        <div class="global-section-content">
-                            <div class="global-shifts-grid">
-                                <div class="global-shift-group">
-                                    <div class="global-shift-label shift-morning-label">
-                                        <i class="fas fa-sun"></i>
-                                        <span>Zmiana ranna</span>
-                                    </div>
-                                    <div class="package-entries-list" data-shift="morning">
-                                        @forelse($shift_packages_morning as $index => $entry)
-                                            <div class="package-entry-row">
-                                                <div class="field-group">
-                                                    <label>Liczba paczek</label>
-                                                    <input type="number" name="morning_package_entries[{{ $index }}][packages_count]"
-                                                           value="{{ $entry->packages_count }}"
-                                                           placeholder="0" min="0">
-                                                </div>
-                                                <div class="field-group">
-                                                    <label>Stawka za paczkę</label>
-                                                    <select name="morning_package_entries[{{ $index }}][package_id]">
-                                                        <option value="">Wybierz stawkę</option>
-                                                        @include('admin.planner.partials.allpackage', [
-                                                            'selected_id' => $entry->package_id
-                                                        ])
-                                                    </select>
-                                                </div>
-                                                <button type="button" class="btn-remove-entry" title="Usuń">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        @empty
-                                            <div class="package-entry-row">
-                                                <div class="field-group">
-                                                    <label>Liczba paczek</label>
-                                                    <input type="number" name="morning_package_entries[0][packages_count]"
-                                                           placeholder="0" min="0">
-                                                </div>
-                                                <div class="field-group">
-                                                    <label>Stawka za paczkę</label>
-                                                    <select name="morning_package_entries[0][package_id]">
-                                                        <option value="">Wybierz stawkę</option>
-                                                        @include('admin.planner.partials.allpackage')
-                                                    </select>
-                                                </div>
-                                                <button type="button" class="btn-remove-entry" title="Usuń wpis">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        @endforelse
-                                    </div>
-                                    <button type="button" class="btn btn-add-entry" data-shift="morning">
-                                        <i class="fas fa-plus"></i> Dodaj więcej
-                                    </button>
-                                </div>
-
-                                <div class="global-shift-group">
-                                    <div class="global-shift-label shift-afternoon-label">
-                                        <i class="fas fa-cloud-sun"></i>
-                                        <span>Zmiana popołudniowa</span>
-                                    </div>
-                                    <div class="package-entries-list" data-shift="afternoon">
-                                        @forelse($shift_packages_afternoon as $index => $entry)
-                                            <div class="package-entry-row">
-                                                <div class="field-group">
-                                                    <label>Liczba paczek</label>
-                                                    <input type="number" name="afternoon_package_entries[{{ $index }}][packages_count]"
-                                                           value="{{ $entry->packages_count }}"
-                                                           placeholder="0" min="0">
-                                                </div>
-                                                <div class="field-group">
-                                                    <label>Stawka za paczkę</label>
-                                                    <select name="afternoon_package_entries[{{ $index }}][package_id]">
-                                                        <option value="">Wybierz stawkę</option>
-                                                        @include('admin.planner.partials.allpackage', [
-                                                            'selected_id' => $entry->package_id
-                                                        ])
-                                                    </select>
-                                                </div>
-                                                <button type="button" class="btn-remove-entry" title="Usuń">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        @empty
-                                            <div class="package-entry-row">
-                                                <div class="field-group">
-                                                    <label>Liczba paczek</label>
-                                                    <input type="number" name="afternoon_package_entries[0][packages_count]"
-                                                           placeholder="0" min="0">
-                                                </div>
-                                                <div class="field-group">
-                                                    <label>Stawka za paczkę</label>
-                                                    <select name="afternoon_package_entries[0][package_id]">
-                                                        <option value="">Wybierz stawkę</option>
-                                                        @include('admin.planner.partials.allpackage')
-                                                    </select>
-                                                </div>
-                                                <button type="button" class="btn-remove-entry" title="Usuń wpis">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        @endforelse
-                                    </div>
-                                    <button type="button" class="btn btn-add-entry" data-shift="afternoon">
-                                        <i class="fas fa-plus"></i> Dodaj więcej
-                                    </button>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="settlement-actions">
-                        <button type="submit" class="btn btn-submit">
-                            <i class="fas fa-check"></i> Zapisz rozliczenie
+                    <div class="settlement-rail__footer">
+                        <p
+                            class="settlement-alert"
+                            id="missingRateAlert"
+                            role="status"
+                            @if($summary['missingRates'] === 0) hidden @endif
+                        >
+                            <span id="missingRateText">
+                                {{ $summary['missingRates'] }} pracowników nie ma przydzielonej stawki. Ustaw domyślną dla zmiany i kliknij „Zastosuj do wszystkich”.
+                            </span>
+                        </p>
+                        <button type="submit" class="settlement-btn settlement-btn--primary">
+                            Zatwierdź rozliczenie
                         </button>
                     </div>
-                </div>
-            </form>
-        </main>
-    </div>
+                </aside>
 
-    <div class="substitute-modal-overlay" id="substituteModal" style="display: none;">
-        <div class="substitute-modal">
-            <div class="substitute-modal-header">
-                <h3><i class="fas fa-user-plus"></i> Wybierz zastępcę</h3>
-                <button type="button" class="btn-modal-close" id="closeSubstituteModal">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div class="settlement-boards">
+                    @foreach($shifts as $shiftType => $shift)
+                        <section class="settlement-board settlement-shift-section" data-shift="{{ $shiftType }}" aria-labelledby="shift-title-{{ $shiftType }}">
+                            <header class="settlement-board__head settlement-board__head--{{ $shiftType }}">
+                                <span class="settlement-bar settlement-bar--{{ $shiftType }}" aria-hidden="true"></span>
+                                <h2 id="shift-title-{{ $shiftType }}">{{ $shift['label'] }}</h2>
+                                <div class="settlement-board__meta">
+                                    <span class="settlement-mono settlement-mono--sm">Start</span>
+                                    <span class="settlement-board__value">{{ $shift['startTime'] }}</span>
+                                </div>
+                                <div class="settlement-board__meta">
+                                    <span class="settlement-mono settlement-mono--sm">Obsada</span>
+                                    <span class="settlement-board__value shift-worker-count">
+                                        <strong>{{ count($shift['workers']) }}</strong>
+                                        {{ count($shift['workers']) === 1 ? 'pracownik' : 'pracowników' }}
+                                    </span>
+                                </div>
+                            </header>
+
+                            <div class="settlement-block settlement-block--packages">
+                                <div class="settlement-block__head">
+                                    <span class="settlement-mono settlement-mono--sm">Paczki na zmianie</span>
+                                    <span class="package-position-count">
+                                        {{ max(count($shift['packageEntries']), 1) }}
+                                        {{ count($shift['packageEntries']) === 1 ? 'pozycja' : 'pozycje' }}
+                                    </span>
+                                    <span class="settlement-block__totals">
+                                        <strong class="shift-package-count">0</strong> szt.
+                                        <span aria-hidden="true">·</span>
+                                        <strong class="shift-package-value">0 zł</strong>
+                                    </span>
+                                </div>
+
+                                <div class="settlement-grid settlement-grid--package settlement-grid--head" aria-hidden="true">
+                                    <span>Liczba paczek</span>
+                                    <span>Stawka za paczkę</span>
+                                    <span>Wartość</span>
+                                    <span></span>
+                                </div>
+
+                                <div class="package-entries-list" data-shift="{{ $shiftType }}">
+                                    @forelse($shift['packageEntries'] as $index => $entry)
+                                        @include('admin.planner.day.end-day.partials.package-row', [
+                                            'entry' => $entry,
+                                            'index' => $index,
+                                            'shiftType' => $shiftType,
+                                            'packages' => $packages,
+                                        ])
+                                    @empty
+                                        @include('admin.planner.day.end-day.partials.package-row', [
+                                            'entry' => ['count' => '', 'packageId' => null],
+                                            'index' => 0,
+                                            'shiftType' => $shiftType,
+                                            'packages' => $packages,
+                                        ])
+                                    @endforelse
+                                </div>
+
+                                <button type="button" class="settlement-btn settlement-btn--ghost btn-add-entry" data-shift="{{ $shiftType }}">
+                                    <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    Dodaj pozycję ze stawką
+                                </button>
+                            </div>
+
+                            <div class="settlement-block settlement-block--defaults">
+                                <span class="settlement-mono settlement-mono--sm">Domyślne</span>
+
+                                <div class="settlement-field">
+                                    <label for="default-{{ $shiftType }}-from">Od</label>
+                                    <input type="time" id="default-{{ $shiftType }}-from" class="settlement-input settlement-time-input default-from-time" value="{{ $shift['startTime'] }}">
+                                </div>
+
+                                <div class="settlement-field">
+                                    <label for="default-{{ $shiftType }}-to">Do</label>
+                                    <input type="time" id="default-{{ $shiftType }}-to" class="settlement-input settlement-time-input default-to-time" value="{{ $shift['defaultEndTime'] }}">
+                                </div>
+
+                                <div class="settlement-field settlement-field--rate">
+                                    <label for="default-{{ $shiftType }}-rate">Stawka</label>
+                                    <select id="default-{{ $shiftType }}-rate" class="settlement-input settlement-select default-rate">
+                                        <option value="">— wybierz —</option>
+                                        @foreach($packages as $package)
+                                            <option value="{{ $package['id'] }}" @selected($package['isDefault'])>
+                                                {{ $package['name'] }} · {{ number_format($package['price'], 2, ',', ' ') }} zł
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <button type="button" class="settlement-btn settlement-btn--secondary btn-apply-defaults" data-shift="{{ $shiftType }}">
+                                    Zastosuj do wszystkich (<span data-role="apply-count">{{ count($shift['workers']) }}</span>)
+                                </button>
+                            </div>
+
+                            <div class="settlement-block settlement-block--workers">
+                                <div class="settlement-grid settlement-grid--worker settlement-grid--head" aria-hidden="true">
+                                    <span>Pracownik</span>
+                                    <span>Od</span>
+                                    <span>Do</span>
+                                    <span>Godziny</span>
+                                    <span>Stawka</span>
+                                </div>
+
+                                <div class="settlement-workers" data-shift="{{ $shiftType }}">
+                                    @forelse($shift['workers'] as $worker)
+                                        @include('admin.planner.day.end-day.partials.worker-row', [
+                                            'worker' => $worker,
+                                            'shiftType' => $shiftType,
+                                            'packages' => $packages,
+                                        ])
+                                    @empty
+                                        <div class="settlement-empty-workers">[ brak pracowników na tej zmianie ]</div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </section>
+                    @endforeach
+                </div>
             </div>
-            <div class="substitute-modal-body">
-                <div class="substitute-modal-loading" id="substituteModalLoading">
-                    <i class="fas fa-circle-notch fa-spin"></i> Ładowanie...
-                </div>
-                <div class="substitute-modal-list" id="substituteModalList"></div>
-                <div class="substitute-modal-empty" id="substituteModalEmpty" style="display: none;">
-                    Brak dostępnych pracowników do zastępstwa
-                </div>
+        </form>
+    </main>
+</div>
+
+<div class="settlement-modal-overlay" id="substituteModal" hidden>
+    <div class="settlement-modal" role="dialog" aria-modal="true" aria-labelledby="substituteModalTitle">
+        <div class="settlement-modal__header">
+            <div>
+                <span class="settlement-mono settlement-mono--sm">Zastępstwo</span>
+                <h2 id="substituteModalTitle">Wybierz pracownika</h2>
+            </div>
+            <button type="button" class="settlement-modal__close" id="closeSubstituteModal" aria-label="Zamknij">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="settlement-modal__body">
+            <div class="settlement-modal__note" id="substituteModalLoading">Ładowanie…</div>
+            <div class="settlement-modal__list" id="substituteModalList"></div>
+            <div class="settlement-modal__note" id="substituteModalEmpty" hidden>
+                Brak dostępnych pracowników do zastępstwa
             </div>
         </div>
     </div>
+</div>
+
+<template id="substituteWorkerTemplate">
+    <div class="settlement-worker-card settlement-grid settlement-grid--worker substitute-card" data-worker-entry="false">
+        <input type="hidden" data-field="id">
+        <input type="hidden" data-field="shift_type">
+        <input type="hidden" data-field="status" value="worked" class="worker-status-input">
+        <input type="hidden" data-field="is_substitute" value="1">
+        <input type="hidden" data-field="substituted_for_shift_id">
+
+        <div class="worker-identity">
+            <span class="worker-avatar" data-role="initials" aria-hidden="true"></span>
+            <span class="worker-name" data-role="name"></span>
+            <span class="worker-badge worker-badge--substitute">
+                zastępstwo <span data-role="substitute-label"></span>
+            </span>
+            <span class="worker-actions">
+                <button type="button" class="worker-action btn-remove-substitute" title="Usuń zastępstwo" aria-label="Usuń zastępstwo">
+                    <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </span>
+        </div>
+
+        <input type="time" class="settlement-input settlement-time-input worker-from-time" aria-label="Godzina rozpoczęcia">
+        <input type="time" class="settlement-input settlement-time-input worker-to-time" aria-label="Godzina zakończenia">
+        <span class="calculated-hours" data-minutes="">—</span>
+        <select class="settlement-input settlement-select worker-rate" aria-label="Stawka pracownika">
+            <option value="">— wybierz stawkę —</option>
+            @foreach($packages as $package)
+                <option value="{{ $package['id'] }}">
+                    {{ $package['name'] }} · {{ number_format($package['price'], 2, ',', ' ') }} zł
+                </option>
+            @endforeach
+        </select>
+    </div>
+</template>
 @endsection
 
 @push('scripts')
     <script>
-        window.settlementPackages = @json($packages);
-        window.settlementDate = @json($date);
+        window.settlementConfig = @json($settlementConfig);
     </script>
     @vite(['resources/js/settlement.js'])
 @endpush

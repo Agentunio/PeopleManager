@@ -224,8 +224,8 @@ document.addEventListener('DOMContentLoaded', function () {
         Object.keys(days).forEach(function (d) {
             var x = days[d];
             total += 2;
-            if (x.assignedMorning === '1' || x.morning === '1') mine++;
-            if (x.assignedAfternoon === '1' || x.afternoon === '1') mine++;
+            if (x.assignedMorning === '1') mine++;
+            if (x.assignedAfternoon === '1') mine++;
         });
         summary.innerHTML = 'w tym tygodniu twoich zmian: <strong>' + mine + '</strong> / ' + total;
     }

@@ -16,7 +16,7 @@
     @endphp
     <main class="gr-page">
         <header class="gr-hero">
-            <div class="gr-hero-text">
+            <div>
                 <h1 class="gr-title">
                     Grafik
                     <span class="gr-hero-range">· {{ $weekStart->format('d.m') }} — {{ $weekEnd->format('d.m') }}</span>

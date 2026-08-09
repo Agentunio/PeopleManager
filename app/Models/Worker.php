@@ -6,9 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $id
+ * @property string $first_name
+ * @property string $last_name
+ * @property-read bool $is_available
+ */
 class Worker extends Model
 {
-
     public $timestamps = false;
 
     protected $fillable = [

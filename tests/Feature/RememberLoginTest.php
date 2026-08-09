@@ -14,6 +14,7 @@ class RememberLoginTest extends TestCase
     {
         $user = User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
             'role' => 'admin',
             'is_active' => true,
@@ -33,6 +34,7 @@ class RememberLoginTest extends TestCase
     {
         $user = User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
             'role' => 'admin',
             'is_active' => true,

@@ -1,44 +1,84 @@
-import Swal from 'sweetalert2';
 import '../css/notice.css';
 
-const baseCustomClass = {
-    popup: 'pm-notice',
-    title: 'pm-notice-title',
-};
+const DEFAULT_TIMER = 4000;
+const LEAVE_MS = 200;
+const TYPES = ['success', 'error', 'warning', 'info'];
 
-const Notice = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 4000,
-    timerProgressBar: true,
-    customClass: baseCustomClass,
-    didOpen: (toast) => {
-        toast.onmouseenter = Swal.stopTimer;
-        toast.onmouseleave = Swal.resumeTimer;
-    },
-});
+let stack = null;
 
-function getCustomClass(type, customClass = {}) {
-    return {
-        ...baseCustomClass,
-        ...customClass,
-        popup: [
-            baseCustomClass.popup,
-            `pm-notice--${type}`,
-            customClass.popup,
-        ].filter(Boolean).join(' '),
-    };
+function getStack() {
+    if (stack && document.contains(stack)) return stack;
+
+    stack = document.createElement('div');
+    stack.className = 'pm-notice-stack';
+    stack.setAttribute('role', 'region');
+    stack.setAttribute('aria-live', 'polite');
+    stack.setAttribute('aria-label', 'Powiadomienia');
+    document.body.append(stack);
+
+    return stack;
 }
 
 export function showToast(type, message, options = {}) {
-    const { customClass, ...toastOptions } = options;
+    const safeType = TYPES.includes(type) ? type : 'info';
+    const duration = Number(options.timer) > 0 ? Number(options.timer) : DEFAULT_TIMER;
 
-    return Notice.fire({
-        title: message,
-        customClass: getCustomClass(type, customClass),
-        ...toastOptions,
-    });
+    const notice = document.createElement('div');
+    const title = document.createElement('p');
+    const progress = document.createElement('span');
+
+    notice.className = `pm-notice pm-notice--${safeType}`;
+    notice.setAttribute('role', safeType === 'error' ? 'alert' : 'status');
+
+    title.className = 'pm-notice-title';
+    // textContent, nie innerHTML — treść bywa komunikatem z odpowiedzi serwera.
+    title.textContent = String(message ?? '');
+
+    progress.className = 'pm-notice-progress';
+    progress.style.animationDuration = `${duration}ms`;
+
+    notice.append(title, progress);
+    getStack().append(notice);
+
+    let timer = null;
+    let remaining = duration;
+    let startedAt = Date.now();
+    let dismissed = false;
+
+    // Usunięcie po stałym czasie, nie na animationend: to zdarzenie bąbelkuje
+    // też z paska postępu i w ogóle nie leci przy prefers-reduced-motion,
+    // przez co toast potrafił zostać na ekranie na stałe.
+    function dismiss() {
+        if (dismissed) return;
+
+        dismissed = true;
+        window.clearTimeout(timer);
+        notice.classList.add('is-leaving');
+        window.setTimeout(() => notice.remove(), LEAVE_MS);
+    }
+
+    function resume() {
+        if (dismissed) return;
+
+        startedAt = Date.now();
+        timer = window.setTimeout(dismiss, remaining);
+        progress.style.animationPlayState = 'running';
+    }
+
+    function pause() {
+        if (dismissed) return;
+
+        window.clearTimeout(timer);
+        remaining -= Date.now() - startedAt;
+        progress.style.animationPlayState = 'paused';
+    }
+
+    notice.addEventListener('mouseenter', pause);
+    notice.addEventListener('mouseleave', resume);
+    notice.addEventListener('click', dismiss);
+    resume();
+
+    return notice;
 }
 
 export const toast = {

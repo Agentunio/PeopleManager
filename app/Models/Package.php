@@ -26,11 +26,6 @@ class Package extends Model
         return $this->hasMany(WorkerShift::class);
     }
 
-    public function shift_package(): HasMany
-    {
-        return $this->hasMany(PackageShift::class);
-    }
-
     public static function setAsDefault(?int $id): void
     {
         static::where('is_default', true)->update(['is_default' => false]);

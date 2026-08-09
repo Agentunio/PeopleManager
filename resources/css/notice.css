@@ -1,24 +1,40 @@
 @import './design-system.css';
 
-.swal2-popup.swal2-toast.pm-notice {
-    display: flex !important;
+.pm-notice-stack {
+    position: fixed;
+    z-index: 2000;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.pm-notice {
+    position: relative;
+    box-sizing: border-box;
+    width: min(460px, calc(100vw - 32px));
+    min-height: 80px;
+    display: flex;
     align-items: center;
-    width: min(420px, calc(100vw - 32px));
-    min-height: 72px;
-    padding: 0 20px;
-    background: #ffffff;
+    padding: 16px 22px 20px;
+    overflow: hidden;
     border: 1px solid #e8e3d6;
     border-radius: 12px;
-    box-shadow: none;
+    background: #ffffff;
     color: #1a1612;
     font-family: var(--pm-font-display);
+    pointer-events: auto;
+    cursor: pointer;
+    animation: pm-notice-in 180ms ease-out;
 }
 
-.swal2-popup.swal2-toast.pm-notice .swal2-html-container {
-    margin: 0;
+.pm-notice.is-leaving {
+    animation: pm-notice-out 160ms ease-in forwards;
 }
 
-.swal2-popup.swal2-toast.pm-notice .pm-notice-title {
+.pm-notice-title {
     flex: 1;
     margin: 0;
     padding: 0;
@@ -26,41 +42,70 @@
     font-family: var(--pm-font-display);
     font-size: 17px;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.4;
     letter-spacing: 0;
+    overflow-wrap: anywhere;
 }
 
-.swal2-popup.swal2-toast.pm-notice .swal2-icon {
-    display: none !important;
-}
-
-.swal2-popup.swal2-toast.pm-notice .swal2-timer-progress-bar-container,
-.swal2-popup.swal2-toast.pm-notice .swal2-timer-progress-bar {
-    display: block;
-}
-
-.swal2-popup.swal2-toast.pm-notice .swal2-timer-progress-bar-container {
+.pm-notice-progress {
     position: absolute;
     right: 0;
     bottom: 0;
     left: 0;
     height: 4px;
-    overflow: hidden;
-    border-radius: 0 0 12px 12px;
+    background: #dc2626;
+    transform-origin: left center;
+    animation: pm-notice-progress linear forwards;
 }
 
-.swal2-popup.swal2-toast.pm-notice .swal2-timer-progress-bar {
-    height: 4px;
-    background: #dc2626;
+.pm-notice--success .pm-notice-progress {
+    background: #15803d;
+}
+
+.pm-notice--warning .pm-notice-progress {
+    background: #b45309;
+}
+
+.pm-notice--info .pm-notice-progress {
+    background: #334155;
+}
+
+@keyframes pm-notice-progress {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+@keyframes pm-notice-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pm-notice-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-8px); }
 }
 
 @media (max-width: 560px) {
-    .swal2-popup.swal2-toast.pm-notice {
-        min-height: 70px;
-        padding: 0 18px;
+    .pm-notice-stack {
+        top: 12px;
+        right: 12px;
+        left: 12px;
     }
 
-    .swal2-popup.swal2-toast.pm-notice .pm-notice-title {
+    .pm-notice {
+        width: 100%;
+        min-height: 80px;
+        padding: 14px 18px 18px;
+    }
+
+    .pm-notice-title {
         font-size: 15px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pm-notice,
+    .pm-notice.is-leaving {
+        animation: none;
     }
 }

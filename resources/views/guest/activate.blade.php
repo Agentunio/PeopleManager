@@ -10,66 +10,96 @@
     @if($errors->any())
         <meta name="flash-error" content="{{ $errors->first() }}">
     @endif
-    @vite(['resources/css/activate.css', 'resources/js/activate.js', 'resources/js/password-toggle.js'])
+    @vite(['resources/css/account-activation.css', 'resources/js/activate.js', 'resources/js/password-toggle.js'])
 </head>
 <body>
 
-<div class="login-container">
-    <div class="circle circle1"></div>
-    <div class="circle circle2"></div>
-    <div class="circle circle3"></div>
-
-    <h1>Aktywacja konta</h1>
+<main class="login-page activation-page" aria-labelledby="activation-title">
+    <section class="login-card activation-card">
+        <header class="login-header">
+            <p class="activation-step">Krok {{ $step === 'verify' ? '1 z 2' : '2 z 2' }}</p>
+            <h1 id="activation-title">Aktywacja konta</h1>
+            <p>
+                {{ $step === 'verify'
+                    ? 'Potwierdź swoją tożsamość, podając datę urodzenia.'
+                    : 'Tożsamość potwierdzona. Ustaw bezpieczne hasło do konta.' }}
+            </p>
+        </header>
 
     @if($step === 'verify')
-        <p class="step-info">Aby potwierdzić swoją tożsamość, podaj datę urodzenia</p>
 
         <form action="{{ route('account.verify', $token) }}" method="post">
             @csrf
             <div class="input-group">
-                <label for="date_of_birth">Data urodzenia</label>
-                <input type="text" id="date_of_birth_display" placeholder="Wybierz datę urodzenia" readonly>
-                <input type="hidden" id="date_of_birth" name="date_of_birth">
+                <label for="date-picker-trigger">Data urodzenia</label>
+                <button
+                    type="button"
+                    id="date-picker-trigger"
+                    class="date-picker-trigger"
+                    aria-haspopup="dialog"
+                    aria-controls="date-picker-dialog"
+                    aria-expanded="false"
+                >
+                    <span class="date-picker-value">Wybierz datę urodzenia</span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <rect x="3" y="5" width="18" height="16" rx="2" />
+                        <path d="M16 3v4M8 3v4M3 10h18" />
+                    </svg>
+                </button>
+                <input type="hidden" id="date_of_birth" name="date_of_birth" value="{{ old('date_of_birth') }}">
+                <p id="date-picker-error" class="field-error" hidden>Wybierz datę urodzenia.</p>
             </div>
             <button type="submit" class="login-btn">Potwierdź</button>
         </form>
     @else
-        <p class="step-info">Tożsamość potwierdzona. Ustaw swoje hasło</p>
 
         <form action="{{ route('account.activate.store', $token) }}" method="post">
             @csrf
-            <div class="input-group">
-                <label for="password">Nowe hasło</label>
-                <div class="password-wrapper">
-                    <input type="password" id="password" name="password" placeholder="Wprowadź hasło" class="has-toggle" required>
-                    <button type="button" class="password-toggle" aria-label="Pokaż hasło" aria-pressed="false">
-                        <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <svg class="eye-off-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    </button>
-                </div>
-                <ul class="password-requirements">
-                    <li id="req-length" class="invalid">Minimum 8 znaków</li>
-                    <li id="req-uppercase" class="invalid">Wielka litera</li>
-                    <li id="req-lowercase" class="invalid">Mała litera</li>
-                    <li id="req-number" class="invalid">Cyfra</li>
-                    <li id="req-special" class="invalid">Znak specjalny</li>
-                </ul>
-            </div>
-            <div class="input-group">
-                <label for="password_confirmation">Powtórz hasło</label>
-                <div class="password-wrapper">
-                    <input type="password" id="password_confirmation" name="password_confirmation" placeholder="Powtórz hasło" class="has-toggle" required>
-                    <button type="button" class="password-toggle" aria-label="Pokaż hasło" aria-pressed="false">
-                        <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <svg class="eye-off-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    </button>
-                </div>
-                <p id="password-match" class="password-match hidden"></p>
-            </div>
+            @include('guest.partials.password-fields')
             <button type="submit" class="login-btn">Aktywuj konto</button>
         </form>
     @endif
-</div>
+    </section>
+
+    @if($step === 'verify')
+        <dialog
+            id="date-picker-dialog"
+            class="date-picker-dialog"
+            aria-labelledby="date-picker-title"
+            aria-describedby="date-picker-help"
+            data-month-title="Wybierz miesiąc"
+            data-day-title="Wybierz dzień"
+        >
+            <div class="date-picker-panel">
+                <header class="date-picker-header">
+                    <div>
+                        <span id="date-picker-progress" class="date-picker-progress">Krok 1 z 3</span>
+                        <h2 id="date-picker-title">Wybierz rok</h2>
+                        <p id="date-picker-help">Najpierw wybierz rok urodzenia.</p>
+                    </div>
+                    <button type="button" class="date-picker-close" aria-label="Zamknij wybór daty">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m6 6 12 12M18 6 6 18" />
+                        </svg>
+                    </button>
+                </header>
+
+                <div class="date-picker-steps" aria-hidden="true">
+                    <span class="is-active"></span>
+                    <span></span>
+                    <span></span>
+                </div>
+
+                <div id="date-picker-options" class="date-picker-options year-options"></div>
+
+                <footer class="date-picker-actions">
+                    <button type="button" class="date-picker-back" hidden>Wstecz</button>
+                    <button type="button" class="date-picker-cancel">Anuluj</button>
+                </footer>
+            </div>
+        </dialog>
+    @endif
+</main>
 
 </body>
 </html>

@@ -1,421 +1,583 @@
-import Swal from 'sweetalert2';
+import { confirmDialog } from './confirm-dialog.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
+    const page = document.getElementById('daySettlementPage');
+    const config = window.settlementConfig || {};
+
+    if (!page) return;
+
+    const packages = Array.isArray(config.packages) ? config.packages : [];
+    const packagesById = new Map(packages.map((item) => [String(item.id), Number(item.price) || 0]));
+    const defaultPackage = packages.find((item) => item.isDefault);
+    const modal = document.getElementById('substituteModal');
+    const modalList = document.getElementById('substituteModalList');
+    const modalLoading = document.getElementById('substituteModalLoading');
+    const modalEmpty = document.getElementById('substituteModalEmpty');
+    const closeModalButton = document.getElementById('closeSubstituteModal');
+    const substituteTemplate = document.getElementById('substituteWorkerTemplate');
+    const settlementForm = document.getElementById('settlement-form');
+    const timeInputSelector = '.settlement-time-input[type=time]';
 
     let currentSubstituteShiftId = null;
     let currentSubstituteShiftType = null;
-    let currentAbsentWorkerName = null;
+    let currentAbsentWorkerName = '';
+    let modalTrigger = null;
 
-    function calculateTimeDiff(fromHour, fromMinute, toHour, toMinute) {
-        if (fromHour === '' || toHour === '') return null;
+    const moneyFormatter = new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 });
+    const numberFormatter = new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 2 });
 
-        fromHour = parseInt(fromHour) || 0;
-        fromMinute = parseInt(fromMinute) || 0;
-        toHour = parseInt(toHour) || 0;
-        toMinute = parseInt(toMinute) || 0;
-
-        let fromTotal = fromHour * 60 + fromMinute;
-        let toTotal = toHour * 60 + toMinute;
-
-        if (toTotal < fromTotal) {
-            toTotal += 24 * 60;
-        }
-
-        let diffMinutes = toTotal - fromTotal;
-        let hours = Math.floor(diffMinutes / 60);
-        let minutes = diffMinutes % 60;
-
-        return { hours, minutes };
+    function notify(type, message) {
+        if (window.showToast?.[type]) window.showToast[type](message);
     }
 
-    function updateCalculatedTime(card) {
-        const fromHour = card.querySelector('.worker-from-hour');
-        const toHour = card.querySelector('.worker-to-hour');
-        if (!fromHour || !toHour) return;
+    function initials(name) {
+        return String(name)
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part.charAt(0))
+            .join('')
+            .toUpperCase();
+    }
 
-        const fromMinute = card.querySelector('.worker-from-minute');
-        const toMinute = card.querySelector('.worker-to-minute');
-        const calculated = card.querySelector('.calculated-hours');
+    function timeToMinutes(value) {
+        if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
 
-        const diff = calculateTimeDiff(
-            fromHour.value, fromMinute ? fromMinute.value : '',
-            toHour.value, toMinute ? toMinute.value : ''
-        );
+        const [hours, minutes] = value.split(':').map(Number);
 
-        if (diff && calculated) {
-            calculated.textContent = `${diff.hours}h ${diff.minutes}min`;
-            calculated.classList.add('has-value');
-        } else if (calculated) {
-            calculated.textContent = '0h 0min';
-            calculated.classList.remove('has-value');
+        return (hours * 60) + minutes;
+    }
+
+    function trackPartialTimeDigits(event) {
+        const input = event.target;
+
+        if (!(input instanceof HTMLInputElement) || !input.matches(timeInputSelector)) return;
+
+        if (/^\d$/.test(event.key)) {
+            const pendingDigits = input.dataset.pendingTimeDigits || '';
+            input.dataset.pendingTimeDigits = (pendingDigits + event.key).slice(-4);
+        } else if (event.key === 'Backspace' || event.key === 'Delete') {
+            delete input.dataset.pendingTimeDigits;
         }
     }
 
-    function initTimeListeners(card) {
-        if (card.classList.contains('worker-absent')) return;
+    function normalizePartialTimeInput(input) {
+        const pendingDigits = input.dataset.pendingTimeDigits || '';
 
-        const timeInputs = card.querySelectorAll('.worker-from-hour, .worker-from-minute, .worker-to-hour, .worker-to-minute');
-        timeInputs.forEach(function(input) {
-            input.addEventListener('input', function() {
-                updateCalculatedTime(card);
+        if (input.value || !/^\d{1,2}$/.test(pendingDigits)) return false;
+
+        const hour = Number.parseInt(pendingDigits, 10);
+
+        if (!Number.isInteger(hour) || hour < 0 || hour > 23) return false;
+
+        input.value = String(hour).padStart(2, '0') + ':00';
+        delete input.dataset.pendingTimeDigits;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+
+        return true;
+    }
+
+    function normalizePartialTimeInputs() {
+        settlementForm?.querySelectorAll(timeInputSelector).forEach(normalizePartialTimeInput);
+    }
+
+    function formatHours(minutes) {
+        return Number.isFinite(minutes) ? numberFormatter.format(minutes / 60) + ' h' : '—';
+    }
+
+    function formatMoney(value) {
+        return moneyFormatter.format(value) + ' zł';
+    }
+
+    function markFieldUpdated(field) {
+        field.classList.remove('field-updated');
+        window.requestAnimationFrame(() => field.classList.add('field-updated'));
+        window.setTimeout(() => field.classList.remove('field-updated'), 520);
+    }
+
+    function markWorkerEntryOverridden(card) {
+        if (card.dataset.workerEntry !== 'true') return;
+
+        const note = card.querySelector('.worker-entry-note');
+        const text = note?.querySelector('.worker-entry-text');
+
+        if (!note || !text) return;
+
+        note.classList.remove('is-worker-entered');
+        note.classList.add('is-overridden');
+        text.textContent = 'nadpisano samodzielny wpis';
+    }
+
+    function updateWorkerTime(card, allowSavedFallback = false) {
+        const fromInput = card.querySelector('.worker-from-time');
+        const toInput = card.querySelector('.worker-to-time');
+        const from = timeToMinutes(fromInput?.value);
+        const to = timeToMinutes(toInput?.value);
+        const output = card.querySelector('.calculated-hours');
+
+        if (!output) return;
+
+        let minutes = null;
+
+        if (from !== null && to !== null) {
+            minutes = to - from;
+        } else if (
+            allowSavedFallback
+            && !fromInput?.value
+            && !toInput?.value
+            && card.dataset.initialMinutes !== ''
+        ) {
+            minutes = Number(card.dataset.initialMinutes);
+        }
+
+        output.dataset.minutes = Number.isFinite(minutes) ? String(minutes) : '';
+        output.textContent = formatHours(minutes);
+    }
+
+    function packageRowValue(row) {
+        const count = Math.max(0, Number.parseInt(row.querySelector('.package-count-input')?.value || '0', 10) || 0);
+        const packageId = row.querySelector('.package-rate')?.value || '';
+        const price = packagesById.get(packageId);
+        const value = price === undefined ? null : count * price;
+        const output = row.querySelector('.package-value');
+
+        if (output) output.textContent = value === null ? '—' : formatMoney(value);
+
+        return { count, value: value || 0 };
+    }
+
+    function updatePackageSection(section) {
+        let count = 0;
+        let value = 0;
+        const rows = [...section.querySelectorAll('.package-entry-row')];
+
+        rows.forEach((row) => {
+            const rowData = packageRowValue(row);
+            count += rowData.count;
+            value += rowData.value;
+        });
+
+        const countOutput = section.querySelector('.shift-package-count');
+        const valueOutput = section.querySelector('.shift-package-value');
+        const positionOutput = section.querySelector('.package-position-count');
+
+        if (countOutput) countOutput.textContent = moneyFormatter.format(count);
+        if (valueOutput) valueOutput.textContent = formatMoney(value);
+
+        if (positionOutput) {
+            const noun = rows.length === 1 ? 'pozycja' : (rows.length < 5 ? 'pozycje' : 'pozycji');
+            positionOutput.textContent = rows.length + ' ' + noun;
+        }
+
+        return { count, value };
+    }
+
+    function updateShiftWorkers(section) {
+        const cards = [...section.querySelectorAll('.settlement-worker-card')];
+        const activeCards = cards.filter((card) => !card.classList.contains('worker-absent'));
+        const countOutput = section.querySelector('.shift-worker-count');
+        const applyButton = section.querySelector('.btn-apply-defaults');
+
+        if (countOutput) {
+            const strong = document.createElement('strong');
+            const noun = cards.length === 1 ? 'pracownik' : 'pracowników';
+            strong.textContent = String(cards.length);
+            countOutput.replaceChildren(strong, document.createTextNode(' ' + noun));
+        }
+
+        const applyCount = applyButton?.querySelector('[data-role="apply-count"]');
+
+        if (applyCount) applyCount.textContent = String(activeCards.length);
+
+        return activeCards;
+    }
+
+    function updateSummary() {
+        let packageCount = 0;
+        let packageValue = 0;
+        let workerCount = 0;
+        let totalMinutes = 0;
+        let missingRates = 0;
+
+        document.querySelectorAll('.settlement-shift-section').forEach((section) => {
+            const packageData = updatePackageSection(section);
+            packageCount += packageData.count;
+            packageValue += packageData.value;
+
+            updateShiftWorkers(section).forEach((card) => {
+                workerCount += 1;
+
+                const rawMinutes = card.querySelector('.calculated-hours')?.dataset.minutes;
+                const minutes = rawMinutes === '' ? NaN : Number(rawMinutes);
+                if (Number.isFinite(minutes)) totalMinutes += minutes;
+                if (!card.querySelector('.worker-rate')?.value) missingRates += 1;
             });
         });
 
-        updateCalculatedTime(card);
+        document.getElementById('summaryPackageCount').textContent = moneyFormatter.format(packageCount);
+        document.getElementById('summaryPackageValue').textContent = formatMoney(packageValue);
+        document.getElementById('summaryHours').textContent = formatHours(totalMinutes);
+        document.getElementById('summaryWorkerCount').textContent = String(workerCount);
+
+        const alert = document.getElementById('missingRateAlert');
+        const alertText = document.getElementById('missingRateText');
+
+        alert.hidden = missingRates === 0;
+
+        if (missingRates > 0) {
+            const subject = missingRates === 1
+                ? '1 pracownik nie ma'
+                : String(missingRates) + ' pracowników nie ma';
+            alertText.textContent = subject + ' przydzielonej stawki. Ustaw domyślną dla zmiany i kliknij „Zastosuj do wszystkich”.';
+        }
     }
 
-    document.querySelectorAll('.settlement-worker-card').forEach(initTimeListeners);
+    function reindexPackageRows(list) {
+        const shiftType = list.dataset.shift;
 
-    $(document).on('click', '.btn-absent', function() {
-        const btn = this;
-        const card = btn.closest('.settlement-worker-card');
-        const statusInput = card.querySelector('.worker-status-input');
-        const shiftId = card.dataset.shiftId;
+        [...list.querySelectorAll('.package-entry-row')].forEach((row, index) => {
+            const count = row.querySelector('.package-count-input');
+            const rate = row.querySelector('.package-rate');
+            const countLabel = row.querySelector('label[for*="-count"]');
+            const rateLabel = row.querySelector('label[for*="-rate"]');
+            const countId = 'package-' + shiftType + '-' + index + '-count';
+            const rateId = 'package-' + shiftType + '-' + index + '-rate';
+
+            row.dataset.entryIndex = String(index);
+            count.name = shiftType + '_package_entries[' + index + '][packages_count]';
+            count.id = countId;
+            rate.name = shiftType + '_package_entries[' + index + '][package_id]';
+            rate.id = rateId;
+
+            if (countLabel) countLabel.htmlFor = countId;
+            if (rateLabel) rateLabel.htmlFor = rateId;
+        });
+    }
+
+    function addPackageRow(shiftType) {
+        const list = document.querySelector('.package-entries-list[data-shift="' + shiftType + '"]');
+        const source = list?.querySelector('.package-entry-row');
+
+        if (!list || !source) return;
+
+        const row = source.cloneNode(true);
+        row.querySelector('.package-count-input').value = '';
+        row.querySelector('.package-rate').value = defaultPackage ? String(defaultPackage.id) : '';
+        row.querySelector('.package-value').textContent = '—';
+        list.appendChild(row);
+        reindexPackageRows(list);
+        updateSummary();
+        row.querySelector('.package-count-input').focus();
+    }
+
+    function removePackageRow(button) {
+        const row = button.closest('.package-entry-row');
+        const list = row?.closest('.package-entries-list');
+
+        if (!row || !list) return;
+
+        if (list.querySelectorAll('.package-entry-row').length === 1) {
+            row.querySelector('.package-count-input').value = '';
+            row.querySelector('.package-rate').value = '';
+            row.querySelector('.package-value').textContent = '—';
+        } else {
+            row.remove();
+        }
+
+        reindexPackageRows(list);
+        updateSummary();
+    }
+
+    function setAbsent(card, isAbsent) {
+        const button = card.querySelector('.btn-absent');
+        const status = card.querySelector('.worker-status-input');
+
+        card.classList.toggle('worker-absent', isAbsent);
+        button?.classList.toggle('active', isAbsent);
+        button?.setAttribute('aria-pressed', isAbsent ? 'true' : 'false');
+        if (status) status.value = isAbsent ? 'absent' : 'worked';
+        updateSummary();
+    }
+
+    async function toggleAbsent(button) {
+        const card = button.closest('.settlement-worker-card');
+        const shiftId = card?.dataset.shiftId;
+
+        if (!card) return;
+
         const wasAbsent = card.classList.contains('worker-absent');
 
-        if (wasAbsent) {
-            const container = card.closest('.settlement-workers');
-            const subCard = shiftId ? container.querySelector(`.substitute-card[data-substitute-for-shift="${shiftId}"]`) : null;
-
-            if (subCard) {
-                const subName = subCard.querySelector('.worker-name')?.textContent?.trim() || '';
-                Swal.fire({
-                    title: 'Usunąć zastępstwo?',
-                    text: `Oznaczenie pracownika jako obecnego usunie zastępstwo: ${subName}`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#e50914',
-                    cancelButtonColor: '#555',
-                    confirmButtonText: 'Tak, usuń zastępstwo',
-                    cancelButtonText: 'Anuluj',
-                    background: '#1f1f1f',
-                    color: '#f0f0f0'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        subCard.remove();
-                        card.classList.remove('worker-absent');
-                        btn.classList.remove('active');
-                        statusInput.value = 'worked';
-                    }
-                });
-                return;
-            }
-
-            card.classList.remove('worker-absent');
-            btn.classList.remove('active');
-            statusInput.value = 'worked';
-        } else {
-            card.classList.add('worker-absent');
-            btn.classList.add('active');
-            statusInput.value = 'absent';
-        }
-    });
-
-    $(document).on('click', '.btn-add-substitute', function() {
-        const card = this.closest('.settlement-worker-card');
-        if (!card.classList.contains('worker-absent')) return;
-
-        currentSubstituteShiftId = this.dataset.shiftId;
-        currentSubstituteShiftType = this.dataset.shift;
-        currentAbsentWorkerName = card.querySelector('.worker-name').textContent.trim();
-
-        const container = card.closest('.settlement-workers');
-        const existingSub = container.querySelector(`.substitute-card[data-substitute-for-shift="${currentSubstituteShiftId}"]`);
-        if (existingSub) {
-            if (window.showToast) {
-                showToast.info('Zastępstwo już zostało dodane dla tego pracownika');
-            }
+        if (!wasAbsent) {
+            setAbsent(card, true);
             return;
         }
 
-        openSubstituteModal();
-    });
+        const container = card.closest('.settlement-workers');
+        const substitute = shiftId
+            ? container?.querySelector('.substitute-card[data-substitute-for-shift="' + shiftId + '"]')
+            : null;
 
-    $(document).on('click', '.btn-remove-substitute', function() {
-        const card = this.closest('.substitute-card');
-        if (card) card.remove();
-    });
-
-    function openSubstituteModal() {
-        const modal = document.getElementById('substituteModal');
-        const loading = document.getElementById('substituteModalLoading');
-        const list = document.getElementById('substituteModalList');
-        const empty = document.getElementById('substituteModalEmpty');
-
-        modal.style.display = 'flex';
-        loading.style.display = 'flex';
-        list.style.display = 'none';
-        empty.style.display = 'none';
-        list.innerHTML = '';
-
-        const url = `/grafik/${window.settlementDate}/zastepstwo-dostepni?shift_type=${currentSubstituteShiftType}`;
-
-        fetch(url, {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(r => r.json())
-        .then(workers => {
-            loading.style.display = 'none';
-
-            const alreadyAdded = new Set();
-            document.querySelectorAll(`.settlement-workers[data-shift="${currentSubstituteShiftType}"] .substitute-card`).forEach(el => {
-                const idInput = el.querySelector('input[name$="[id]"]');
-                if (idInput) alreadyAdded.add(idInput.value);
+        if (substitute) {
+            const substituteName = substitute.querySelector('.worker-name')?.textContent?.trim() || '';
+            const confirmed = await confirmDialog({
+                title: 'Usunąć zastępstwo?',
+                text: 'Oznaczenie pracownika jako obecnego usunie zastępstwo: ' + substituteName,
+                confirmText: 'Tak, usuń zastępstwo',
             });
 
-            const available = workers.filter(w => !alreadyAdded.has(String(w.id)));
+            if (!confirmed) return;
+            substitute.remove();
+        }
+
+        setAbsent(card, false);
+    }
+
+    function closeSubstituteModal() {
+        if (!modal) return;
+
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        currentSubstituteShiftId = null;
+        currentSubstituteShiftType = null;
+        currentAbsentWorkerName = '';
+        modalTrigger?.focus();
+        modalTrigger = null;
+    }
+
+    function modalWorkerButton(worker) {
+        const button = document.createElement('button');
+        const label = document.createElement('span');
+
+        button.type = 'button';
+        button.className = 'substitute-modal-item';
+        button.dataset.workerId = String(worker.id);
+        button.dataset.workerName = (worker.first_name + ' ' + worker.last_name).trim();
+        label.textContent = button.dataset.workerName;
+        button.append(label);
+
+        return button;
+    }
+
+    async function openSubstituteModal(button) {
+        const card = button.closest('.settlement-worker-card');
+
+        if (!card?.classList.contains('worker-absent') || !modal || !modalList) return;
+
+        currentSubstituteShiftId = button.dataset.shiftId;
+        currentSubstituteShiftType = button.dataset.shift;
+        currentAbsentWorkerName = card.querySelector('.worker-name')?.textContent?.trim() || '';
+        modalTrigger = button;
+
+        const container = card.closest('.settlement-workers');
+        const existing = container?.querySelector(
+            '.substitute-card[data-substitute-for-shift="' + currentSubstituteShiftId + '"]'
+        );
+
+        if (existing) {
+            notify('info', 'Zastępstwo już zostało dodane dla tego pracownika');
+            return;
+        }
+
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        modalLoading.hidden = false;
+        modalEmpty.hidden = true;
+        modalList.hidden = true;
+        modalList.replaceChildren();
+        closeModalButton?.focus();
+
+        try {
+            const url = new URL(config.substitutionUrl, window.location.origin);
+            url.searchParams.set('shift_type', currentSubstituteShiftType);
+
+            const response = await fetch(url, {
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+
+            if (!response.ok) throw new Error('Request failed');
+
+            const workers = await response.json();
+            const selector = '.settlement-workers[data-shift="' + currentSubstituteShiftType + '"] .substitute-card';
+            const alreadyAdded = new Set(
+                [...document.querySelectorAll(selector)].map((item) => item.dataset.workerId)
+            );
+            const available = workers.filter((worker) => !alreadyAdded.has(String(worker.id)));
+
+            modalLoading.hidden = true;
 
             if (available.length === 0) {
-                empty.style.display = 'block';
+                modalEmpty.textContent = 'Brak dostępnych pracowników do zastępstwa';
+                modalEmpty.hidden = false;
                 return;
             }
 
-            list.style.display = 'block';
-            list.innerHTML = available.map(w =>
-                `<button type="button" class="substitute-modal-item" data-worker-id="${w.id}" data-worker-name="${escapeAttr(w.first_name + ' ' + w.last_name)}">
-                    <i class="fas fa-user"></i>
-                    <span>${escapeHtml(w.first_name)} ${escapeHtml(w.last_name)}</span>
-                </button>`
-            ).join('');
-        })
-        .catch(() => {
-            loading.style.display = 'none';
-            empty.style.display = 'block';
-            empty.textContent = 'Błąd ładowania pracowników';
-        });
+            available.forEach((worker) => modalList.appendChild(modalWorkerButton(worker)));
+            modalList.hidden = false;
+            modalList.querySelector('button')?.focus();
+        } catch {
+            modalLoading.hidden = true;
+            modalEmpty.textContent = 'Nie udało się załadować pracowników';
+            modalEmpty.hidden = false;
+        }
     }
 
-    $(document).on('click', '.substitute-modal-item', function() {
-        const workerId = this.dataset.workerId;
-        const workerName = this.dataset.workerName;
+    function setDynamicInput(input, name, value) {
+        input.name = name;
+        input.value = value ?? '';
+    }
 
-        createSubstituteCard(workerId, workerName, currentSubstituteShiftType, currentSubstituteShiftId, currentAbsentWorkerName);
+    function createSubstituteCard(workerId, workerName) {
+        if (!substituteTemplate || !currentSubstituteShiftType || !currentSubstituteShiftId) return;
+
+        const card = substituteTemplate.content.firstElementChild.cloneNode(true);
+        const key = workerId + '_' + currentSubstituteShiftType;
+        const container = document.querySelector(
+            '.settlement-workers[data-shift="' + currentSubstituteShiftType + '"]'
+        );
+
+        card.dataset.substituteForShift = currentSubstituteShiftId;
+        card.dataset.workerId = workerId;
+        card.dataset.initialMinutes = '';
+
+        setDynamicInput(card.querySelector('[data-field="id"]'), 'workers[' + key + '][id]', workerId);
+        setDynamicInput(card.querySelector('[data-field="shift_type"]'), 'workers[' + key + '][shift_type]', currentSubstituteShiftType);
+        setDynamicInput(card.querySelector('[data-field="status"]'), 'workers[' + key + '][status]', 'worked');
+        setDynamicInput(card.querySelector('[data-field="is_substitute"]'), 'workers[' + key + '][is_substitute]', '1');
+        setDynamicInput(
+            card.querySelector('[data-field="substituted_for_shift_id"]'),
+            'workers[' + key + '][substituted_for_shift_id]',
+            currentSubstituteShiftId
+        );
+
+        const from = card.querySelector('.worker-from-time');
+        const to = card.querySelector('.worker-to-time');
+        const rate = card.querySelector('.worker-rate');
+
+        from.name = 'workers[' + key + '][from_hour]';
+        to.name = 'workers[' + key + '][to_hour]';
+        rate.name = 'workers[' + key + '][package]';
+        card.querySelector('[data-role="initials"]').textContent = initials(workerName);
+        card.querySelector('[data-role="name"]').textContent = workerName;
+        card.querySelector('[data-role="substitute-label"]').textContent = 'za ' + currentAbsentWorkerName;
+
+        container.querySelector('.settlement-empty-workers')?.remove();
+        container.appendChild(card);
+        updateWorkerTime(card);
+        updateSummary();
+        notify('success', 'Dodano zastępstwo: ' + workerName);
+    }
+
+    function applyDefaults(button) {
+        const section = button.closest('.settlement-shift-section');
+
+        section?.querySelectorAll('.default-from-time, .default-to-time').forEach(normalizePartialTimeInput);
+
+        const from = section?.querySelector('.default-from-time')?.value || '';
+        const to = section?.querySelector('.default-to-time')?.value || '';
+        const rate = section?.querySelector('.default-rate')?.value || '';
+
+        section?.querySelectorAll('.settlement-worker-card:not(.worker-absent)').forEach((card) => {
+            const fromInput = card.querySelector('.worker-from-time');
+            const toInput = card.querySelector('.worker-to-time');
+            const rateInput = card.querySelector('.worker-rate');
+
+            if (from) {
+                fromInput.value = from;
+                markFieldUpdated(fromInput);
+            }
+
+            if (to) {
+                toInput.value = to;
+                markFieldUpdated(toInput);
+            }
+
+            if (rate) {
+                rateInput.value = rate;
+                markFieldUpdated(rateInput);
+            }
+
+            markWorkerEntryOverridden(card);
+            updateWorkerTime(card, true);
+        });
+
+        updateSummary();
+        notify('success', 'Zastosowano domyślne wartości dla zmiany');
+    }
+
+    document.querySelectorAll('.package-entries-list').forEach(reindexPackageRows);
+    document.querySelectorAll('.settlement-worker-card').forEach((card) => updateWorkerTime(card, true));
+    updateSummary();
+
+    page.addEventListener('keydown', trackPartialTimeDigits, true);
+    page.addEventListener('input', (event) => {
+        const card = event.target.closest('.settlement-worker-card');
+
+        if (event.target.matches(timeInputSelector) && event.target.value) {
+            delete event.target.dataset.pendingTimeDigits;
+        }
+
+        if (event.target.matches('.worker-from-time, .worker-to-time') && card) {
+            markWorkerEntryOverridden(card);
+            updateWorkerTime(card, true);
+        }
+
+        if (event.target.matches('.package-count-input')) {
+            event.target.value = event.target.value.replace(/[^0-9]/g, '');
+        }
+
+        updateSummary();
+    });
+
+    page.addEventListener('change', (event) => {
+        if (event.target.matches('.worker-rate, .package-rate')) updateSummary();
+    });
+
+    page.addEventListener('click', (event) => {
+        const addEntry = event.target.closest('.btn-add-entry');
+        const removeEntry = event.target.closest('.btn-remove-entry');
+        const absent = event.target.closest('.btn-absent');
+        const addSubstitute = event.target.closest('.btn-add-substitute');
+        const removeSubstitute = event.target.closest('.btn-remove-substitute');
+        const apply = event.target.closest('.btn-apply-defaults');
+
+        if (addEntry) addPackageRow(addEntry.dataset.shift);
+        else if (removeEntry) removePackageRow(removeEntry);
+        else if (absent) toggleAbsent(absent);
+        else if (addSubstitute) openSubstituteModal(addSubstitute);
+        else if (removeSubstitute) {
+            removeSubstitute.closest('.settlement-worker-card')?.remove();
+            updateSummary();
+        } else if (apply) applyDefaults(apply);
+    });
+
+    document.addEventListener('click', (event) => {
+        const submitter = event.target.closest?.('button[type="submit"], input[type="submit"]');
+
+        if (submitter?.form === settlementForm) normalizePartialTimeInputs();
+    }, true);
+
+    settlementForm?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') normalizePartialTimeInputs();
+    }, true);
+
+    settlementForm?.addEventListener('submit', normalizePartialTimeInputs);
+
+    modalList?.addEventListener('click', (event) => {
+        const item = event.target.closest('.substitute-modal-item');
+
+        if (!item) return;
+
+        createSubstituteCard(item.dataset.workerId, item.dataset.workerName);
         closeSubstituteModal();
     });
 
-    document.getElementById('closeSubstituteModal').addEventListener('click', closeSubstituteModal);
-    document.getElementById('substituteModal').addEventListener('click', function(e) {
-        if (e.target === this) closeSubstituteModal();
+    closeModalButton?.addEventListener('click', closeSubstituteModal);
+    modal?.addEventListener('click', (event) => {
+        if (event.target === modal) closeSubstituteModal();
     });
 
-    function closeSubstituteModal() {
-        document.getElementById('substituteModal').style.display = 'none';
-        currentSubstituteShiftId = null;
-        currentSubstituteShiftType = null;
-        currentAbsentWorkerName = null;
-    }
-
-    function createSubstituteCard(workerId, workerName, shiftType, absentShiftId, absentWorkerName) {
-        const key = `${workerId}_${shiftType}`;
-        const container = document.querySelector(`.settlement-workers[data-shift="${shiftType}"]`);
-
-        const packageOptions = (window.settlementPackages || []).map(p =>
-            `<option value="${p.id}">${escapeHtml(p.name)}</option>`
-        ).join('');
-
-        const html = `
-            <div class="settlement-worker-card substitute-card" data-substitute-for-shift="${absentShiftId}">
-                <input type="hidden" name="workers[${key}][id]" value="${workerId}">
-                <input type="hidden" name="workers[${key}][shift_type]" value="${shiftType}">
-                <input type="hidden" name="workers[${key}][status]" value="worked" class="worker-status-input">
-                <input type="hidden" name="workers[${key}][is_substitute]" value="1">
-                <input type="hidden" name="workers[${key}][substituted_for_shift_id]" value="${absentShiftId}">
-                <div class="worker-info">
-                    <span class="worker-name">${escapeHtml(workerName)}</span>
-                    <div class="worker-actions">
-                        <div class="substitute-label">
-                            <i class="fas fa-user-check"></i>
-                            Zastępstwo za ${escapeHtml(absentWorkerName)}
-                        </div>
-                        <button type="button" class="btn btn-remove-substitute">
-                            <i class="fas fa-times"></i> Usuń zastępstwo
-                        </button>
-                    </div>
-                </div>
-                <div class="worker-settlement-fields">
-                    <div class="field-group">
-                        <span>Stawka</span>
-                        <select name="workers[${key}][package]" class="worker-rate">
-                            <option value="">Wybierz stawkę</option>
-                            ${packageOptions}
-                        </select>
-                    </div>
-                    <div class="field-group field-time">
-                        <span>Czas pracy</span>
-                        <div class="time-range-inputs">
-                            <div class="time-from">
-                                <span class="time-label">Od</span>
-                                <input type="number" name="workers[${key}][from_hour]" class="worker-from-hour" placeholder="00" min="0" max="23">
-                                <span class="time-colon">:</span>
-                                <input type="number" name="workers[${key}][from_minute]" class="worker-from-minute" placeholder="00" min="0" max="59">
-                            </div>
-                            <span class="time-range-separator">—</span>
-                            <div class="time-to">
-                                <span class="time-label">Do</span>
-                                <input type="number" name="workers[${key}][to_hour]" class="worker-to-hour" placeholder="00" min="0" max="23">
-                                <span class="time-colon">:</span>
-                                <input type="number" name="workers[${key}][to_minute]" class="worker-to-minute" placeholder="00" min="0" max="59">
-                            </div>
-                            <div class="time-calculated">
-                                <span class="calculated-hours">0h 0min</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        container.insertAdjacentHTML('beforeend', html);
-
-        const newCard = container.querySelector(`.substitute-card[data-substitute-for-shift="${absentShiftId}"]`);
-        if (newCard) initTimeListeners(newCard);
-
-        if (window.showToast) {
-            showToast.success(`Dodano zastępstwo: ${workerName}`);
-        }
-    }
-
-    document.querySelectorAll('.btn-apply-defaults').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const shift = this.dataset.shift;
-            applyDefaults(shift);
-        });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal && !modal.hidden) closeSubstituteModal();
     });
-
-    function applyDefaults(shift) {
-        const defaultRate = document.getElementById(`default-${shift}-rate`).value;
-        const defaultFromHour = document.getElementById(`default-${shift}-from-hour`).value;
-        const defaultFromMinute = document.getElementById(`default-${shift}-from-minute`).value;
-        const defaultToHour = document.getElementById(`default-${shift}-to-hour`).value;
-        const defaultToMinute = document.getElementById(`default-${shift}-to-minute`).value;
-
-        const workersContainer = document.querySelector(`.settlement-workers[data-shift="${shift}"]`);
-        if (!workersContainer) return;
-
-        const workerCards = workersContainer.querySelectorAll('.settlement-worker-card');
-
-        workerCards.forEach(function(card) {
-            if (card.classList.contains('worker-absent')) return;
-
-            if (defaultRate) {
-                const rateField = card.querySelector('.worker-rate');
-                if (rateField) {
-                    rateField.value = defaultRate;
-                    rateField.classList.add('field-updated');
-                    setTimeout(() => rateField.classList.remove('field-updated'), 500);
-                }
-            }
-
-            if (defaultFromHour !== '') {
-                const field = card.querySelector('.worker-from-hour');
-                if (field) {
-                    field.value = defaultFromHour;
-                    field.classList.add('field-updated');
-                    setTimeout(() => field.classList.remove('field-updated'), 500);
-                }
-            }
-
-            if (defaultFromMinute !== '') {
-                const field = card.querySelector('.worker-from-minute');
-                if (field) {
-                    field.value = defaultFromMinute;
-                    field.classList.add('field-updated');
-                    setTimeout(() => field.classList.remove('field-updated'), 500);
-                }
-            }
-
-            if (defaultToHour !== '') {
-                const field = card.querySelector('.worker-to-hour');
-                if (field) {
-                    field.value = defaultToHour;
-                    field.classList.add('field-updated');
-                    setTimeout(() => field.classList.remove('field-updated'), 500);
-                }
-            }
-
-            if (defaultToMinute !== '') {
-                const field = card.querySelector('.worker-to-minute');
-                if (field) {
-                    field.value = defaultToMinute;
-                    field.classList.add('field-updated');
-                    setTimeout(() => field.classList.remove('field-updated'), 500);
-                }
-            }
-
-            updateCalculatedTime(card);
-        });
-
-        const shiftName = shift === 'morning' ? 'rannej' : 'popołudniowej';
-        if (window.showToast) {
-            showToast.success(`Domyślne wartości zastosowane dla zmiany ${shiftName}`);
-        }
-    }
-
-    $(document).on('click', '.btn-change-time', function() {
-        $(this).closest('.field-time').find('.time-saved').hide();
-        $(this).closest('.field-time').find('.time-range-inputs').show();
-    });
-
-    document.querySelectorAll('.btn-add-entry').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const shift = this.dataset.shift;
-            const list = document.querySelector(`.package-entries-list[data-shift="${shift}"]`);
-            if (!list) return;
-
-            const rows = list.querySelectorAll('.package-entry-row');
-            const newIndex = rows.length;
-            const prefix = shift + '_package_entries';
-
-            const firstRow = rows[0];
-            const newRow = firstRow.cloneNode(true);
-
-            const input = newRow.querySelector('input[type="number"]');
-            input.name = `${prefix}[${newIndex}][packages_count]`;
-            input.value = '';
-
-            const select = newRow.querySelector('select');
-            select.name = `${prefix}[${newIndex}][package_id]`;
-            select.selectedIndex = 0;
-
-            list.appendChild(newRow);
-        });
-    });
-
-    $(document).on('click', '.btn-remove-entry', function() {
-        const row = this.closest('.package-entry-row');
-        const list = row.closest('.package-entries-list');
-        const rows = list.querySelectorAll('.package-entry-row');
-
-        if (rows.length <= 1) {
-            const input = row.querySelector('input[type="number"]');
-            const select = row.querySelector('select');
-            if (input) input.value = '';
-            if (select) select.selectedIndex = 0;
-            return;
-        }
-
-        row.remove();
-
-        const shift = list.dataset.shift;
-        const prefix = shift + '_package_entries';
-        list.querySelectorAll('.package-entry-row').forEach(function(r, i) {
-            const input = r.querySelector('input[type="number"]');
-            const select = r.querySelector('select');
-            if (input) input.name = `${prefix}[${i}][packages_count]`;
-            if (select) select.name = `${prefix}[${i}][package_id]`;
-        });
-    });
-
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
-    function escapeAttr(str) {
-        return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
 });

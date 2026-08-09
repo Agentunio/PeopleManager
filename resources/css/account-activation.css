@@ -1,0 +1,364 @@
+@import './login.css';
+@import './password-fields.css';
+
+.activation-page {
+    padding-block: 32px;
+}
+
+.activation-card {
+    width: 600px;
+}
+
+.login-header .activation-step {
+    margin-bottom: 10px;
+    color: var(--login-accent);
+    font-family: var(--login-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.date-picker-trigger {
+    width: 100%;
+    min-width: 0;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 15px 13px 17px;
+    background: var(--login-field);
+    border: 1px solid var(--login-line);
+    border-radius: 10px;
+    color: var(--login-text);
+    cursor: pointer;
+    font-size: 17px;
+    font-weight: 500;
+    text-align: left;
+    transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.date-picker-trigger:hover,
+.date-picker-trigger:focus-visible,
+.date-picker-trigger[aria-expanded="true"] {
+    border-color: var(--login-text);
+    outline: none;
+}
+
+.date-picker-trigger.is-invalid {
+    border-color: var(--login-accent);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.date-picker-trigger svg {
+    width: 21px;
+    height: 21px;
+    flex: 0 0 21px;
+    color: var(--login-muted);
+}
+
+.date-picker-value.is-placeholder {
+    color: #a8a094;
+}
+
+.field-error {
+    margin: 7px 0 0;
+    color: var(--login-accent);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+
+body.date-picker-open {
+    overflow: hidden;
+}
+
+.date-picker-dialog {
+    width: min(520px, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
+    margin: auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--login-text);
+    overflow: hidden;
+}
+
+.date-picker-dialog::backdrop {
+    background: rgba(26, 22, 18, 0.52);
+    backdrop-filter: blur(3px);
+}
+
+.date-picker-panel {
+    width: 100%;
+    max-height: min(720px, calc(100svh - 48px));
+    display: flex;
+    flex-direction: column;
+    padding: 28px;
+    background: var(--login-panel);
+    border: 1px solid var(--login-line);
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(26, 22, 18, 0.2);
+}
+
+.date-picker-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.date-picker-progress {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--login-accent);
+    font-family: var(--login-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+}
+
+.date-picker-header h2 {
+    margin: 0 0 5px;
+    font-size: 27px;
+    font-weight: 500;
+    line-height: 1.1;
+}
+
+.date-picker-header p {
+    margin: 0;
+    color: var(--login-muted);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.date-picker-close {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: var(--login-field);
+    border: 1px solid var(--login-line);
+    border-radius: 10px;
+    color: var(--login-muted);
+    cursor: pointer;
+}
+
+.date-picker-close:hover,
+.date-picker-close:focus-visible {
+    border-color: var(--login-text);
+    color: var(--login-text);
+    outline: none;
+}
+
+.date-picker-close svg {
+    width: 18px;
+    height: 18px;
+}
+
+.date-picker-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin: 22px 0 18px;
+}
+
+.date-picker-steps span {
+    height: 3px;
+    background: var(--login-line);
+    border-radius: 999px;
+}
+
+.date-picker-steps span.is-active {
+    background: var(--login-accent);
+}
+
+.date-picker-options {
+    min-height: 230px;
+    display: grid;
+    gap: 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 2px 4px 2px 0;
+}
+
+.date-picker-options.year-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.date-picker-options.month-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-content: start;
+}
+
+.date-picker-options.day-options {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    align-content: start;
+}
+
+.date-picker-option {
+    min-height: 48px;
+    padding: 9px 6px;
+    background: var(--login-field);
+    border: 1px solid var(--login-line);
+    border-radius: 9px;
+    color: var(--login-text);
+    cursor: pointer;
+    font-family: var(--login-mono);
+    font-size: 13px;
+    font-weight: 600;
+    transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+}
+
+.month-options .date-picker-option {
+    min-height: 58px;
+    font-family: var(--login-font);
+    font-size: 14px;
+}
+
+.date-picker-option:hover,
+.date-picker-option:focus-visible {
+    border-color: var(--login-text);
+    outline: none;
+}
+
+.date-picker-option.is-selected {
+    background: var(--login-text);
+    border-color: var(--login-text);
+    color: #ffffff;
+}
+
+.date-picker-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--login-line);
+}
+
+.date-picker-actions button {
+    min-height: 40px;
+    padding: 9px 13px;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    color: var(--login-text);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.date-picker-actions button:hover,
+.date-picker-actions button:focus-visible {
+    background: var(--login-field);
+    outline: none;
+}
+
+.date-picker-actions .date-picker-cancel {
+    margin-left: auto;
+    color: var(--login-muted);
+}
+
+.error-card .login-header {
+    margin-bottom: 0;
+}
+
+.error-status {
+    margin: 0 0 12px;
+    color: var(--login-accent);
+    font-family: var(--login-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.error-card .login-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 28px;
+    text-decoration: none;
+}
+
+@media (max-width: 560px) {
+    .activation-page {
+        padding: 0;
+    }
+
+    .activation-card {
+        padding-top: 18vh;
+    }
+
+    .login-header .activation-step {
+        margin-bottom: 8px;
+        font-size: 9px;
+    }
+
+    .date-picker-trigger {
+        height: 44px;
+        padding: 11px 12px 11px 13px;
+        font-size: 15px;
+    }
+
+
+    .date-picker-dialog {
+        width: 100%;
+        max-width: none;
+        max-height: none;
+        margin: auto 0 0;
+    }
+
+    .date-picker-panel {
+        width: 100%;
+        max-height: 86svh;
+        padding: 22px 16px max(18px, env(safe-area-inset-bottom));
+        border-right: 0;
+        border-bottom: 0;
+        border-left: 0;
+        border-radius: 18px 18px 0 0;
+    }
+
+    .date-picker-header h2 {
+        font-size: 23px;
+    }
+
+    .date-picker-header p {
+        font-size: 12px;
+    }
+
+    .date-picker-options {
+        min-height: 210px;
+    }
+
+    .date-picker-options.year-options {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .date-picker-option {
+        min-height: 44px;
+        font-size: 12px;
+    }
+
+    .month-options .date-picker-option {
+        min-height: 52px;
+        font-size: 12px;
+    }
+
+    .day-options .date-picker-option {
+        min-height: 40px;
+        padding-inline: 2px;
+    }
+}
+
+@media (max-width: 370px) {
+    .date-picker-options.year-options {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}

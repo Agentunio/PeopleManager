@@ -1,440 +1,790 @@
-.header {
-    background-color: #000;
-    padding: 30px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-}
+@import './design-system.css';
 
-.header h1 {
-    font-size: 2rem;
-    font-weight: 300;
-    color: var(--secondary-color);
-    margin: 0 0 10px 0;
-}
-
-.header p {
-    color: #aaa;
-    font-size: 0.95rem;
+.rates-page {
+    --rates-bg: #f5f3ee;
+    --rates-panel: #ffffff;
+    --rates-field: #faf8f3;
+    --rates-line: #e8e3d6;
+    --rates-line-strong: #d4cdbe;
+    --rates-text: #1a1612;
+    --rates-muted: #6b6357;
+    --rates-accent: #dc2626;
+    --rates-accent-deep: #991b1b;
+    --rates-accent-tint: rgba(220, 38, 38, 0.1);
+    --rates-accent-border: rgba(220, 38, 38, 0.25);
     margin: 0;
+    background: var(--rates-bg);
+    color: var(--rates-text);
+    font-family: var(--pm-font-display);
 }
 
-.header .btn {
-    flex-shrink: 0;
+.rates-page.rates-modal-open {
+    overflow: hidden;
 }
 
-.settings-container {
-    background-color: #1f1f1f;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 30px;
+.rates-page .rates-admin-panel {
+    min-height: 100dvh;
+    background: var(--rates-bg);
 }
 
-.settings-container:not(:first-of-type) {
-    margin-top: 20px;
+.rates-content {
+    box-sizing: border-box;
+    padding: 24px 28px 28px;
+    background: var(--rates-bg);
+    color: var(--rates-text);
 }
 
-.settings-container h2 {
-    color: var(--secondary-color);
-    font-size: 1.3rem;
+.rates-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+}
+
+.rates-heading h1 {
+    margin: 6px 0;
+    color: var(--rates-text);
+    font-family: var(--pm-font-display);
+    font-size: 30px;
     font-weight: 500;
-    margin: 0 0 20px 0;
-    padding-bottom: 15px;
-    border-bottom: 2px solid var(--accent-color);
+    line-height: 1.05;
+    letter-spacing: -0.9px;
 }
 
-.settings-section {
-    background-color: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 25px;
-}
-
-.settings-section h2 {
-    margin-bottom: 20px;
-}
-
-.package-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.package-header-row h2 {
+.rates-heading p {
+    max-width: 640px;
     margin: 0;
-    padding: 0;
-    border: none;
-}
-
-.current-amount {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 20px;
-    padding: 20px;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.amount-info {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.amount-label {
-    font-size: 1rem;
-    color: #888;
-}
-
-.amount-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--secondary-color);
-}
-
-.currency {
-    font-size: 1.1rem;
-    color: var(--accent-color);
-    font-weight: 600;
-}
-
-.btn {
-    padding: 12px 25px;
-    border: none;
-    border-radius: 6px;
-    font-family: 'Open Sans', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-decoration: none;
-}
-
-.btn-change {
-    background-color: var(--accent-color);
-    color: white;
-}
-
-.btn-change:hover {
-    background-color: #ff4444;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(229, 9, 20, 0.3);
-}
-
-.btn-submit {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.btn-submit:hover {
-    background-color: #45a049;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
-}
-
-.btn-cancel {
-    background-color: transparent;
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-}
-
-.btn-cancel:hover {
-    background-color: var(--hover-bg-color);
-    border-color: var(--text-color);
-}
-
-.btn-delete {
-    padding: 10px 18px;
-    font-size: 0.85rem;
-    background-color: #8B0000;
-    color: white;
-    border: none;
-}
-
-.btn-delete:hover {
-    background-color: #a50000;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(139, 0, 0, 0.4);
-}
-
-.btn-delete i {
-    font-size: 0.8rem;
-}
-
-.toggle-btn {
-    display: inline-flex;
-    user-select: none;
-    cursor: pointer;
-}
-
-#toggle-package-form,
-#toggle-worker-form,
-.settings-section input[type="checkbox"] {
-    display: none;
-}
-
-#toggle-package-form:checked ~ .edit-form,
-#toggle-worker-form:checked ~ .edit-form,
-.settings-section input[type="checkbox"]:checked ~ .edit-form {
-    display: block;
-}
-
-.form-group-toggle .toggle-label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--text-color);
-    cursor: pointer;
+    color: var(--rates-muted);
+    font-size: 14px;
     line-height: 1.5;
 }
 
-.settings-section input.settings-toggle-input[type="checkbox"] {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    accent-color: var(--accent-color);
-    cursor: pointer;
-    flex-shrink: 0;
-}
-
-.edit-form {
-    display: none;
-    padding: 25px;
-    background-color: rgba(0, 0, 0, 0.4);
+.rates-primary-button,
+.rates-mobile-add-button,
+.rate-save-button,
+.rate-edit-button,
+.rate-delete-cancel,
+.rate-delete-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
     border-radius: 8px;
-    border: 1px solid var(--border-color);
-    margin: 20px 0;
-    animation: slideDown 0.3s ease;
-}
-
-.edit-form h2 {
-    color: var(--secondary-color);
-    font-size: 1.2rem;
-    margin: 0 0 25px 0;
-    padding-bottom: 15px;
-    border-bottom: 2px solid var(--accent-color);
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-grid .form-group {
-    margin-bottom: 0;
-}
-
-.form-label {
-    display: block;
-    margin-bottom: 8px;
-    color: #aaa;
-    font-size: 0.9rem;
+    font-family: var(--pm-font-display);
     font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
 }
 
-.form-label i {
-    margin-right: 8px;
-    color: var(--accent-color);
+.rates-primary-button {
+    flex: 0 0 auto;
+    gap: 6px;
+    min-height: 40px;
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--rates-accent);
+    color: #ffffff;
+    font-size: 13.5px;
+    letter-spacing: 0.1px;
 }
 
-.form-input {
-    width: 100%;
-    padding: 12px 15px;
-    background-color: var(--primary-color);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    color: var(--text-color);
-    font-size: 1rem;
-    font-family: 'Open Sans', sans-serif;
-    transition: all 0.3s ease;
+.rates-primary-button:hover,
+.rates-primary-button:focus-visible,
+.rate-save-button:hover,
+.rate-save-button:focus-visible,
+.rate-delete-submit:hover,
+.rate-delete-submit:focus-visible {
+    background: var(--rates-accent-deep);
+}
+
+.rates-mobile-add-button {
+    gap: 4px;
+    min-height: 38px;
+    padding: 9px 13px 9px 11px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--rates-accent);
+    color: #ffffff;
+    font-size: 13.5px;
+}
+
+.rates-visibility-toggle,
+.rate-edit-toggle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.rates-content:has(.rates-visibility-toggle:focus-visible) .rates-primary-button,
+.rate-edit-toggle:focus-visible ~ .rate-actions .rate-edit-button {
+    outline: 3px solid rgba(220, 38, 38, 0.2);
+    outline-offset: 2px;
+}
+
+.rates-list {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    border: 1px solid var(--rates-line);
+    border-radius: 14px;
+    background: var(--rates-panel);
+}
+
+.rates-table-header,
+.rate-row {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) 200px 220px;
+    align-items: center;
+    gap: 12px;
     box-sizing: border-box;
 }
 
-.form-input:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.15);
+.rates-table-header {
+    order: -2;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--rates-line);
+    color: var(--rates-muted);
+    font-family: var(--pm-font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
 }
 
-.form-input::placeholder {
-    color: #555;
+.rates-column-default {
+    text-align: center;
 }
 
-.form-actions {
+.rates-column-price {
+    padding-right: 10px;
+    text-align: right;
+}
+
+.rate-row {
+    position: relative;
+    padding: 14px 20px;
+    border-top: 1px solid var(--rates-line);
+    background: transparent;
+}
+
+.rates-table-header + .rate-row,
+.rates-table-header + .rates-empty-state {
+    border-top: 0;
+}
+
+.rate-row.is-default {
+    background: rgba(220, 38, 38, 0.025);
+}
+
+.rate-row-new {
+    order: 1000;
+    display: none;
+    border-top: 1px solid var(--rates-line);
+}
+
+#toggle-package-form:checked ~ .rates-list .rate-row-new {
+    display: grid;
+}
+
+#toggle-package-form:checked ~ .rates-list .rates-empty-state {
+    display: none;
+}
+
+.rate-default-form {
     display: flex;
-    gap: 15px;
+    grid-column: 1;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+.rate-default-control {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0;
+    border: 1.5px solid var(--rates-line-strong);
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    transition: border-color 150ms ease, opacity 150ms ease;
+}
+
+.rate-default-control > span {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.rate-default-control[aria-checked='true'] {
+    border-color: var(--rates-accent);
+}
+
+.rate-default-control[aria-checked='true'] > span {
+    background: var(--rates-accent);
+}
+
+.rate-default-control:hover,
+.rate-default-control:focus-visible {
+    border-color: var(--rates-accent);
+    outline: 3px solid rgba(220, 38, 38, 0.12);
+    outline-offset: 2px;
+}
+
+.rate-default-control-disabled {
+    grid-column: 1;
+    justify-self: center;
+    opacity: 0.45;
+    cursor: default;
+}
+
+.rate-default-control-disabled:hover {
+    border-color: var(--rates-line-strong);
+    outline: 0;
+}
+
+.rate-default-form.is-submitting {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.rate-name {
+    grid-column: 2;
+    min-width: 0;
+}
+
+.rate-name strong {
+    display: block;
+    overflow: hidden;
+    padding: 8px 10px;
+    color: var(--rates-text);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.1px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rate-price {
+    display: flex;
+    grid-column: 3;
     justify-content: flex-end;
-    margin-top: 25px;
-    flex-wrap: wrap;
 }
 
-.header-actions {
-    width: 100%;
+.rate-price strong {
+    min-width: 140px;
+    padding: 8px 10px;
+    color: var(--rates-text);
+    font-family: var(--pm-font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0.2px;
+    text-align: right;
+}
+
+.rate-mobile-label {
+    display: none;
+}
+
+.rate-actions {
+    position: relative;
     display: flex;
-    align-items: stretch;
-    gap: 10px;
+    grid-column: 4;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
 }
 
-.header-actions .btn {
-    flex: 1;
+.rate-edit-button {
+    min-height: 34px;
+    padding: 8px 14px;
+    border: 1px solid var(--rates-line);
+    background: var(--rates-panel);
+    color: var(--rates-text);
+    font-size: 12.5px;
 }
 
-@media screen and (max-width: 1300px) {
-    .header {
+.rate-edit-button:hover,
+.rate-edit-button:focus-visible,
+.rate-delete-cancel:hover,
+.rate-delete-cancel:focus-visible {
+    border-color: var(--rates-line-strong);
+    background: var(--rates-field);
+}
+
+.rate-delete-form {
+    position: relative;
+    display: flex;
+    margin: 0;
+}
+
+.rate-delete-trigger {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--rates-muted);
+    cursor: pointer;
+}
+
+.rate-delete-trigger:hover,
+.rate-delete-trigger:focus-visible,
+.rate-delete-trigger[aria-expanded='true'] {
+    border-color: var(--rates-accent-border);
+    background: var(--rates-accent-tint);
+    color: var(--rates-accent);
+    outline: 0;
+}
+
+.rate-delete-confirm[hidden] {
+    display: none;
+}
+
+.rate-delete-confirm:not([hidden]) {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 6px);
+    right: 0;
+    display: block;
+    width: 240px;
+    box-sizing: border-box;
+    padding: 14px;
+    border: 1px solid var(--rates-line);
+    border-radius: 10px;
+    background: var(--rates-panel);
+    box-shadow: 0 18px 40px rgba(26, 22, 18, 0.18), 0 2px 6px rgba(26, 22, 18, 0.06);
+}
+
+.rate-delete-panel h2 {
+    margin: 0;
+    color: var(--rates-text);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.rate-delete-panel p {
+    margin: 4px 0 12px;
+    color: var(--rates-muted);
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+
+.rate-delete-panel > div {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.rate-delete-cancel,
+.rate-delete-submit {
+    min-height: 30px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+}
+
+.rate-delete-cancel {
+    border: 1px solid var(--rates-line);
+    background: transparent;
+    color: var(--rates-text);
+}
+
+.rate-delete-submit {
+    border: 0;
+    background: var(--rates-accent);
+    color: #ffffff;
+}
+
+.rate-edit-form {
+    display: none;
+}
+
+.rate-edit-toggle:checked ~ .rate-display-value:not(.rate-actions) {
+    display: none;
+}
+
+.rate-edit-toggle:checked ~ .rate-actions {
+    pointer-events: none;
+}
+
+.rate-edit-toggle:checked ~ .rate-actions .rate-edit-button {
+    display: none;
+}
+
+.rate-edit-toggle:checked ~ .rate-actions .rate-delete-form {
+    pointer-events: auto;
+}
+
+.rate-edit-toggle:checked ~ .rate-edit-form {
+    display: contents;
+}
+
+@media screen and (min-width: 769px) {
+    .rates-content {
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        padding: 25px;
+        min-height: 100dvh;
+    }
+
+    .rates-empty-state {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .rate-edit-toggle:checked ~ .rate-actions,
+    .rate-edit-form .rate-name-field,
+    .rate-edit-form .rate-price-field,
+    .rate-edit-form .rate-edit-actions {
+        grid-row: 1;
+    }
+}
+
+.rate-field {
+    min-width: 0;
+}
+
+.rate-field label {
+    display: none;
+    color: var(--rates-muted);
+    font-family: var(--pm-font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1.3px;
+    line-height: 1.3;
+    text-transform: uppercase;
+}
+
+.rate-field input {
+    width: 100%;
+    min-height: 36px;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border: 1px solid var(--rates-line-strong);
+    border-radius: 7px;
+    outline: 0;
+    background: var(--rates-field);
+    color: var(--rates-text);
+    font-family: var(--pm-font-display);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.1px;
+}
+
+.rate-field input:focus {
+    border-color: var(--rates-accent);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.rate-name-field {
+    grid-column: 2;
+}
+
+.rate-price-field {
+    display: flex;
+    grid-column: 3;
+    justify-content: flex-end;
+}
+
+.rate-price-field input {
+    width: 140px;
+    font-family: var(--pm-font-mono);
+    letter-spacing: 0.2px;
+    text-align: right;
+}
+
+.rate-edit-actions {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    grid-column: 4;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.rate-edit-toggle:checked ~ .rate-edit-form .rate-edit-actions {
+    padding-right: 40px;
+}
+
+.rate-save-button {
+    min-height: 34px;
+    padding: 8px 16px;
+    border: 0;
+    background: var(--rates-accent);
+    color: #ffffff;
+    font-size: 12.5px;
+}
+
+.rates-empty-state {
+    padding: 60px 20px;
+    border-top: 0;
+    color: var(--rates-muted);
+    text-align: center;
+}
+
+.rates-empty-state span {
+    font-family: var(--pm-font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+}
+
+.rates-empty-state p {
+    margin: 8px 0 0;
+    font-size: 14px;
+}
+
+@media screen and (min-width: 769px) and (max-width: 900px) {
+    .rates-table-header,
+    .rate-row {
+        grid-template-columns: 48px minmax(0, 1fr) 130px 150px;
+        gap: 8px;
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .rate-price strong,
+    .rate-price-field input {
+        min-width: 0;
+        width: 110px;
+    }
+
+    .rate-edit-button,
+    .rate-save-button {
+        padding-right: 10px;
+        padding-left: 10px;
     }
 }
 
 @media screen and (max-width: 768px) {
-    .header-actions {
+    html:has(body.rates-page) {
+        scrollbar-width: none;
+    }
+
+    html:has(body.rates-page)::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+    }
+
+    .rates-content {
+        padding: 4px 14px 24px;
+    }
+
+    .rates-heading {
+        display: none;
+    }
+
+    .rates-list {
+        gap: 10px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .rates-table-header {
+        display: none;
+    }
+
+    .rate-row {
+        grid-template-columns: 34px minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+        gap: 12px;
+        padding: 14px;
+        border: 1px solid var(--rates-line);
+        border-radius: 14px;
+        background: var(--rates-panel);
+    }
+
+    .rate-row.is-default {
+        border-color: var(--rates-accent-border);
+        background: var(--rates-panel);
+        box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.06);
+    }
+
+    .rate-row-new {
+        order: -1;
+    }
+
+    .rate-default-form,
+    .rate-default-control-disabled {
+        grid-column: 1;
+        grid-row: 1;
+        align-self: center;
+        justify-self: center;
+    }
+
+    .rate-default-control {
+        width: 24px;
+        height: 24px;
+    }
+
+    .rate-default-control > span {
+        width: 11px;
+        height: 11px;
+    }
+
+    .rate-name,
+    .rate-name-field {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .rate-mobile-label,
+    .rate-field label {
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .rate-name strong {
+        padding: 0;
+        font-size: 16px;
+        line-height: 1.3;
+        letter-spacing: -0.2px;
+    }
+
+    .rate-price,
+    .rate-price-field {
+        display: block;
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .rate-price strong {
+        display: block;
+        min-width: 0;
+        padding: 0;
+        font-size: 18px;
+        line-height: 1.3;
+        text-align: left;
+    }
+
+    .rate-field input,
+    .rate-price-field input {
         width: 100%;
+        min-height: 42px;
+        padding: 11px 12px;
+        border-radius: 8px;
+        text-align: left;
+    }
+
+    .rate-actions,
+    .rate-edit-actions {
         display: flex;
+        grid-column: 1 / -1;
+        grid-row: 3;
+        gap: 8px;
+        padding-top: 12px;
+        border-top: 1px solid var(--rates-line);
     }
 
-    .header-actions .btn {
+    .rate-edit-toggle:checked ~ .rate-edit-form .rate-edit-actions {
+        padding-right: 52px;
+    }
+
+    .rate-new-actions {
+        padding-right: 0;
+    }
+
+    .rate-edit-button,
+    .rate-save-button {
         flex: 1;
-    }
-
-    .header {
-        padding: 20px;
+        min-height: 42px;
+        padding: 11px 14px;
         border-radius: 10px;
+        font-size: 13.5px;
     }
 
-    .header h1 {
-        font-size: 1.5rem;
-    }
-
-    .settings-container {
-        padding: 20px;
+    .rate-delete-trigger {
+        width: 44px;
+        height: 42px;
+        padding: 0 12px;
+        border-color: var(--rates-accent-border);
         border-radius: 10px;
+        color: var(--rates-accent);
     }
 
-    .settings-section {
-        padding: 20px;
+    .rate-delete-confirm:not([hidden]) {
+        position: fixed;
+        z-index: 1100;
+        inset: 0;
+        display: flex;
+        width: auto;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        border: 0;
+        border-radius: 0;
+        background: rgba(26, 22, 18, 0.5);
+        box-shadow: none;
     }
 
-    .current-amount {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 15px;
-    }
-
-    .amount-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-    }
-
-    .amount-value {
-        font-size: 1.6rem;
-    }
-
-    .package-header-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .btn-delete {
+    .rate-delete-panel {
         width: 100%;
+        max-width: 370px;
+        overflow: hidden;
+        box-sizing: border-box;
+        padding: 18px;
+        border: 1px solid var(--rates-line);
+        border-radius: 14px;
+        background: var(--rates-panel);
+        box-shadow: 0 30px 80px rgba(26, 22, 18, 0.3);
     }
 
-    .form-grid {
-        grid-template-columns: 1fr;
+    .rate-delete-panel h2 {
+        font-size: 17px;
+        line-height: 1.3;
+        letter-spacing: -0.3px;
     }
 
-    .form-actions {
-        flex-direction: column-reverse;
-    }
-}
-
-@media screen and (max-width: 480px) {
-    .header {
-        padding: 15px;
+    .rate-delete-panel p {
+        margin: 8px 0 14px;
+        font-size: 13px;
+        line-height: 1.5;
     }
 
-    .header h1 {
-        font-size: 1.3rem;
+    .rate-delete-panel > div {
+        gap: 8px;
     }
 
-    .header p {
-        font-size: 0.85rem;
+    .rate-delete-cancel,
+    .rate-delete-submit {
+        flex: 1;
+        min-height: 42px;
+        padding: 11px 12px;
+        border-radius: 10px;
+        font-size: 13.5px;
     }
 
-    .settings-container {
-        padding: 15px;
+    .rates-empty-state {
+        padding: 40px 16px;
+        border: 1px solid var(--rates-line);
+        border-radius: 14px;
+        background: var(--rates-panel);
     }
-
-    .settings-section {
-        padding: 15px;
-    }
-
-    .edit-form {
-        padding: 15px;
-    }
-
-    .amount-label {
-        font-size: 0.9rem;
-    }
-
-    .amount-value {
-        font-size: 1.4rem;
-    }
-
-    .btn {
-        padding: 12px 20px;
-        font-size: 0.85rem;
-    }
-}
-
-.settings-hint {
-    color: #aaa;
-    font-size: 0.9rem;
-    margin: -10px 0 20px 0;
-    line-height: 1.5;
-}
-
-.default-package-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.default-package-form select.form-input {
-    cursor: pointer;
 }

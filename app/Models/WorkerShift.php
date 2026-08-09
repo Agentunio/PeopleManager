@@ -28,6 +28,8 @@ class WorkerShift extends Model
         'minutes',
         'status',
         'substituted_for_shift_id',
+        'approved_from_time',
+        'approved_to_time',
         'worker_from_time',
         'worker_to_time',
         'hours_source',
@@ -71,21 +73,33 @@ class WorkerShift extends Model
         return $this->worker_to_time !== null ? $this->worker_to_time % 60 : null;
     }
 
+    /**
+     * @return BelongsTo<Worker, $this>
+     */
     public function worker(): BelongsTo
     {
         return $this->belongsTo(Worker::class);
     }
 
+    /**
+     * @return BelongsTo<Package, $this>
+     */
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
     }
 
+    /**
+     * @return BelongsTo<WorkerShift, $this>
+     */
     public function substitutedForShift(): BelongsTo
     {
         return $this->belongsTo(self::class, 'substituted_for_shift_id');
     }
 
+    /**
+     * @return HasOne<WorkerShift, $this>
+     */
     public function substitute(): HasOne
     {
         return $this->hasOne(self::class, 'substituted_for_shift_id');

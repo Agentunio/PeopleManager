@@ -1,34 +1,35 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: Arial, sans-serif; background: #1a1a1a; color: #f0f0f0; margin: 0; padding: 20px; }
-        .container { max-width: 520px; margin: 0 auto; background: #242424; border-radius: 8px; padding: 32px; border: 1px solid #333; }
-        h1 { color: #e50914; font-size: 22px; margin-top: 0; }
-        .info-box { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 16px; margin: 20px 0; }
-        .info-label { color: #888; font-size: 13px; display: block; margin-bottom: 4px; }
-        .info-value { color: #f0f0f0; font-size: 16px; font-weight: bold; }
-        .btn { display: inline-block; background: #e50914; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; font-size: 15px; margin: 20px 0; }
-        .note { color: #888; font-size: 13px; margin-top: 20px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Konto aktywowane!</h1>
-        <p>Cześć, {{ $firstName }}! Twoje konto zostało pomyślnie aktywowane.</p>
+@extends('emails.layout')
 
-        <div class="info-box">
-            <span class="info-label">Twój login</span>
-            <span class="info-value">{{ $username }}</span>
-        </div>
+@section('title', 'Konto zostało aktywowane')
+@section('preheader', 'Twoje konto zostało aktywowane i jest gotowe do użycia.')
 
-        <p>Możesz teraz zalogować się do tutaj:</p>
+@section('content')
+    <h1 style="margin: 0 0 14px; color: #1a1612; font-family: Arial, Helvetica, sans-serif; font-size: 28px; line-height: 34px; font-weight: 700;">
+        Konto aktywowane
+    </h1>
 
-        <a href="{{ $loginUrl }}" class="btn">Zaloguj się</a>
+    <p style="margin: 0 0 16px; color: #1a1612; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 25px;">
+        Cześć, {{ $firstName }}! Twoje konto zostało pomyślnie aktywowane.
+    </p>
 
-        <p class="note">Jeśli nie aktywowałeś tego konta, skontaktuj się z administratorem.</p>
-    </div>
-</body>
-</html>
+    @include('emails.partials.login-info', ['username' => $username])
+
+    <p style="margin: 0; color: #1a1612; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 25px;">
+        Możesz teraz zalogować się do swojego panelu.
+    </p>
+
+    @include('emails.partials.action-button', [
+        'url' => $loginUrl,
+        'label' => 'Zaloguj się',
+    ])
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#faf8f3" style="width: 100%; background-color: #faf8f3; border-left: 4px solid #d4cdbe; border-collapse: separate; border-spacing: 0;">
+        <tr>
+            <td style="padding: 14px 16px;">
+                <p style="margin: 0; color: #6b6357; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 20px;">
+                    Jeśli nie aktywowałeś tego konta, skontaktuj się z administratorem.
+                </p>
+            </td>
+        </tr>
+    </table>
+@endsection

@@ -18,6 +18,7 @@ class ShiftStartTimeTest extends TestCase
     {
         return User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
             'role' => 'admin',
         ]);

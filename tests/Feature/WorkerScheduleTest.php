@@ -26,6 +26,7 @@ class WorkerScheduleTest extends TestCase
 
         $user = User::create([
             'username' => 'anna',
+            'email' => 'anna@example.test',
             'password' => 'password',
             'worker_id' => $worker->id,
         ]);
@@ -164,7 +165,7 @@ class WorkerScheduleTest extends TestCase
         $content = $response->getContent();
 
         $response->assertStatus(200);
-        $this->assertStringContainsString('data-date="' . $today->toDateString() . '"', $content);
+        $this->assertStringContainsString('data-date="'.$today->toDateString().'"', $content);
 
         preg_match('/window\.scheduleDays\s*=\s*(\{.*?\});/s', $content, $matches);
         $this->assertNotEmpty($matches, 'window.scheduleDays not found in page');
@@ -432,6 +433,8 @@ class WorkerScheduleTest extends TestCase
 
     public function test_schedule_shows_assigned_workers(): void
     {
+        $this->travelTo(Carbon::parse('2026-04-29 08:00:00'));
+
         $user = $this->createWorkerUser();
         $worker = $user->worker;
 
@@ -551,6 +554,84 @@ class WorkerScheduleTest extends TestCase
         $this->assertEquals(14 * 60 + 30, $shift->worker_to_time);
         $this->assertEquals('worker', $shift->hours_source);
         $this->assertNull($shift->minutes);
+    }
+
+    public function test_substitute_can_store_own_hours(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 12:00:00'));
+
+        $user = $this->createWorkerUser();
+        $absentWorker = Worker::create([
+            'first_name' => 'Jan',
+            'last_name' => 'Kowalski',
+        ]);
+        $date = now()->toDateString();
+
+        $absentShift = WorkerShift::create([
+            'worker_id' => $absentWorker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+            'status' => 'absent',
+            'minutes' => 0,
+        ]);
+        $substituteShift = WorkerShift::create([
+            'worker_id' => $user->worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+            'substituted_for_shift_id' => $absentShift->id,
+        ]);
+
+        $response = $this->actingAs($user)->postJson(
+            route('worker.schedule.hours', $date),
+            ['shift_type' => 'morning', 'from_time' => '08:00', 'to_time' => '14:30']
+        );
+
+        $response->assertOk()->assertJson(['success' => true]);
+        $substituteShift->refresh();
+        $this->assertSame(8 * 60, $substituteShift->worker_from_time);
+        $this->assertSame((14 * 60) + 30, $substituteShift->worker_to_time);
+        $this->assertSame('worker', $substituteShift->hours_source);
+    }
+
+    public function test_schedule_exposes_substitute_reported_hours_for_editing(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-29 12:00:00'));
+
+        $user = $this->createWorkerUser();
+        $absentWorker = Worker::create([
+            'first_name' => 'Jan',
+            'last_name' => 'Kowalski',
+        ]);
+        $date = now()->toDateString();
+
+        $absentShift = WorkerShift::create([
+            'worker_id' => $absentWorker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+            'status' => 'absent',
+            'minutes' => 0,
+        ]);
+        WorkerShift::create([
+            'worker_id' => $user->worker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+            'worker_from_time' => 8 * 60,
+            'worker_to_time' => (14 * 60) + 30,
+            'hours_source' => 'worker',
+            'substituted_for_shift_id' => $absentShift->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('worker.schedule'))
+            ->assertOk()
+            ->assertViewHas('days', function (array $days) use ($date): bool {
+                $day = collect($days)->firstWhere('date', $date);
+
+                return $day !== null
+                    && $day['morning_source'] === 'worker'
+                    && $day['morning_from'] === '08:00'
+                    && $day['morning_to'] === '14:30';
+            });
     }
 
     public function test_store_hours_rejected_before_configured_shift_start_time_for_today(): void
@@ -852,14 +933,37 @@ class WorkerScheduleTest extends TestCase
         $content = $response->getContent();
         $dayAfterEnd = now()->addDays(4)->toDateString();
 
-        if (str_contains($content, 'data-date="' . $dayAfterEnd . '"')) {
+        if (str_contains($content, 'data-date="'.$dayAfterEnd.'"')) {
             $this->assertDoesNotMatchRegularExpression(
-                '/data-date="' . preg_quote($dayAfterEnd) . '"[^>]*class="[^"]*clickable/',
+                '/data-date="'.preg_quote($dayAfterEnd).'"[^>]*class="[^"]*clickable/',
                 $content
             );
         } else {
             $this->assertTrue(true);
         }
+    }
+
+    public function test_today_outside_limited_always_schedule_is_not_clickable(): void
+    {
+        Carbon::setTestNow('2026-07-08 12:00:00');
+        $user = $this->createWorkerUser();
+
+        Schedule::create([
+            'id' => 1,
+            'type' => 'always',
+            'start_date' => '2026-07-09',
+            'end_date' => '2026-07-15',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('worker.schedule'));
+
+        $response->assertOk()->assertViewHas('days', function (array $days): bool {
+            $today = collect($days)->firstWhere('date', '2026-07-08');
+
+            return $today !== null
+                && $today['in_schedule'] === false
+                && $today['is_clickable'] === false;
+        });
     }
 
     public function test_store_availability_rejects_invalid_date_format(): void
@@ -919,6 +1023,7 @@ class WorkerScheduleTest extends TestCase
     {
         $user = User::create([
             'username' => 'orphan',
+            'email' => 'orphan@example.test',
             'password' => 'password',
         ]);
 
@@ -934,6 +1039,7 @@ class WorkerScheduleTest extends TestCase
     {
         $user = User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
         ]);
 
@@ -996,6 +1102,7 @@ class WorkerScheduleTest extends TestCase
         if ($yesterday->lt(now()->startOfWeek())) {
             $yesterday = now()->startOfWeek();
         }
+
         return $yesterday->toDateString();
     }
 

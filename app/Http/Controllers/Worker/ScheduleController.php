@@ -13,6 +13,7 @@ use App\Models\WorkerShift;
 use App\Services\ShiftStartService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -33,7 +34,7 @@ class ScheduleController extends Controller
 
         if ($week) {
             $parts = explode('-', $week);
-            if (count($parts) !== 3 || !checkdate((int) $parts[1], (int) $parts[0], (int) $parts[2])) {
+            if (count($parts) !== 3 || ! checkdate((int) $parts[1], (int) $parts[0], (int) $parts[2])) {
                 abort(404);
             }
             $weekStart = Carbon::createFromFormat('d-m-Y', $week)->startOfWeek();
@@ -56,7 +57,7 @@ class ScheduleController extends Controller
         $shiftsQuery = WorkerShift::published()
             ->whereBetween('day', [$weekStart->toDateString(), $weekEnd->toDateString()]);
 
-        if (!$showAllWorkers) {
+        if (! $showAllWorkers) {
             $shiftsQuery->where('worker_id', $worker->id);
         }
 
@@ -66,23 +67,19 @@ class ScheduleController extends Controller
         if ($isCurrentWeek) {
             $myShifts = $allShifts->flatten(1)
                 ->where('worker_id', $worker->id)
-                ->whereNull('substituted_for_shift_id')
-                ->keyBy(fn ($s) => $s->day . '_' . $s->shift_type);
+                ->keyBy(fn ($s) => $s->day.'_'.$s->shift_type);
         }
 
         $workerSelfHoursEnabled = AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS);
         $days = $this->buildDaysArray($weekStart, $weekEnd, $worker, $schedule, $availabilities, $allShifts, $myShifts, $isCurrentWeek, $shiftStartData, $workerSelfHoursEnabled);
-        $canOpenModal = collect($days)->contains(fn ($d) => $d['is_clickable']);
 
         return view('worker.schedule.index', [
             'scheduleStatus' => $scheduleStatus,
             'days' => $days,
-            'canOpenModal' => $canOpenModal,
             'weekStart' => $weekStart,
             'weekEnd' => $weekEnd,
             'prevWeek' => $weekStart->copy()->subWeek()->format('d-m-Y'),
             'nextWeek' => $weekStart->copy()->addWeek()->format('d-m-Y'),
-            'worker' => $worker,
             'workerSelfHoursEnabled' => $workerSelfHoursEnabled,
         ]);
     }
@@ -95,7 +92,7 @@ class ScheduleController extends Controller
 
         $schedule = Schedule::getCurrent();
 
-        if (!$schedule || !$schedule->isActive()) {
+        if (! $schedule || ! $schedule->isActive()) {
             return response()->json(['message' => 'Grafik jest nieaktywny'], 422);
         }
 
@@ -105,39 +102,44 @@ class ScheduleController extends Controller
             return response()->json(['message' => 'Nie można edytować dostępności dla dzisiejszego lub przeszłego dnia'], 422);
         }
 
-        if (!$schedule->isDateInSchedule($parsedDate)) {
+        if (! $schedule->isDateInSchedule($parsedDate)) {
             return response()->json(['message' => 'Ten dzień wykracza poza zakres aktywnego grafiku'], 422);
         }
 
         $morning = (bool) $request->input('morning_shift', false);
         $afternoon = (bool) $request->input('afternoon_shift', false);
 
-        $assignedShifts = WorkerShift::published()
-            ->where('worker_id', $worker->id)
-            ->where('day', $date)
-            ->pluck('shift_type')
-            ->toArray();
-
-        if (in_array('morning', $assignedShifts)) {
-            $morning = true;
-        }
-        if (in_array('afternoon', $assignedShifts)) {
-            $afternoon = true;
-        }
-
-        if ($morning || $afternoon) {
-            WorkerAvailability::updateOrCreate(
-                ['worker_id' => $worker->id, 'day' => $date],
-                [
-                    'morning_shift' => $morning,
-                    'afternoon_shift' => $afternoon,
-                ]
-            );
-        } else {
-            WorkerAvailability::where('worker_id', $worker->id)
+        // Locked so a concurrent admin assignment cannot slip between reading
+        // the shifts and persisting availability (assigned => available).
+        DB::transaction(function () use ($worker, $date, $morning, $afternoon) {
+            $assignedShifts = WorkerShift::published()
+                ->where('worker_id', $worker->id)
                 ->where('day', $date)
-                ->delete();
-        }
+                ->lockForUpdate()
+                ->pluck('shift_type')
+                ->toArray();
+
+            if (in_array('morning', $assignedShifts)) {
+                $morning = true;
+            }
+            if (in_array('afternoon', $assignedShifts)) {
+                $afternoon = true;
+            }
+
+            if ($morning || $afternoon) {
+                WorkerAvailability::updateOrCreate(
+                    ['worker_id' => $worker->id, 'day' => $date],
+                    [
+                        'morning_shift' => $morning,
+                        'afternoon_shift' => $afternoon,
+                    ]
+                );
+            } else {
+                WorkerAvailability::where('worker_id', $worker->id)
+                    ->where('day', $date)
+                    ->delete();
+            }
+        });
 
         return response()->json([
             'success' => true,
@@ -151,7 +153,7 @@ class ScheduleController extends Controller
 
         abort_unless($worker, 403, 'Brak powiązanego profilu pracownika');
 
-        if (!AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS)) {
+        if (! AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS)) {
             return response()->json(['message' => 'Wpisywanie godzin zostalo wylaczone przez administratora'], 403);
         }
 
@@ -159,7 +161,7 @@ class ScheduleController extends Controller
         $weekStart = now()->startOfWeek();
         $weekEnd = now()->endOfWeek();
 
-        if (!$parsedDate->between($weekStart, $weekEnd)) {
+        if (! $parsedDate->between($weekStart, $weekEnd)) {
             return response()->json(['message' => 'Można wpisywać godziny tylko dla bieżącego tygodnia'], 422);
         }
 
@@ -169,74 +171,77 @@ class ScheduleController extends Controller
 
         $shiftType = $request->input('shift_type');
 
-        $shift = WorkerShift::published()
-            ->where('worker_id', $worker->id)
-            ->where('day', $date)
-            ->where('shift_type', $shiftType)
-            ->whereNull('substituted_for_shift_id')
-            ->first();
+        return DB::transaction(function () use ($date, $parsedDate, $request, $shiftType, $worker): JsonResponse {
+            $shift = WorkerShift::published()
+                ->where('worker_id', $worker->id)
+                ->where('day', $date)
+                ->where('shift_type', $shiftType)
+                ->lockForUpdate()
+                ->first();
 
-        if (!$shift) {
-            return response()->json(['message' => 'Brak przypisanej zmiany'], 403);
-        }
-
-        if ($shift->status === 'absent') {
-            return response()->json(['message' => 'Nie można wpisać godzin — jesteś oznaczony jako nieobecny'], 422);
-        }
-
-        if ($shift->hours_source === 'admin') {
-            return response()->json(['message' => 'Godziny zostały już zatwierdzone przez administratora'], 422);
-        }
-
-        if ($parsedDate->isToday()) {
-            $currentMinutes = now()->hour * 60 + now()->minute;
-            $allowedFrom = $this->shiftStartService->resolveStartMinutes($date, $shiftType);
-
-            if ($currentMinutes < $allowedFrom) {
-                $label = $this->shiftStartService->label($allowedFrom);
-                return response()->json([
-                    'message' => "Godziny dla tej zmiany można wpisać dopiero po $label",
-                ], 422);
+            if (! $shift) {
+                return response()->json(['message' => 'Brak przypisanej zmiany'], 403);
             }
-        }
 
-        $fromMinutes = WorkerShift::parseTimeToMinutes($request->input('from_time'));
-        $toMinutes = WorkerShift::parseTimeToMinutes($request->input('to_time'));
-
-        $updates = [
-            'worker_from_time' => $fromMinutes,
-            'worker_to_time' => $toMinutes,
-            'hours_source' => 'worker',
-        ];
-
-        if ($shift->package_id === null) {
-            $defaultPackageId = Package::where('is_default', true)->value('id');
-            if ($defaultPackageId) {
-                $updates['package_id'] = $defaultPackageId;
+            if ($shift->status === 'absent') {
+                return response()->json(['message' => 'Nie można wpisać godzin — jesteś oznaczony jako nieobecny'], 422);
             }
-        }
 
-        $shift->update($updates);
+            if ($shift->hours_source === 'admin') {
+                return response()->json(['message' => 'Godziny zostały już zatwierdzone przez administratora'], 422);
+            }
 
-        $shiftData = [
-            'status' => $shift->status,
-            'hours_source' => 'worker',
-            'minutes' => $shift->minutes,
-            'from' => sprintf('%02d:%02d', $shift->worker_from_hour, $shift->worker_from_minute),
-            'to' => sprintf('%02d:%02d', $shift->worker_to_hour, $shift->worker_to_minute),
-            'blocked' => false,
-            'block_label' => '',
-        ];
+            if ($parsedDate->isToday()) {
+                $currentMinutes = now()->hour * 60 + now()->minute;
+                $allowedFrom = $this->shiftStartService->resolveStartMinutes($date, $shiftType);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Godziny zostały zapisane',
-            'html' => view('worker.dashboard.partials.shift-hours', [
-                'shift' => $shiftData,
-                'type' => $shiftType,
-                'workerSelfHoursEnabled' => true,
-            ])->render(),
-        ]);
+                if ($currentMinutes < $allowedFrom) {
+                    $label = $this->shiftStartService->label($allowedFrom);
+
+                    return response()->json([
+                        'message' => "Godziny dla tej zmiany można wpisać dopiero po $label",
+                    ], 422);
+                }
+            }
+
+            $fromMinutes = WorkerShift::parseTimeToMinutes($request->input('from_time'));
+            $toMinutes = WorkerShift::parseTimeToMinutes($request->input('to_time'));
+
+            $updates = [
+                'worker_from_time' => $fromMinutes,
+                'worker_to_time' => $toMinutes,
+                'hours_source' => 'worker',
+            ];
+
+            if ($shift->package_id === null) {
+                $defaultPackageId = Package::where('is_default', true)->value('id');
+                if ($defaultPackageId) {
+                    $updates['package_id'] = $defaultPackageId;
+                }
+            }
+
+            $shift->update($updates);
+
+            $shiftData = [
+                'status' => $shift->status,
+                'hours_source' => 'worker',
+                'minutes' => $shift->minutes,
+                'from' => sprintf('%02d:%02d', $shift->worker_from_hour, $shift->worker_from_minute),
+                'to' => sprintf('%02d:%02d', $shift->worker_to_hour, $shift->worker_to_minute),
+                'blocked' => false,
+                'block_label' => '',
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Godziny zostały zapisane',
+                'html' => view('worker.dashboard.partials.shift-hours', [
+                    'shift' => $shiftData,
+                    'type' => $shiftType,
+                    'workerSelfHoursEnabled' => true,
+                ])->render(),
+            ]);
+        });
     }
 
     private function dateStringsBetween(Carbon $start, Carbon $end): array
@@ -279,7 +284,7 @@ class ScheduleController extends Controller
             ];
 
             $assignedWorkers = $dayShifts->map(fn ($s) => [
-                'name' => $s->worker->first_name . ' ' . $s->worker->last_name,
+                'name' => $s->worker->first_name.' '.$s->worker->last_name,
                 'shift_type' => $s->shift_type,
                 'is_me' => $s->worker_id === $worker->id,
             ])->values()->all();
@@ -290,17 +295,17 @@ class ScheduleController extends Controller
 
             $canViewHours = $isCurrentWeek && $isPast && ($myAssigned['morning'] || $myAssigned['afternoon']);
             $canInputHours = $canViewHours && $workerSelfHoursEnabled;
-            $isClickable = ($scheduleActive && !$isPast && $inSchedule)
-                || ($isToday && $scheduleActive)
+            $isClickable = ($scheduleActive && ! $isPast && $inSchedule)
+                || ($isToday && $scheduleActive && $inSchedule)
                 || $canViewHours;
 
-            $morningShift = $myShifts->get($dateStr . '_morning');
-            $afternoonShift = $myShifts->get($dateStr . '_afternoon');
+            $morningShift = $myShifts->get($dateStr.'_morning');
+            $afternoonShift = $myShifts->get($dateStr.'_afternoon');
 
             $days[] = [
                 'date' => $dateStr,
                 'weekday' => Str::ucfirst($date->translatedFormat('l')),
-                'short_date' => $date->translatedFormat('j') . ' ' . Str::ucfirst($date->translatedFormat('M')),
+                'short_date' => $date->translatedFormat('j').' '.Str::ucfirst($date->translatedFormat('M')),
                 'is_today' => $isToday,
                 'is_past' => $isPast,
                 'is_current_week' => $isCurrentWeek,

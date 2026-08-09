@@ -21,10 +21,12 @@ class PackageCountExportService
     public function getExportData(Carbon $startDate, Carbon $endDate): array
     {
         $shifts = PackageShift::query()
-            ->select('day', 'shift_type', 'packages_count', 'package_id')
+            ->select('day', 'shift_type', 'package_id')
+            ->selectRaw('SUM(packages_count) AS packages_count')
             ->with('packageRate:id,name')
             ->whereBetween('day', [$startDate->toDateString(), $endDate->toDateString()])
             ->where('packages_count', '>', 0)
+            ->groupBy('day', 'shift_type', 'package_id')
             ->get();
 
         $weeks = $this->buildWeeks($shifts, $startDate, $endDate);
@@ -57,7 +59,7 @@ class PackageCountExportService
 
     private function buildWeeks(Collection $shifts, Carbon $startDate, Carbon $endDate): array
     {
-        $shiftsByDate = $shifts->groupBy(fn($shift) => $shift->day->toDateString());
+        $shiftsByDate = $shifts->groupBy(fn ($shift) => $shift->day->toDateString());
 
         $weeks = [];
         $cursor = $startDate->copy()->startOfDay();
@@ -128,7 +130,7 @@ class PackageCountExportService
         $dayTotals = $this->buildDayTotals($weekShifts, $days);
 
         return [
-            'label' => $start->format('d.m') . ' - ' . $end->format('d.m.Y'),
+            'label' => $start->format('d.m').' - '.$end->format('d.m.Y'),
             'days' => $days,
             'rates' => $rates,
             'dayTotals' => $dayTotals,
@@ -154,14 +156,14 @@ class PackageCountExportService
             ];
         }
 
-        usort($rates, fn($a, $b) => strcmp($a['name'], $b['name']));
+        usort($rates, fn ($a, $b) => strcmp($a['name'], $b['name']));
 
         return $rates;
     }
 
     private function buildRateCells(Collection $rateShifts, array $days): array
     {
-        $byDate = $rateShifts->groupBy(fn($shift) => $shift->day->toDateString());
+        $byDate = $rateShifts->groupBy(fn ($shift) => $shift->day->toDateString());
         $cells = [];
 
         foreach ($days as $day) {
@@ -177,7 +179,7 @@ class PackageCountExportService
 
     private function buildDayTotals(Collection $weekShifts, array $days): array
     {
-        $byDate = $weekShifts->groupBy(fn($shift) => $shift->day->toDateString());
+        $byDate = $weekShifts->groupBy(fn ($shift) => $shift->day->toDateString());
         $totals = [];
 
         foreach ($days as $day) {
@@ -208,7 +210,7 @@ class PackageCountExportService
             ];
         }
 
-        usort($rows, fn($a, $b) => $b['total'] <=> $a['total']);
+        usort($rows, fn ($a, $b) => $b['total'] <=> $a['total']);
 
         return [
             'rows' => $rows,
@@ -219,7 +221,7 @@ class PackageCountExportService
     private function renderWeekTable(array $week, int $weekIndex): string
     {
         $html = '<div class="week-block">';
-        $html .= '<div class="week-title">Tydzien ' . $weekIndex . ': ' . htmlspecialchars($week['label'], ENT_QUOTES, 'UTF-8') . '</div>';
+        $html .= '<div class="week-title">Tydzien '.$weekIndex.': '.htmlspecialchars($week['label'], ENT_QUOTES, 'UTF-8').'</div>';
         $html .= '<table>';
         $html .= $this->renderWeekHeader($week['days']);
         $html .= '<tbody>';
@@ -240,8 +242,8 @@ class PackageCountExportService
         $html = '<thead><tr><th class="rate-col" rowspan="2">Stawka</th>';
 
         foreach ($days as $day) {
-            $label = htmlspecialchars($day['dayName'] . ' ' . $day['dateLabel'], ENT_QUOTES, 'UTF-8');
-            $html .= '<th colspan="2">' . $label . '</th>';
+            $label = htmlspecialchars($day['dayName'].' '.$day['dateLabel'], ENT_QUOTES, 'UTF-8');
+            $html .= '<th colspan="2">'.$label.'</th>';
         }
 
         $html .= '<th class="total-col" rowspan="2">Razem</th></tr>';
@@ -258,14 +260,14 @@ class PackageCountExportService
 
     private function renderRateRow(array $rate): string
     {
-        $html = '<tr><td class="rate-name">' . htmlspecialchars($rate['name'], ENT_QUOTES, 'UTF-8') . '</td>';
+        $html = '<tr><td class="rate-name">'.htmlspecialchars($rate['name'], ENT_QUOTES, 'UTF-8').'</td>';
 
         foreach ($rate['cells'] as $cell) {
-            $html .= '<td>' . $this->formatCount($cell['morning']) . '</td>';
-            $html .= '<td>' . $this->formatCount($cell['afternoon']) . '</td>';
+            $html .= '<td>'.$this->formatCount($cell['morning']).'</td>';
+            $html .= '<td>'.$this->formatCount($cell['afternoon']).'</td>';
         }
 
-        $html .= '<td class="total-col">' . $rate['weekTotal'] . '</td></tr>';
+        $html .= '<td class="total-col">'.$rate['weekTotal'].'</td></tr>';
 
         return $html;
     }
@@ -275,11 +277,11 @@ class PackageCountExportService
         $html = '<tr class="total-row"><td class="rate-name">Razem</td>';
 
         foreach ($dayTotals as $total) {
-            $html .= '<td>' . $this->formatCount($total['morning']) . '</td>';
-            $html .= '<td>' . $this->formatCount($total['afternoon']) . '</td>';
+            $html .= '<td>'.$this->formatCount($total['morning']).'</td>';
+            $html .= '<td>'.$this->formatCount($total['afternoon']).'</td>';
         }
 
-        $html .= '<td class="total-col">' . $weekTotal . '</td></tr>';
+        $html .= '<td class="total-col">'.$weekTotal.'</td></tr>';
 
         return $html;
     }
@@ -297,12 +299,12 @@ class PackageCountExportService
         $html .= '<tbody>';
 
         foreach ($summary['rows'] as $row) {
-            $html .= '<tr><td class="rate-name">' . htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8') . '</td>';
-            $html .= '<td class="total-col">' . $row['total'] . '</td></tr>';
+            $html .= '<tr><td class="rate-name">'.htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8').'</td>';
+            $html .= '<td class="total-col">'.$row['total'].'</td></tr>';
         }
 
         $html .= '<tr class="total-row"><td class="rate-name">Razem</td>';
-        $html .= '<td class="total-col">' . $summary['grandTotal'] . '</td></tr>';
+        $html .= '<td class="total-col">'.$summary['grandTotal'].'</td></tr>';
         $html .= '</tbody></table></div>';
 
         return $html;
@@ -339,6 +341,6 @@ class PackageCountExportService
 </style>
 </head>
 <body>
-<div class="title">Paczki: ' . htmlspecialchars($periodLabel, ENT_QUOTES, 'UTF-8') . '</div>';
+<div class="title">Paczki: '.htmlspecialchars($periodLabel, ENT_QUOTES, 'UTF-8').'</div>';
     }
 }

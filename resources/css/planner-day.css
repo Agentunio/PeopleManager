@@ -1,0 +1,854 @@
+/* Grafik dnia — edytor obsady (paper, wariant „Boczna pula + tablice") */
+
+.planner-day-screen {
+    --pd-bg: #f5f3ee;
+    --pd-panel: #ffffff;
+    --pd-panel-deep: #f0ebde;
+    --pd-field: #faf8f3;
+    --pd-line: #e8e3d6;
+    --pd-line-hi: #d4cdbe;
+    --pd-text: #1a1612;
+    --pd-mute: #6b6357;
+    --pd-mute-soft: #a8a094;
+    --pd-accent: #dc2626;
+    --pd-accent-deep: #991b1b;
+    --pd-accent-tint: rgba(220, 38, 38, 0.1);
+    --pd-accent-bd: rgba(220, 38, 38, 0.25);
+    --pd-ok: #15803d;
+    --pd-ok-tint: rgba(21, 128, 61, 0.1);
+    --pd-ok-bd: rgba(21, 128, 61, 0.25);
+    --pd-warn: #b45309;
+    --pd-warn-tint: rgba(180, 83, 9, 0.1);
+    --pd-warn-bd: rgba(180, 83, 9, 0.25);
+    /* Wspólna wysokość nagłówków puli i tablic — linie podziału obu kolumn
+       muszą lecieć na tej samej wysokości. */
+    --pd-head-h: 82px;
+    /* Optyczne opuszczenie tytułu zmiany. 0 (środek całego bloku
+       „etykieta mono + kontrolka") czytało się za wysoko, pełne 17px
+       (środek samej kontrolki) za nisko — 9px trafia pomiędzy. */
+    --pd-head-title-offset: 9px;
+    background: var(--pd-bg);
+    color: var(--pd-text);
+}
+
+.planner-day-screen {
+    font-family: var(--pm-font-display);
+}
+
+/* Edytor dnia działa jak app shell: panel trzyma wysokość okna, a przewija się
+   wnętrze (pula pracowników), dzięki czemu obie kolumny zawsze się pokrywają.
+   Poniżej 1081px układ wraca do naturalnego przewijania strony. */
+@media screen and (min-width: 1081px) {
+    .planner-day-screen .admin-panel {
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+    }
+}
+
+.planner-day-screen .main-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 24px 28px 28px;
+}
+
+/* :where() zeruje specyficzność — reset nie może wygrać z klasami komponentów */
+.planner-day-screen :where(button, input) {
+    font: inherit;
+}
+
+.planner-day-screen button,
+.planner-day-screen a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.planner-day-screen :focus-visible {
+    outline: 3px solid rgba(220, 38, 38, 0.28);
+    outline-offset: 2px;
+}
+
+.planner-day-screen [hidden] {
+    display: none !important;
+}
+
+/* ---- Etykiety mono ---------------------------------------------------- */
+
+.planner-day-mono {
+    display: block;
+    font-family: var(--pm-font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--pd-mute);
+}
+
+.planner-day-mono--sm {
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    margin-bottom: 5px;
+}
+
+/* ---- Powrót + nagłówek ------------------------------------------------ */
+
+.planner-day-back {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 7px;
+    margin-bottom: 16px;
+    font-family: var(--pm-font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--pd-mute);
+    transition: color 140ms ease;
+}
+
+.planner-day-back:hover {
+    color: var(--pd-accent);
+}
+
+.planner-day-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.planner-day-head h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: -0.7px;
+    color: var(--pd-text);
+}
+
+.planner-day-subtitle {
+    margin: 6px 0 0;
+    font-family: var(--pm-font-mono);
+    font-size: 12.5px;
+    letter-spacing: 0.2px;
+    color: var(--pd-mute);
+}
+
+.planner-day-subtitle__date {
+    color: var(--pd-accent);
+    font-weight: 700;
+}
+
+.planner-day-draft-banner {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border: 1px solid var(--pd-warn-bd);
+    border-radius: 9px;
+    background: var(--pd-warn-tint);
+    color: var(--pd-warn);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* ---- Układ: pula + tablice -------------------------------------------- */
+
+.planner-day-form {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.planner-day-layout {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    flex: 1;
+    min-height: 340px;
+}
+
+.planner-day-boards {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ---- Boczna pula ------------------------------------------------------ */
+
+.planner-day-pool {
+    display: flex;
+    flex-direction: column;
+    width: 306px;
+    flex-shrink: 0;
+    background: var(--pd-panel);
+    border: 1px solid var(--pd-line);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.planner-day-pool__header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    min-height: var(--pd-head-h);
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--pd-line);
+    background: var(--pd-field);
+}
+
+/* Etykieta w jednej linii — przy przycisku obok łamała się na dwa wiersze */
+.planner-day-pool__header .planner-day-mono {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.planner-day-pool__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.planner-day-pool__count {
+    margin: 0;
+    font-size: 12px;
+    color: var(--pd-mute);
+}
+
+.planner-day-pool__count-value {
+    color: var(--pd-text);
+    font-weight: 700;
+}
+
+.planner-day-pool__edit {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border: 1px solid var(--pd-line-hi);
+    border-radius: 7px;
+    background: var(--pd-panel);
+    color: var(--pd-mute);
+    font-family: var(--pm-font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 140ms ease, border-color 140ms ease;
+}
+
+.planner-day-pool__edit:hover {
+    border-color: var(--pd-accent-bd);
+    color: var(--pd-accent);
+}
+
+.planner-day-pool__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+.planner-day-pool__cards {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: 7px;
+}
+
+.planner-day-pool__empty {
+    margin: auto 0;
+    padding: 16px 0;
+    font-family: var(--pm-font-mono);
+    font-size: 11px;
+    color: var(--pd-mute-soft);
+    text-align: center;
+}
+
+/* ---- Karta pracownika w puli ------------------------------------------ */
+
+.worker-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid var(--pd-line);
+    border-radius: 10px;
+    background: var(--pd-field);
+}
+
+.worker-card .worker-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--pd-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.worker-card__actions {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.planner-day-add {
+    padding: 5px 10px;
+    border-radius: 7px;
+    font-family: var(--pm-font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: filter 120ms ease;
+}
+
+.planner-day-add--morning {
+    border: 1px solid var(--pd-accent-bd);
+    background: var(--pd-accent-tint);
+    color: var(--pd-accent);
+}
+
+.planner-day-add--afternoon {
+    border: 1px solid var(--pd-line-hi);
+    background: var(--pd-panel-deep);
+    color: var(--pd-mute);
+}
+
+.planner-day-add:not(:disabled):hover {
+    filter: brightness(0.94);
+}
+
+.planner-day-add:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ---- Tablica zmiany --------------------------------------------------- */
+
+.planner-day-board {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    background: var(--pd-panel);
+    border: 1px solid var(--pd-line);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.planner-day-board__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    min-height: var(--pd-head-h);
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--pd-line);
+}
+
+.planner-day-bar {
+    width: 4px;
+    height: 22px;
+    margin-top: var(--pd-head-title-offset);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.planner-day-bar--morning {
+    background: var(--pd-accent);
+}
+
+.planner-day-bar--afternoon {
+    background: var(--pd-mute-soft);
+}
+
+.planner-day-board__head h2 {
+    flex: 1;
+    min-width: 0;
+    margin: var(--pd-head-title-offset) 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--pd-text);
+}
+
+.planner-day-board__meta {
+    text-align: center;
+}
+
+.planner-day-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid var(--pd-line);
+    border-radius: 9px;
+    background: var(--pd-field);
+}
+
+.planner-day-time svg {
+    flex-shrink: 0;
+    color: var(--pd-accent);
+}
+
+.planner-day-time input[type='time'] {
+    width: 66px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--pd-text);
+    font-family: var(--pm-font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.planner-day-time input[type='time']:focus-visible {
+    outline: none;
+}
+
+.planner-day-time:focus-within {
+    border-color: var(--pd-accent-bd);
+}
+
+.planner-day-time input[type='time']::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
+.planner-day-count {
+    display: inline-flex;
+    align-items: baseline;
+    min-width: 44px;
+    justify-content: center;
+    padding: 4px 12px;
+    border: 1px solid var(--pd-line);
+    border-radius: 8px;
+    background: var(--pd-field);
+    font-family: var(--pm-font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--pd-text);
+    line-height: 1.35;
+}
+
+.planner-day-board__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 92px;
+    padding: 14px 18px 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.assigned-workers {
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: 8px;
+    align-content: flex-start;
+}
+
+.planner-day-board__empty {
+    margin: auto 0;
+    padding: 4px 0;
+    font-family: var(--pm-font-mono);
+    font-size: 11px;
+    color: var(--pd-mute-soft);
+    text-align: center;
+}
+
+/* ---- Chip przypisanego pracownika ------------------------------------- */
+
+.assigned-worker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 8px 8px 13px;
+    border: 1px solid var(--pd-line-hi);
+    border-radius: 999px;
+    background: var(--pd-field);
+}
+
+.assigned-worker .worker-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--pd-text);
+}
+
+.assigned-worker.worker-absent {
+    border-color: var(--pd-accent-bd);
+    background: var(--pd-accent-tint);
+}
+
+.assigned-worker.worker-absent .worker-name {
+    color: var(--pd-accent-deep);
+    text-decoration: line-through;
+}
+
+.assigned-worker.worker-substitute {
+    border-color: var(--pd-ok-bd);
+    background: var(--pd-ok-tint);
+}
+
+.assigned-worker.worker-substitute .worker-name {
+    color: var(--pd-ok);
+}
+
+.remove-worker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--pd-mute-soft);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 120ms ease, background 120ms ease;
+}
+
+.remove-worker:hover {
+    background: var(--pd-accent-tint);
+    color: var(--pd-accent);
+}
+
+.hidden-inputs {
+    display: none;
+}
+
+/* ---- Akcje dnia ------------------------------------------------------- */
+
+.planner-day-actions {
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.planner-day-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.planner-day-btn--primary {
+    border: 1px solid var(--pd-accent);
+    background: var(--pd-accent);
+    color: #ffffff;
+}
+
+.planner-day-btn--primary:hover {
+    border-color: var(--pd-accent-deep);
+    background: var(--pd-accent-deep);
+}
+
+.planner-day-btn--secondary {
+    border: 1px solid var(--pd-line-hi);
+    background: var(--pd-panel);
+    color: var(--pd-text);
+}
+
+.planner-day-btn--secondary:hover {
+    border-color: var(--pd-mute);
+}
+
+.planner-day-btn--ghost {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--pd-mute);
+}
+
+.planner-day-btn--ghost:hover {
+    color: var(--pd-accent);
+}
+
+/* ---- Modal dostępności ------------------------------------------------ */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba(26, 22, 18, 0.45);
+    overflow-y: auto;
+    padding: 24px 16px;
+    box-sizing: border-box;
+}
+
+.modal-content {
+    max-width: 540px;
+    margin: 6vh auto 24px;
+    background: var(--pd-panel);
+    border: 1px solid var(--pd-line-hi);
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(26, 22, 18, 0.18);
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--pd-line);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--pd-text);
+}
+
+.modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--pd-line);
+    border-radius: 10px;
+    background: var(--pd-field);
+    color: var(--pd-mute);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 140ms ease, border-color 140ms ease;
+}
+
+.modal-close:hover {
+    border-color: var(--pd-accent-bd);
+    color: var(--pd-accent);
+}
+
+.modal-body {
+    max-height: min(56vh, 520px);
+    padding: 14px 18px;
+    overflow-y: auto;
+}
+
+.availability-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--pd-line);
+    border-radius: 10px;
+    background: var(--pd-field);
+}
+
+.availability-item + .availability-item {
+    margin-top: 7px;
+}
+
+.availability-item .worker-name {
+    min-width: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--pd-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.availability-empty {
+    margin: 0;
+    padding: 16px 0;
+    font-family: var(--pm-font-mono);
+    font-size: 11px;
+    color: var(--pd-mute-soft);
+    text-align: center;
+}
+
+.availability-toggles {
+    display: flex;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.toggle-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.toggle-label {
+    font-family: var(--pm-font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--pd-mute);
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+}
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: var(--pd-line-hi);
+    transition: background 160ms ease;
+    pointer-events: none;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(26, 22, 18, 0.25);
+    transition: transform 160ms ease;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--pd-accent);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+    outline: 3px solid rgba(220, 38, 38, 0.28);
+    outline-offset: 2px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 18px;
+    border-top: 1px solid var(--pd-line);
+    background: var(--pd-field);
+}
+
+/* ---- Responsywność ---------------------------------------------------- */
+
+/* Poniżej 1080px kolumny się układają jeden pod drugim — wysokość wraca do
+   naturalnej, przewija się strona zamiast wnętrza paneli. */
+@media screen and (max-width: 1080px) {
+    .planner-day-form,
+    .planner-day-layout,
+    .planner-day-board {
+        flex: 0 0 auto;
+    }
+
+    .planner-day-layout {
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .planner-day-pool {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .planner-day-pool__body,
+    .planner-day-board__body {
+        flex: 0 0 auto;
+        overflow: visible;
+    }
+
+    .planner-day-pool__cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .planner-day-screen .main-content {
+        padding: 16px 14px 40px;
+    }
+
+    .planner-day-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    .planner-day-board__head {
+        flex-wrap: wrap;
+        row-gap: 12px;
+    }
+
+    /* Tytuł jest w osobnym wierszu — nie ma się z czym równać */
+    .planner-day-board__head h2,
+    .planner-day-bar {
+        margin-top: 0;
+    }
+
+    .planner-day-board__head h2 {
+        flex-basis: calc(100% - 16px);
+    }
+
+    .planner-day-board__meta {
+        text-align: left;
+    }
+
+    .planner-day-pool__cards {
+        grid-template-columns: 1fr;
+    }
+
+    .planner-day-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .availability-item {
+        flex-wrap: wrap;
+    }
+}

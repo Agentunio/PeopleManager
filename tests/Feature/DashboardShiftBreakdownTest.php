@@ -18,6 +18,7 @@ class DashboardShiftBreakdownTest extends TestCase
     {
         $user = User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
         ]);
         $user->role = 'admin';
@@ -36,6 +37,23 @@ class DashboardShiftBreakdownTest extends TestCase
             'date_of_birth' => '1990-01-01',
             'is_student' => false,
             'is_employed' => false,
+        ]);
+    }
+
+    private function workedShift(
+        Worker $worker,
+        Package $package,
+        string $day,
+        string $shiftType = 'morning'
+    ): WorkerShift {
+        return WorkerShift::create([
+            'worker_id' => $worker->id,
+            'day' => $day,
+            'shift_type' => $shiftType,
+            'package_id' => $package->id,
+            'minutes' => 60,
+            'status' => 'worked',
+            'is_draft' => false,
         ]);
     }
 
@@ -221,5 +239,135 @@ class DashboardShiftBreakdownTest extends TestCase
 
         $this->assertEquals(0.0, $json['byShift']['morning']['cost']);
         $this->assertEquals(10.0, $json['byShift']['afternoon']['cost']);
+    }
+
+    public function test_data_paginates_worker_costs_without_limiting_dashboard_totals(): void
+    {
+        $rate = Package::create(['name' => 'Stawka', 'price' => 20]);
+
+        foreach (range(1, 12) as $number) {
+            $worker = $this->worker('Pracownik', sprintf('%02d', $number));
+            $this->workedShift($worker, $rate, '2026-04-10');
+        }
+
+        $admin = $this->admin();
+        $firstPage = $this->actingAs($admin)->getJson(route('dashboard.data', [
+            'start_date' => '2026-04-01',
+            'end_date' => '2026-04-30',
+            'page' => 1,
+            'shift' => 'total',
+        ]));
+
+        $firstPage->assertOk()
+            ->assertJsonCount(10, 'workers')
+            ->assertJsonPath('workerPagination.currentPage', 1)
+            ->assertJsonPath('workerPagination.lastPage', 2)
+            ->assertJsonPath('workerPagination.perPage', 10)
+            ->assertJsonPath('workerPagination.total', 12)
+            ->assertJsonPath('totalCost', 240);
+
+        $secondPage = $this->actingAs($admin)->getJson(route('dashboard.data', [
+            'start_date' => '2026-04-01',
+            'end_date' => '2026-04-30',
+            'page' => 2,
+            'shift' => 'total',
+        ]));
+
+        $secondPage->assertOk()
+            ->assertJsonCount(2, 'workers')
+            ->assertJsonPath('workerPagination.currentPage', 2)
+            ->assertJsonPath('workerPagination.total', 12)
+            ->assertJsonPath('totalCost', 240);
+    }
+
+    public function test_data_paginates_workers_for_the_selected_shift(): void
+    {
+        $rate = Package::create(['name' => 'Stawka', 'price' => 20]);
+
+        foreach (range(1, 11) as $number) {
+            $worker = $this->worker('Rano', sprintf('%02d', $number));
+            $this->workedShift($worker, $rate, '2026-04-10');
+        }
+
+        foreach (range(1, 3) as $number) {
+            $worker = $this->worker('Popoludnie', sprintf('%02d', $number));
+            $this->workedShift($worker, $rate, '2026-04-10', 'afternoon');
+        }
+
+        $response = $this->actingAs($this->admin())->getJson(route('dashboard.data', [
+            'start_date' => '2026-04-01',
+            'end_date' => '2026-04-30',
+            'page' => 1,
+            'shift' => 'afternoon',
+        ]));
+
+        $response->assertOk()
+            ->assertJsonCount(3, 'workers')
+            ->assertJsonPath('workerPagination.currentPage', 1)
+            ->assertJsonPath('workerPagination.lastPage', 1)
+            ->assertJsonPath('workerPagination.total', 3);
+
+        foreach ($response->json('workers') as $worker) {
+            $this->assertGreaterThan(0, $worker['byShift']['afternoon']['totalMinutes']);
+        }
+    }
+
+    public function test_data_rejects_invalid_worker_pagination_parameters(): void
+    {
+        $response = $this->actingAs($this->admin())->getJson(route('dashboard.data', [
+            'start_date' => '2026-04-01',
+            'end_date' => '2026-04-30',
+            'page' => 0,
+            'shift' => 'night',
+        ]));
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['page', 'shift']);
+    }
+
+    public function test_data_rejects_range_over_span_limit(): void
+    {
+        $response = $this->actingAs($this->admin())->getJson(route('dashboard.data', [
+            'start_date' => '2024-01-01',
+            'end_date' => '2026-04-30',
+        ]));
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['end_date']);
+    }
+
+    public function test_data_rejects_comparison_range_over_span_limit(): void
+    {
+        $response = $this->actingAs($this->admin())->getJson(route('dashboard.data', [
+            'start_date' => '2026-04-01',
+            'end_date' => '2026-04-30',
+            'compare_start_date' => '2023-01-01',
+            'compare_end_date' => '2025-04-30',
+        ]));
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['compare_end_date']);
+    }
+
+    public function test_data_rejects_page_over_limit(): void
+    {
+        $response = $this->actingAs($this->admin())->getJson(route('dashboard.data', [
+            'start_date' => '2026-04-01',
+            'end_date' => '2026-04-30',
+            'page' => 201,
+        ]));
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['page']);
+    }
+
+    public function test_data_accepts_year_long_range(): void
+    {
+        $response = $this->actingAs($this->admin())->getJson(route('dashboard.data', [
+            'start_date' => '2025-05-01',
+            'end_date' => '2026-04-30',
+        ]));
+
+        $response->assertOk();
     }
 }

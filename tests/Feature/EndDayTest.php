@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Package;
 use App\Models\PackageShift;
+use App\Models\ShiftStart;
 use App\Models\User;
 use App\Models\Worker;
 use App\Models\WorkerShift;
@@ -18,6 +19,7 @@ class EndDayTest extends TestCase
     {
         $user = User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
         ]);
         $user->role = 'admin';
@@ -41,6 +43,115 @@ class EndDayTest extends TestCase
             'day' => $date,
             'shift_type' => $type,
         ], $attrs));
+    }
+
+    public function test_settlement_page_receives_complete_design_data(): void
+    {
+        $admin = $this->createAdmin();
+        $worker = $this->createWorker('Anna', 'Nowak');
+        $package = Package::create([
+            'name' => 'Stawka testowa',
+            'price' => 18.50,
+            'is_default' => true,
+        ]);
+        $date = '2026-08-02';
+
+        $this->shift($worker->id, $date, 'morning', [
+            'package_id' => $package->id,
+            'worker_from_time' => 7 * 60,
+            'worker_to_time' => 13 * 60,
+            'hours_source' => 'worker',
+        ]);
+        ShiftStart::create([
+            'day' => $date,
+            'shift_type' => 'morning',
+            'start_time' => (7 * 60) + 15,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('planner.day.end-day', $date));
+
+        $response->assertOk();
+        $response->assertViewHas('packages', function (array $packages) use ($package): bool {
+            return collect($packages)->contains(fn (array $item): bool => $item['id'] === $package->id
+                && $item['name'] === 'Stawka testowa'
+                && $item['price'] === 18.5
+                && $item['isDefault'] === true
+            );
+        });
+        $response->assertViewHas('shifts', function (array $shifts) use ($worker): bool {
+            return $shifts['morning']['startTime'] === '07:15'
+                && $shifts['morning']['workers'][0]['workerId'] === $worker->id
+                && $shifts['morning']['workers'][0]['displayFrom'] === '07:00'
+                && $shifts['morning']['workers'][0]['displayTo'] === '13:00'
+                && $shifts['afternoon']['startTime'] === '21:00';
+        });
+    }
+
+    public function test_admin_approved_range_is_stored_without_overwriting_worker_reported_hours(): void
+    {
+        $admin = $this->createAdmin();
+        $worker = $this->createWorker('Iwona', 'Kowalska');
+        $date = '2026-08-02';
+
+        $this->shift($worker->id, $date, 'morning', [
+            'worker_from_time' => 8 * 60,
+            'worker_to_time' => 14 * 60,
+            'hours_source' => 'worker',
+        ]);
+
+        $this->actingAs($admin)->patch(route('planner.day.update', $date), [
+            'workers' => [
+                "{$worker->id}_morning" => [
+                    'id' => $worker->id,
+                    'shift_type' => 'morning',
+                    'status' => 'worked',
+                    'from_hour' => 9,
+                    'from_minute' => 15,
+                    'to_hour' => 17,
+                    'to_minute' => 45,
+                ],
+            ],
+        ])->assertRedirect();
+
+        $shift = WorkerShift::where('worker_id', $worker->id)->firstOrFail();
+
+        $this->assertSame(8 * 60, $shift->worker_from_time);
+        $this->assertSame(14 * 60, $shift->worker_to_time);
+        $this->assertSame((9 * 60) + 15, $shift->approved_from_time);
+        $this->assertSame((17 * 60) + 45, $shift->approved_to_time);
+        $this->assertSame(8 * 60 + 30, $shift->minutes);
+        $this->assertSame('admin', $shift->hours_source);
+    }
+
+    public function test_marking_worker_absent_clears_approved_range(): void
+    {
+        $admin = $this->createAdmin();
+        $worker = $this->createWorker('Piotr', 'Zielinski');
+        $date = '2026-08-02';
+
+        $this->shift($worker->id, $date, 'morning', [
+            'minutes' => 480,
+            'approved_from_time' => 8 * 60,
+            'approved_to_time' => 16 * 60,
+            'hours_source' => 'admin',
+        ]);
+
+        $this->actingAs($admin)->patch(route('planner.day.update', $date), [
+            'workers' => [
+                "{$worker->id}_morning" => [
+                    'id' => $worker->id,
+                    'shift_type' => 'morning',
+                    'status' => 'absent',
+                ],
+            ],
+        ])->assertRedirect();
+
+        $shift = WorkerShift::where('worker_id', $worker->id)->firstOrFail();
+
+        $this->assertSame(0, $shift->minutes);
+        $this->assertNull($shift->approved_from_time);
+        $this->assertNull($shift->approved_to_time);
+        $this->assertNull($shift->hours_source);
     }
 
     public function test_saving_settlement_without_hours_does_not_mark_untouched_workers_as_admin_approved(): void
@@ -98,6 +209,7 @@ class EndDayTest extends TestCase
 
         $workerBUser = User::create([
             'username' => 'bartek',
+            'email' => 'bartek@example.test',
             'password' => 'password',
             'worker_id' => $workerB->id,
         ]);
@@ -341,5 +453,230 @@ class EndDayTest extends TestCase
 
         $this->assertNull($substituteShift->minutes);
         $this->assertNull($substituteShift->hours_source);
+    }
+
+    public function test_available_substitutes_exclude_unemployed_workers(): void
+    {
+        $admin = $this->createAdmin();
+        $assignedWorker = $this->createWorker('Assigned', 'Worker');
+        $employedWorker = $this->createWorker('Employed', 'Candidate');
+        $unemployedWorker = $this->createWorker('Unemployed', 'Candidate');
+        $unemployedWorker->update(['is_employed' => false]);
+        $date = '2026-08-02';
+
+        $this->shift($assignedWorker->id, $date, 'morning');
+
+        $response = $this->actingAs($admin)->getJson(route('planner.day.substitution.available', [
+            'date' => $date,
+            'shift_type' => 'morning',
+        ]));
+
+        $response->assertOk();
+        $response->assertJsonFragment(['id' => $employedWorker->id]);
+        $response->assertJsonMissing(['id' => $unemployedWorker->id]);
+    }
+
+    public function test_settlement_rejects_unemployed_substitute_submitted_outside_the_ui(): void
+    {
+        $admin = $this->createAdmin();
+        $absentWorker = $this->createWorker('Absent', 'Worker');
+        $unemployedWorker = $this->createWorker('Unemployed', 'Candidate');
+        $unemployedWorker->update(['is_employed' => false]);
+        $date = '2026-08-02';
+
+        $absentShift = $this->shift($absentWorker->id, $date, 'morning', [
+            'status' => 'absent',
+            'minutes' => 0,
+        ]);
+
+        $workerKey = "{$unemployedWorker->id}_morning";
+        $response = $this->actingAs($admin)->patchJson(route('planner.day.update', $date), [
+            'workers' => [
+                $workerKey => [
+                    'id' => $unemployedWorker->id,
+                    'shift_type' => 'morning',
+                    'status' => 'worked',
+                    'is_substitute' => true,
+                    'substituted_for_shift_id' => $absentShift->id,
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors("workers.{$workerKey}.id");
+        $this->assertDatabaseMissing('worker_shifts', [
+            'worker_id' => $unemployedWorker->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+    }
+
+    public function test_settlement_rejects_substitute_for_a_different_shift_type(): void
+    {
+        $admin = $this->createAdmin();
+        $absentWorker = $this->createWorker('Absent', 'Worker');
+        $substitute = $this->createWorker('Employed', 'Candidate');
+        $date = '2026-08-02';
+
+        $afternoonAbsence = $this->shift($absentWorker->id, $date, 'afternoon', [
+            'status' => 'absent',
+            'minutes' => 0,
+        ]);
+
+        $workerKey = "{$substitute->id}_morning";
+        $response = $this->actingAs($admin)->patchJson(route('planner.day.update', $date), [
+            'workers' => [
+                $workerKey => [
+                    'id' => $substitute->id,
+                    'shift_type' => 'morning',
+                    'status' => 'worked',
+                    'is_substitute' => true,
+                    'substituted_for_shift_id' => $afternoonAbsence->id,
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors("workers.{$workerKey}.substituted_for_shift_id");
+        $this->assertDatabaseMissing('worker_shifts', [
+            'worker_id' => $substitute->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+    }
+
+    public function test_settlement_rejects_substitute_without_an_absent_shift(): void
+    {
+        $admin = $this->createAdmin();
+        $substitute = $this->createWorker('Employed', 'Candidate');
+        $date = '2026-08-02';
+        $workerKey = "{$substitute->id}_morning";
+
+        $response = $this->actingAs($admin)->patchJson(route('planner.day.update', $date), [
+            'workers' => [
+                $workerKey => [
+                    'id' => $substitute->id,
+                    'shift_type' => 'morning',
+                    'status' => 'worked',
+                    'is_substitute' => true,
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors("workers.{$workerKey}.substituted_for_shift_id");
+        $this->assertDatabaseMissing('worker_shifts', [
+            'worker_id' => $substitute->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+    }
+
+    public function test_settlement_rejects_substitute_for_a_draft_absence(): void
+    {
+        $admin = $this->createAdmin();
+        $absentWorker = $this->createWorker('Absent', 'Worker');
+        $substitute = $this->createWorker('Employed', 'Candidate');
+        $date = '2026-08-02';
+
+        $draftAbsence = $this->shift($absentWorker->id, $date, 'morning', [
+            'status' => 'absent',
+            'minutes' => 0,
+            'is_draft' => true,
+        ]);
+
+        $workerKey = "{$substitute->id}_morning";
+        $response = $this->actingAs($admin)->patchJson(route('planner.day.update', $date), [
+            'workers' => [
+                $workerKey => [
+                    'id' => $substitute->id,
+                    'shift_type' => 'morning',
+                    'status' => 'worked',
+                    'is_substitute' => true,
+                    'substituted_for_shift_id' => $draftAbsence->id,
+                ],
+            ],
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors("workers.{$workerKey}.substituted_for_shift_id");
+        $this->assertDatabaseMissing('worker_shifts', [
+            'worker_id' => $substitute->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+        ]);
+    }
+
+    public function test_settlement_can_mark_absent_and_add_substitute_atomically(): void
+    {
+        $admin = $this->createAdmin();
+        $originalWorker = $this->createWorker('Original', 'Worker');
+        $substitute = $this->createWorker('Employed', 'Candidate');
+        $date = '2026-08-02';
+        $originalShift = $this->shift($originalWorker->id, $date, 'morning');
+
+        $this->actingAs($admin)->patch(route('planner.day.update', $date), [
+            'workers' => [
+                "{$substitute->id}_morning" => [
+                    'id' => $substitute->id,
+                    'shift_type' => 'morning',
+                    'status' => 'worked',
+                    'is_substitute' => true,
+                    'substituted_for_shift_id' => $originalShift->id,
+                ],
+                "{$originalWorker->id}_morning" => [
+                    'id' => $originalWorker->id,
+                    'shift_type' => 'morning',
+                    'status' => 'absent',
+                ],
+            ],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('worker_shifts', [
+            'id' => $originalShift->id,
+            'status' => 'absent',
+        ]);
+        $this->assertDatabaseHas('worker_shifts', [
+            'worker_id' => $substitute->id,
+            'day' => $date,
+            'shift_type' => 'morning',
+            'substituted_for_shift_id' => $originalShift->id,
+        ]);
+    }
+
+    public function test_worker_cannot_access_settlement_substitution_endpoints(): void
+    {
+        $workerUser = User::create([
+            'username' => 'worker',
+            'email' => 'worker@example.test',
+            'password' => 'password',
+        ]);
+        $workerUser->role = 'worker';
+        $workerUser->save();
+        $date = '2026-08-02';
+
+        $this->actingAs($workerUser)
+            ->getJson(route('planner.day.substitution.available', [
+                'date' => $date,
+                'shift_type' => 'morning',
+            ]))
+            ->assertForbidden();
+
+        $this->actingAs($workerUser)
+            ->patchJson(route('planner.day.update', $date), ['workers' => []])
+            ->assertForbidden();
+    }
+
+    public function test_guest_cannot_access_settlement_substitution_endpoints(): void
+    {
+        $date = '2026-08-02';
+
+        $this->get(route('planner.day.substitution.available', [
+            'date' => $date,
+            'shift_type' => 'morning',
+        ]))->assertRedirect(route('login'));
+
+        $this->patch(route('planner.day.update', $date), ['workers' => []])
+            ->assertRedirect(route('login'));
     }
 }

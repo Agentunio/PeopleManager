@@ -7,8 +7,8 @@ use App\Models\User;
 use App\Models\Worker;
 use App\Models\WorkerShift;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AppSettingsTest extends TestCase
@@ -25,6 +25,7 @@ class AppSettingsTest extends TestCase
     {
         $user = User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
         ]);
         $user->role = 'admin';
@@ -42,6 +43,7 @@ class AppSettingsTest extends TestCase
 
         $user = User::create([
             'username' => 'anna',
+            'email' => 'anna@example.test',
             'password' => 'password',
             'worker_id' => $worker->id,
         ]);
@@ -57,6 +59,7 @@ class AppSettingsTest extends TestCase
         if ($yesterday->lt(now()->startOfWeek())) {
             $yesterday = now()->startOfWeek();
         }
+
         return $yesterday->toDateString();
     }
 
@@ -132,8 +135,57 @@ class AppSettingsTest extends TestCase
         $response->assertSee('Jan Kowalski');
         $response->assertSee(Carbon::parse($date)->translatedFormat('d.m.Y'));
         $response->assertSee('Poranna');
-        $response->assertSee('Wylacz mimo wszystko');
+        $response->assertSee('Wyłącz mimo wszystko');
         $this->assertTrue(AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS));
+    }
+
+    public function test_pending_warning_is_paginated_without_hiding_later_entries(): void
+    {
+        $admin = $this->createAdmin();
+        $date = $this->pastDateInCurrentWeek();
+
+        foreach (range(1, 26) as $number) {
+            $worker = Worker::create([
+                'first_name' => 'Pracownik',
+                'last_name' => sprintf('%02d', $number),
+            ]);
+
+            WorkerShift::create([
+                'worker_id' => $worker->id,
+                'day' => $date,
+                'shift_type' => 'morning',
+                'hours_source' => 'worker',
+                'worker_from_time' => 8 * 60,
+                'worker_to_time' => 14 * 60,
+            ]);
+        }
+
+        $firstPage = $this->actingAs($admin)->post(route('app-settings.update'), []);
+
+        $firstPage->assertOk();
+        $firstPage->assertSee('Pracownik 01');
+        $firstPage->assertSee('Pracownik 25');
+        $firstPage->assertDontSee('Pracownik 26');
+        $firstPage->assertSee('pending=1', false);
+
+        $secondPage = $this->actingAs($admin)->get(route('app-settings.index', [
+            'pending' => 1,
+            'page' => 2,
+        ]));
+
+        $secondPage->assertOk();
+        $secondPage->assertSee('Pracownik 26');
+        $secondPage->assertDontSee('Pracownik 01');
+        $this->assertTrue(AppSetting::getBool(AppSetting::KEY_WORKER_SELF_HOURS));
+    }
+
+    public function test_pending_warning_query_parameters_are_validated(): void
+    {
+        $admin = $this->createAdmin();
+
+        $this->actingAs($admin)
+            ->get(route('app-settings.index', ['pending' => 1, 'page' => 0]))
+            ->assertSessionHasErrors('page');
     }
 
     public function test_disable_with_pending_and_force_succeeds(): void

@@ -21,7 +21,7 @@
         <nav class="bottom-bar">
             <a href="{{ route('worker.dashboard') }}" class="bar-item {{ request()->routeIs('worker.dashboard') ? 'active' : '' }}">
                 <i class="fa-solid fa-house"></i>
-                <span>Strona główna</span>
+                <span>Pulpit</span>
             </a>
 
             <a href="{{ route('worker.schedule') }}" class="bar-item {{ request()->routeIs('worker.schedule') ? 'active' : '' }}">

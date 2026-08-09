@@ -7,6 +7,8 @@ services:
         APP_ENV: local
     container_name: peoplemanager-app
     restart: unless-stopped
+    # Chromium (eksport PDF) rozsadza domyślne 64MB /dev/shm — jak w prod.
+    shm_size: 512m
     volumes:
       - .:/var/www/html
       - /var/www/html/vendor
@@ -25,6 +27,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     networks:
       - peoplemanager
 
@@ -53,6 +57,14 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "grep -aq 'queue:work' /proc/1/cmdline"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - peoplemanager
 
@@ -81,6 +93,23 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "grep -aq 'schedule:run' /proc/1/cmdline"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - peoplemanager
+
+  mailpit:
+    image: axllent/mailpit:v1.30.0
+    container_name: peoplemanager-mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+    environment:
+      MP_MAX_MESSAGES: "500"
     networks:
       - peoplemanager
 

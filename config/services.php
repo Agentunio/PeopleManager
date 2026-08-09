@@ -38,4 +38,8 @@ return [
     'chrome' => [
         'path' => env('CHROME_PATH', '/usr/bin/google-chrome-stable'),
     ],
+
+    'node' => [
+        'binary' => env('NODE_BINARY', 'node'),
+    ],
 ];

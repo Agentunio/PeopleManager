@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Models\Worker;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
@@ -58,12 +59,46 @@ class GuestCsrfRecoveryTest extends TestCase
         $response->assertSessionHasErrors('login');
     }
 
+    public function test_forgot_password_token_mismatch_redirects_to_form_with_error(): void
+    {
+        $request = Request::create('/zapomniane-haslo', 'POST');
+        $request->setRouteResolver(fn () => (new Route('POST', '/zapomniane-haslo', []))
+            ->name('password.email'));
+
+        $response = $this->renderTokenMismatchResponse($request);
+
+        $response->assertRedirect(route('password.request'));
+        $response->assertSessionHasErrors('email');
+    }
+
+    public function test_reset_password_token_mismatch_redirects_back_with_error(): void
+    {
+        $request = Request::create('/reset-hasla', 'POST', [
+            'email' => 'admin@example.com',
+            'token' => str_repeat('a', 64),
+        ]);
+        $request->headers->set('referer', route('password.reset', [
+            'token' => str_repeat('a', 64),
+            'email' => 'admin@example.com',
+        ]));
+        $request->setRouteResolver(fn () => (new Route('POST', '/reset-hasla', []))
+            ->name('password.update'));
+
+        $response = $this->renderTokenMismatchResponse($request);
+
+        $response->assertRedirect(route('password.reset', [
+            'token' => str_repeat('a', 64),
+            'email' => 'admin@example.com',
+        ]));
+        $response->assertSessionHasErrors('password');
+    }
+
     private function renderTokenMismatchResponse(Request $request): TestResponse
     {
         $request->setLaravelSession($this->app['session.store']);
 
         $response = $this->app
-            ->make(\Illuminate\Contracts\Debug\ExceptionHandler::class)
+            ->make(ExceptionHandler::class)
             ->render($request, new TokenMismatchException('CSRF token mismatch.'));
 
         return TestResponse::fromBaseResponse($response);

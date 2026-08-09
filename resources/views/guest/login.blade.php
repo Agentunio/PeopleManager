@@ -69,7 +69,7 @@
                         </span>
                         <span>Zapamiętaj mnie</span>
                     </label>
-                    <span class="forgot-password">Zapomniałeś hasła?</span>
+                    <a class="forgot-password" href="{{ route('password.request') }}">Zapomniałeś hasła?</a>
                 </div>
 
                 <button type="submit" class="login-btn">Zaloguj się</button>

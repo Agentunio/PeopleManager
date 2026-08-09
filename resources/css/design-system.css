@@ -38,3 +38,26 @@
     --pm-font-display: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
     --pm-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
+
+input[type='search']::-webkit-search-cancel-button {
+    width: 20px;
+    height: 20px;
+    margin-inline-start: 8px;
+    border-radius: 4px;
+    background:
+        linear-gradient(45deg, transparent 44%, currentColor 45%, currentColor 55%, transparent 56%) center / 10px 10px no-repeat,
+        linear-gradient(-45deg, transparent 44%, currentColor 45%, currentColor 55%, transparent 56%) center / 10px 10px no-repeat;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: background-color 120ms ease, opacity 120ms ease;
+    -webkit-appearance: none;
+}
+
+input[type='search']::-webkit-search-cancel-button:hover {
+    background-color: rgba(107, 99, 87, 0.12);
+    opacity: 0.85;
+}
+
+input[type='search']::-webkit-search-cancel-button:active {
+    opacity: 1;
+}

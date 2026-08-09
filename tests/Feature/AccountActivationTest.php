@@ -8,6 +8,7 @@ use App\Models\Worker;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -37,12 +38,12 @@ class AccountActivationTest extends TestCase
         ]);
     }
 
-    private function verifyDob(string $token = self::RAW_TOKEN, string $dob = '1990-05-15'): \Illuminate\Testing\TestResponse
+    private function verifyDob(string $token = self::RAW_TOKEN, string $dob = '1990-05-15'): TestResponse
     {
         return $this->post(route('account.verify', $token), ['date_of_birth' => $dob]);
     }
 
-    private function activateAccount(string $token = self::RAW_TOKEN, string $password = 'SecurePass1!'): \Illuminate\Testing\TestResponse
+    private function activateAccount(string $token = self::RAW_TOKEN, string $password = 'SecurePass1!'): TestResponse
     {
         return $this->post(route('account.activate.store', $token), [
             'password' => $password,
@@ -61,11 +62,19 @@ class AccountActivationTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Aktywacja konta');
         $response->assertSee('Data urodzenia');
+        $response->assertSee('Wybierz rok');
+        $response->assertSee('Wybierz miesiąc');
+        $response->assertSee('Wybierz dzień');
+        $response->assertSee('date-picker-dialog');
+        $response->assertDontSee('date_of_birth_display');
     }
 
     public function test_invalid_token_returns_404(): void
     {
         $response = $this->get(route('account.activate', 'nonexistent_token'));
+
+        $response->assertSee('Link aktywacyjny jest nieprawidłowy');
+        $response->assertSee('Wróć do logowania');
         $response->assertStatus(404);
     }
 
@@ -75,6 +84,9 @@ class AccountActivationTest extends TestCase
         $user->update(['activation_expires_at' => now()->subHour()]);
 
         $response = $this->get(route('account.activate', self::RAW_TOKEN));
+
+        $response->assertSee('Link aktywacyjny wygasł');
+        $response->assertSee('Wróć do logowania');
         $response->assertStatus(410);
     }
 
@@ -150,7 +162,7 @@ class AccountActivationTest extends TestCase
         $this->verifyDob();
         $this->activateAccount();
 
-        Mail::assertSent(WorkerAccountActivated::class, function (WorkerAccountActivated $mail) use ($user) {
+        Mail::assertQueued(WorkerAccountActivated::class, function (WorkerAccountActivated $mail) use ($user) {
             return $mail->hasTo($user->email)
                 && $mail->user->id === $user->id;
         });
@@ -199,7 +211,7 @@ class AccountActivationTest extends TestCase
         $this->verifyDob();
         $this->activateAccount();
 
-        $this->assertNull(session('activation_verified_' . self::RAW_TOKEN));
+        $this->assertNull(session('activation_verified_'.self::RAW_TOKEN));
     }
 
     // --- Hasła ---
@@ -213,6 +225,16 @@ class AccountActivationTest extends TestCase
 
         $response->assertSessionHasErrors('password');
         $this->assertFalse($user->fresh()->is_active);
+    }
+
+    public function test_activation_uses_polish_password_rule_messages(): void
+    {
+        $this->createPendingAccount();
+        $this->verifyDob();
+
+        $this->activateAccount(password: 'lowercase1!')->assertSessionHasErrors([
+            'password' => 'Hasło musi zawierać małą i wielką literę.',
+        ]);
     }
 
     #[DataProvider('weakPasswordsProvider')]

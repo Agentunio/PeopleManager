@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Notifications\QueuedResetPassword;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
+    use Notifiable;
 
     public $timestamps = true;
 
@@ -38,11 +41,20 @@ class User extends Authenticatable
 
     public function hasExpiredActivation(): bool
     {
-        if (!$this->activation_expires_at) {
+        if (! $this->activation_expires_at) {
             return true;
         }
 
         return Carbon::parse($this->activation_expires_at)->isPast();
+    }
+
+    /**
+     * Queued so the response time never reveals whether the account exists
+     * and SMTP stays out of the request cycle.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new QueuedResetPassword($token));
     }
 
     protected $hidden = [

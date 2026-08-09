@@ -7,8 +7,8 @@ use App\Models\User;
 use App\Models\Worker;
 use App\Models\WorkerShift;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class WorkerSelfHoursToggleTest extends TestCase
@@ -31,6 +31,7 @@ class WorkerSelfHoursToggleTest extends TestCase
 
         $user = User::create([
             'username' => 'anna',
+            'email' => 'anna@example.test',
             'password' => 'password',
             'worker_id' => $worker->id,
         ]);
@@ -46,6 +47,7 @@ class WorkerSelfHoursToggleTest extends TestCase
         if ($yesterday->lt(now()->startOfWeek())) {
             $yesterday = now()->startOfWeek();
         }
+
         return $yesterday->toDateString();
     }
 
@@ -120,6 +122,7 @@ class WorkerSelfHoursToggleTest extends TestCase
 
         $admin = User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
         ]);
         $admin->role = 'admin';

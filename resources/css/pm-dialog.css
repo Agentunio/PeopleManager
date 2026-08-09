@@ -1,0 +1,151 @@
+@import './design-system.css';
+
+/* Paleta domyślna = motyw paper. Strony w innym motywie (np. ciemny edytor
+   dnia) nadpisują te zmienne na .pm-dialog-backdrop u siebie. */
+.pm-dialog-backdrop {
+    --pm-dialog-surface: #ffffff;
+    --pm-dialog-text: #1a1612;
+    --pm-dialog-muted: #6b6357;
+    --pm-dialog-line: #e8e3d6;
+    --pm-dialog-accent: #dc2626;
+    --pm-dialog-accent-deep: #991b1b;
+    --pm-dialog-accent-tint: rgba(220, 38, 38, 0.1);
+    position: fixed;
+    z-index: 2100;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(26, 22, 18, 0.55);
+    animation: pm-dialog-fade 140ms ease-out;
+}
+
+body.pm-dialog-open {
+    overflow: hidden;
+}
+
+.pm-dialog {
+    box-sizing: border-box;
+    width: min(420px, 100%);
+    padding: 28px 26px 22px;
+    border: 1px solid var(--pm-dialog-line);
+    border-radius: 14px;
+    background: var(--pm-dialog-surface);
+    color: var(--pm-dialog-text);
+    font-family: var(--pm-font-display);
+    text-align: center;
+    animation: pm-dialog-in 160ms ease-out;
+}
+
+.pm-dialog-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 18px;
+    border: 2px solid var(--pm-dialog-accent);
+    border-radius: 50%;
+    background: var(--pm-dialog-accent-tint);
+    color: var(--pm-dialog-accent);
+    font-family: var(--pm-font-mono);
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.pm-dialog-title {
+    margin: 0 0 10px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.4px;
+}
+
+.pm-dialog-text {
+    margin: 0 0 22px;
+    color: var(--pm-dialog-muted);
+    font-size: 14.5px;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.pm-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.pm-dialog-button {
+    box-sizing: border-box;
+    min-height: 42px;
+    padding: 11px 20px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-family: var(--pm-font-display);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+.pm-dialog-button--confirm {
+    background: var(--pm-dialog-accent);
+    color: #ffffff;
+}
+
+.pm-dialog-button--confirm:hover {
+    background: var(--pm-dialog-accent-deep);
+}
+
+.pm-dialog-button--cancel {
+    border-color: var(--pm-dialog-line);
+    background: var(--pm-dialog-surface);
+    color: var(--pm-dialog-text);
+}
+
+.pm-dialog-button--cancel:hover {
+    border-color: var(--pm-dialog-muted);
+}
+
+.pm-dialog-button:focus-visible {
+    outline: 2px solid var(--pm-dialog-accent);
+    outline-offset: 2px;
+}
+
+@keyframes pm-dialog-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes pm-dialog-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 430px) {
+    .pm-dialog {
+        padding: 24px 20px 18px;
+    }
+
+    .pm-dialog-title {
+        font-size: 21px;
+    }
+
+    .pm-dialog-actions {
+        flex-direction: column-reverse;
+    }
+
+    .pm-dialog-button {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pm-dialog-backdrop,
+    .pm-dialog {
+        animation: none;
+    }
+}

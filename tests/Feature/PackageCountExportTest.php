@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\HtmlExportRenderer;
 use App\Models\Package;
 use App\Models\PackageShift;
 use App\Models\User;
 use App\Services\PackageCountExportService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Fakes\FakeHtmlExportRenderer;
 use Tests\TestCase;
 
 class PackageCountExportTest extends TestCase
@@ -18,6 +20,7 @@ class PackageCountExportTest extends TestCase
     {
         $user = User::create([
             'username' => 'admin',
+            'email' => 'admin@example.test',
             'password' => 'password',
         ]);
         $user->role = 'admin';
@@ -30,6 +33,7 @@ class PackageCountExportTest extends TestCase
     {
         $user = User::create([
             'username' => 'worker',
+            'email' => 'worker@example.test',
             'password' => 'password',
         ]);
         $user->role = 'worker';
@@ -89,6 +93,48 @@ class PackageCountExportTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['end_date']);
+    }
+
+    public function test_export_rejects_ranges_longer_than_366_calendar_days(): void
+    {
+        $admin = $this->createAdmin();
+
+        $response = $this->actingAs($admin)->post(route('dashboard.export.packages'), [
+            'start_date' => '2025-01-01',
+            'end_date' => '2026-01-02',
+        ]);
+
+        $response->assertSessionHasErrors(['end_date']);
+    }
+
+    public function test_export_requires_strict_iso_dates(): void
+    {
+        $admin = $this->createAdmin();
+
+        $response = $this->actingAs($admin)->post(route('dashboard.export.packages'), [
+            'start_date' => '01.04.2026',
+            'end_date' => '07.04.2026',
+        ]);
+
+        $response->assertSessionHasErrors(['start_date', 'end_date']);
+    }
+
+    public function test_export_accepts_366_calendar_days_and_stays_an_immediate_pdf(): void
+    {
+        $admin = $this->createAdmin();
+        $fakeRenderer = new FakeHtmlExportRenderer;
+        $this->app->instance(HtmlExportRenderer::class, $fakeRenderer);
+
+        $response = $this->actingAs($admin)->post(route('dashboard.export.packages'), [
+            'start_date' => '2025-01-01',
+            'end_date' => '2026-01-01',
+        ]);
+
+        $response->assertDownload('paczki_2025-01-01_2026-01-01.pdf');
+        $this->assertCount(1, $fakeRenderer->pdfCalls);
+        $this->assertTrue($fakeRenderer->pdfCalls[0]['landscape']);
+
+        @unlink($response->baseResponse->getFile()->getPathname());
     }
 
     public function test_service_groups_shifts_into_weeks_and_skips_rates_with_zero(): void

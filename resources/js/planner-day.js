@@ -1,81 +1,9 @@
-import Swal from 'sweetalert2';
-import Sortable from 'sortablejs';
+import $ from 'jquery';
+import { confirmDialog } from './confirm-dialog.js';
 
 $(document).ready(function() {
-    const $dropzones = $('.shift-dropzone');
-    let isTapMode = false;
-    let selectedWorkers = [];
-    let sortableInstances = [];
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        const div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
-    }
-
-    function isTouchDevice() {
-        return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    }
-
-    function shouldUseTapMode() {
-        return window.innerWidth <= 1100 || isTouchDevice();
-    }
-
-    function initMode() {
-        const newTapMode = shouldUseTapMode();
-
-        if (newTapMode !== isTapMode) {
-            isTapMode = newTapMode;
-
-            if (isTapMode) {
-                enableTapMode();
-            } else {
-                disableTapMode();
-            }
-        }
-    }
-
-    function enableTapMode() {
-        $('body').addClass('tap-mode-active');
-
-        sortableInstances.forEach(s => s.option('disabled', true));
-
-        if ($('.selection-info-bar').length === 0) {
-            const infoBar = `
-                <div class="selection-info-bar">
-                    <div>
-                        <span class="selection-count">Zaznaczono: <strong id="selected-count">0</strong> pracowników</span>
-                        <span class="selection-hint">Kliknij na zmianę, aby przypisać</span>
-                    </div>
-                    <button type="button" class="btn-clear-selection">
-                        <i class="fas fa-times"></i> Wyczyść
-                    </button>
-                </div>
-            `;
-            $('body').append(infoBar);
-        }
-
-        if ($('.tap-mode-instruction').length === 0) {
-            const instruction = `
-                <div class="tap-mode-instruction">
-                    <i class="fas fa-hand-pointer"></i>
-                    Zaznacz pracowników, następnie kliknij na zmianę
-                </div>
-            `;
-            $('.workers-panel-header').after(instruction);
-        }
-    }
-
-    function disableTapMode() {
-        $('body').removeClass('tap-mode-active selection-active');
-
-        sortableInstances.forEach(s => s.option('disabled', false));
-
-        clearSelection();
-
-        $('.selection-info-bar').removeClass('show');
-    }
+    const $morningZone = $('#morning-shift');
+    const $afternoonZone = $('#afternoon-shift');
 
     function getWorkerFromData(workerId) {
         return workersData.find(w => w.id == workerId);
@@ -97,351 +25,178 @@ $(document).ready(function() {
         return shiftType === 'morning' ? availability.morning : availability.afternoon;
     }
 
-    function canWorkerBeOnBothShifts(workerId) {
-        const availability = getWorkerAvailability(workerId);
-        return availability.morning && availability.afternoon;
-    }
-
     function isWorkerAssignedToShift(workerId, shiftType) {
-        const dropzoneId = shiftType === 'morning' ? '#morning-shift' : '#afternoon-shift';
-        return $(dropzoneId).find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0;
+        return zoneFor(shiftType).find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0;
     }
 
-    function toggleWorkerSelection(workerId) {
-        const index = selectedWorkers.indexOf(workerId);
-
-        if (index > -1) {
-            selectedWorkers.splice(index, 1);
-            $(`.worker-card[data-worker-id="${workerId}"]`).removeClass('selected');
-        } else {
-            selectedWorkers.push(workerId);
-            $(`.worker-card[data-worker-id="${workerId}"]`).addClass('selected');
-        }
-
-        updateSelectionUI();
+    function zoneFor(shiftType) {
+        return shiftType === 'morning' ? $morningZone : $afternoonZone;
     }
 
-    function clearSelection() {
-        selectedWorkers = [];
-        $('.worker-card').removeClass('selected');
-        updateSelectionUI();
+    function freeShiftsFor(workerId) {
+        const availability = getWorkerAvailability(workerId);
+        return {
+            morning: availability.morning && !isWorkerAssignedToShift(workerId, 'morning'),
+            afternoon: availability.afternoon && !isWorkerAssignedToShift(workerId, 'afternoon')
+        };
     }
 
-    function updateSelectionUI() {
-        const count = selectedWorkers.length;
-        $('#selected-count').text(count);
+    function buildPoolCard(worker, freeMorning, freeAfternoon) {
+        const $card = $(`
+            <div class="worker-card">
+                <span class="worker-name"></span>
+                <div class="worker-card__actions">
+                    <button type="button" class="planner-day-add planner-day-add--morning" data-shift="morning">Rano</button>
+                    <button type="button" class="planner-day-add planner-day-add--afternoon" data-shift="afternoon">Popo.</button>
+                </div>
+            </div>
+        `);
 
-        if (count > 0) {
-            $('.selection-info-bar').addClass('show');
-            $('body').addClass('selection-active');
-        } else {
-            $('.selection-info-bar').removeClass('show');
-            $('body').removeClass('selection-active');
-        }
+        $card.attr('data-worker-id', worker.id);
+        $card.find('.worker-name').text(worker.name);
+        $card.find('[data-shift="morning"]').attr('aria-label', `Przypisz ${worker.name} do zmiany rannej`);
+        $card.find('[data-shift="afternoon"]').attr('aria-label', `Przypisz ${worker.name} do zmiany popołudniowej`);
+        syncPoolCard($card, freeMorning, freeAfternoon);
+
+        return $card;
     }
 
-    function assignSelectedWorkersToShift(shiftType) {
-        if (selectedWorkers.length === 0) {
-            showToast.warning('Najpierw zaznacz pracowników');
-            return;
-        }
-
-        const $dropzone = $(`#${shiftType}-shift`);
-        let assignedCount = 0;
-        let errors = [];
-
-        selectedWorkers.forEach(workerId => {
-            const worker = getWorkerFromData(workerId);
-            if (!worker) return;
-
-            if (!isWorkerAvailableForShift(workerId, shiftType)) {
-                errors.push(`${worker.name} - niedostępny na tę zmianę`);
-                return;
-            }
-
-            if ($dropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0) {
-                errors.push(`${worker.name} - już przypisany`);
-                return;
-            }
-
-            if (!canWorkerBeOnBothShifts(workerId)) {
-                const $otherDropzone = $dropzones.not($dropzone);
-                $otherDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).remove();
-                $otherDropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
-                updatePlaceholder($otherDropzone);
-            }
-
-            addWorkerToShift(workerId, worker.name, shiftType, $dropzone);
-            updateWorkerCardVisibility(workerId);
-            assignedCount++;
-        });
-
-        updatePlaceholder($dropzone);
-        updateCounts();
-        clearSelection();
-
-        if (assignedCount > 0) {
-            showToast.success(`Przypisano ${assignedCount} pracowników`);
-        }
-
-        if (errors.length > 0) {
-            setTimeout(() => {
-                showToast.warning(errors[0]);
-            }, 500);
-        }
+    function syncPoolCard($card, freeMorning, freeAfternoon) {
+        $card.attr('data-morning', String(freeMorning));
+        $card.attr('data-afternoon', String(freeAfternoon));
+        $card.find('[data-shift="morning"]').prop('disabled', !freeMorning);
+        $card.find('[data-shift="afternoon"]').prop('disabled', !freeAfternoon);
     }
 
-    function restoreWorkerCard(workerId) {
+    function refreshPoolCard(workerId) {
         const worker = getWorkerFromData(workerId);
         if (!worker) return;
 
-        const assignedMorning = isWorkerAssignedToShift(workerId, 'morning');
-        const assignedAfternoon = isWorkerAssignedToShift(workerId, 'afternoon');
+        const free = freeShiftsFor(workerId);
+        const $card = $(`.worker-card[data-worker-id="${workerId}"]`);
 
-        const freeMorning = worker.morning && !assignedMorning;
-        const freeAfternoon = worker.afternoon && !assignedAfternoon;
-
-        if (!freeMorning && !freeAfternoon) return;
-
-        let $workerCard = $(`.worker-card[data-worker-id="${workerId}"]`);
-
-        if ($workerCard.length === 0) {
-            let badges = '';
-            if (freeMorning) badges += '<span class="badge badge-morning">R</span>';
-            if (freeAfternoon) badges += '<span class="badge badge-afternoon">P</span>';
-
-            const cardHtml = `
-            <div class="worker-card draggable" data-worker-id="${workerId}" data-morning="${freeMorning}" data-afternoon="${freeAfternoon}">
-                <span class="worker-name">${escapeHtml(worker.name)}</span>
-                <div class="worker-availability-badges">
-                    ${badges}
-                </div>
-            </div>
-        `;
-            $('#workers-list').append(cardHtml);
+        if (!free.morning && !free.afternoon) {
+            $card.hide();
+        } else if ($card.length === 0) {
+            $('#workers-list').append(buildPoolCard(worker, free.morning, free.afternoon));
         } else {
-            $workerCard.show();
-            $workerCard.attr('data-morning', freeMorning);
-            $workerCard.attr('data-afternoon', freeAfternoon);
-
-            const $badges = $workerCard.find('.worker-availability-badges');
-            $badges.empty();
-            if (freeMorning) $badges.append('<span class="badge badge-morning">R</span>');
-            if (freeAfternoon) $badges.append('<span class="badge badge-afternoon">P</span>');
+            syncPoolCard($card, free.morning, free.afternoon);
+            $card.show();
         }
+
+        updatePoolState();
     }
 
-    function updateWorkerCardVisibility(workerId) {
-        const $workerCard = $(`.worker-card[data-worker-id="${workerId}"]`);
-        const availability = getWorkerAvailability(workerId);
-        const assignedMorning = isWorkerAssignedToShift(workerId, 'morning');
-        const assignedAfternoon = isWorkerAssignedToShift(workerId, 'afternoon');
-
-        const freeMorning = availability.morning && !assignedMorning;
-        const freeAfternoon = availability.afternoon && !assignedAfternoon;
-
-        if (!freeMorning && !freeAfternoon) {
-            $workerCard.hide();
-            const index = selectedWorkers.indexOf(workerId);
-            if (index > -1) {
-                selectedWorkers.splice(index, 1);
-                updateSelectionUI();
-            }
-            return;
-        }
-
-        if ($workerCard.length === 0) {
-            restoreWorkerCard(workerId);
-        } else {
-            $workerCard.show();
-            $workerCard.attr('data-morning', freeMorning);
-            $workerCard.attr('data-afternoon', freeAfternoon);
-            $workerCard.find('.badge-morning').toggle(freeMorning);
-            $workerCard.find('.badge-afternoon').toggle(freeAfternoon);
-        }
-    }
-
-    function removeUnavailableWorkers() {
+    function syncPoolWithBoards() {
         $('.assigned-worker').each(function() {
-            const $assigned = $(this);
-            const workerId = $assigned.data('worker-id');
-            const $dropzone = $assigned.closest('.shift-dropzone');
-            const shiftType = $dropzone.data('shift');
-
-            if (!isWorkerAvailableForShift(workerId, shiftType)) {
-                $assigned.remove();
-                $dropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
-                updatePlaceholder($dropzone);
-            }
-        });
-        updateCounts();
-    }
-
-    function initDragAndDrop() {
-        sortableInstances.forEach(s => s.destroy());
-        sortableInstances = [];
-
-        const sharedConfig = {
-            disabled: isTapMode,
-            ghostClass: 'sortable-ghost',
-            chosenClass: 'dragging',
-            dragClass: 'sortable-drag',
-            animation: 150,
-            onStart: function() {
-                $dropzones.addClass('highlight');
-            },
-            onEnd: function() {
-                $dropzones.removeClass('highlight dropzone-hover');
-            }
-        };
-
-        const workersListEl = document.getElementById('workers-list');
-        if (workersListEl) {
-            sortableInstances.push(
-                new Sortable(workersListEl, {
-                    ...sharedConfig,
-                    group: { name: 'planner', pull: 'clone', put: false },
-                    sort: false,
-                    draggable: '.worker-card.draggable'
-                })
-            );
-        }
-
-        ['morning', 'afternoon'].forEach(function(shiftType) {
-            const container = document.querySelector(`#${shiftType}-shift .assigned-workers`);
-            if (!container) return;
-
-            sortableInstances.push(
-                new Sortable(container, {
-                    ...sharedConfig,
-                    group: { name: 'planner', pull: 'clone', put: true },
-                    sort: false,
-                    draggable: '.assigned-worker.draggable',
-                    emptyInsertThreshold: 80,
-                    onAdd: function(evt) {
-                        handleShiftDrop(evt, shiftType);
-                    }
-                })
-            );
-        });
-
-        $dropzones.off('dragenter.sortable dragleave.sortable drop.sortable');
-        $dropzones.on('dragenter.sortable', function() {
-            $(this).addClass('dropzone-hover');
-        });
-        $dropzones.on('dragleave.sortable', function(e) {
-            if (!this.contains(e.originalEvent ? e.originalEvent.relatedTarget : e.relatedTarget)) {
-                $(this).removeClass('dropzone-hover');
-            }
-        });
-        $dropzones.on('drop.sortable', function() {
-            $(this).removeClass('dropzone-hover');
+            refreshPoolCard($(this).data('worker-id'));
         });
     }
 
-    function handleShiftDrop(evt, shiftType) {
-        const item = evt.item;
-        const $currentDropzone = $(`#${shiftType}-shift`);
+    function updatePoolState() {
+        const visible = $('#workers-list .worker-card').filter(function() {
+            return $(this).css('display') !== 'none';
+        }).length;
 
-        const workerId = $(item).data('worker-id');
-        const workerName = $(item).find('.worker-name').text();
-        const isFromWorkersList = item.classList.contains('worker-card');
-
-        item.remove();
-
-        if (!isWorkerAvailableForShift(workerId, shiftType)) {
-            showToast.error('Ten pracownik nie jest dostępny na tę zmianę');
-            return;
-        }
-
-        if ($currentDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0) {
-            showToast.warning('Ten pracownik jest już przypisany do tej zmiany');
-            return;
-        }
-
-        if (!isFromWorkersList) {
-            const $sourceDropzone = $(evt.from).closest('.shift-dropzone');
-            $sourceDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).remove();
-            $sourceDropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
-            updatePlaceholder($sourceDropzone);
-        }
-
-        if (!canWorkerBeOnBothShifts(workerId)) {
-            const $otherDropzone = $dropzones.not($currentDropzone);
-            $otherDropzone.find(`.assigned-worker[data-worker-id="${workerId}"]`).remove();
-            $otherDropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
-            updatePlaceholder($otherDropzone);
-        }
-
-        addWorkerToShift(workerId, workerName, shiftType, $currentDropzone);
-        updatePlaceholder($currentDropzone);
-        updateCounts();
-        updateWorkerCardVisibility(workerId);
-
-        showToast.success(`${workerName} przypisany do zmiany`);
+        $('#pool-count').text(visible);
+        $('[data-pool-empty]').prop('hidden', visible > 0);
     }
 
-    function addWorkerToShift(workerId, workerName, shiftType, $dropzone) {
-        const $workerElement = $(`
-        <div class="assigned-worker draggable" data-worker-id="${workerId}">
-            <span class="worker-name">${escapeHtml(workerName)}</span>
-            <button type="button" class="remove-worker" data-worker-id="${workerId}">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `);
+    function addWorkerToShift(workerId, workerName, shiftType, $zone) {
+        const $chip = $(`
+            <span class="assigned-worker">
+                <span class="worker-name"></span>
+                <button type="button" class="remove-worker">
+                    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </span>
+        `);
+
+        $chip.attr('data-worker-id', workerId);
+        $chip.find('.worker-name').text(workerName);
+        $chip.find('.remove-worker')
+            .attr('data-worker-id', workerId)
+            .attr('aria-label', `Usuń ${workerName} ze zmiany`);
 
         const index = `${workerId}_${shiftType}`;
         const hiddenInput =
             `<input type="hidden" name="workers[${index}][worker_id]" value="${workerId}" data-worker-id="${workerId}">` +
             `<input type="hidden" name="workers[${index}][shift_type]" value="${shiftType}" data-worker-id="${workerId}">`;
 
-        $dropzone.find('.assigned-workers').append($workerElement);
-        $dropzone.find('.hidden-inputs').append(hiddenInput);
+        $zone.find('.assigned-workers').append($chip);
+        $zone.find('.hidden-inputs').append(hiddenInput);
     }
 
-    function updatePlaceholder($dropzone) {
-        const hasWorkers = $dropzone.find('.assigned-worker').length > 0;
-        $dropzone.find('.dropzone-placeholder').toggle(!hasWorkers);
+    function updateEmptyState($zone) {
+        const hasWorkers = $zone.find('.assigned-worker').length > 0;
+        $zone.find('[data-board-empty]').prop('hidden', hasWorkers);
     }
 
+    // Licznik „Przypisani" pokazuje osoby, które faktycznie wyjdą na zmianę —
+    // nieobecni odpadają, zastępcy się liczą (tak samo liczy to DayController).
     function updateCounts() {
-        const morningCount = $('#morning-shift .assigned-worker').length;
-        const afternoonCount = $('#afternoon-shift .assigned-worker').length;
-
-        $('#morning-count').text(morningCount);
-        $('#afternoon-count').text(afternoonCount);
-        $('#total-assigned').text(morningCount + afternoonCount);
+        ['morning', 'afternoon'].forEach((shiftType) => {
+            $(`#${shiftType}-count`).text(
+                zoneFor(shiftType).find('.assigned-worker:not(.worker-absent)').length
+            );
+        });
     }
 
-    $(document).on('click', '.worker-card', function(e) {
-        if (!isTapMode) return;
+    function removeUnavailableWorkers() {
+        $('.assigned-worker').each(function() {
+            const $assigned = $(this);
+            const workerId = $assigned.data('worker-id');
+            const $zone = $assigned.closest('[data-shift]');
+            const shiftType = $zone.data('shift');
 
-        e.preventDefault();
-        e.stopPropagation();
+            const shiftId = $assigned.data('shift-id');
+            const isSubstitutionPair = !!$assigned.attr('data-substituted-for')
+                || (shiftId && $zone.find(`.assigned-worker[data-substituted-for="${shiftId}"]`).length > 0);
 
-        const workerId = $(this).data('worker-id');
-        toggleWorkerSelection(workerId);
-    });
+            if (!isSubstitutionPair && !isWorkerAvailableForShift(workerId, shiftType)) {
+                $assigned.remove();
+                $zone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
+                updateEmptyState($zone);
+            }
+        });
+        updateCounts();
+    }
 
-    $(document).on('click', '.shift-dropzone', function(e) {
-        if (!isTapMode) return;
-        if ($(e.target).closest('.remove-worker').length) return;
-        if ($(e.target).closest('.assigned-worker').length) return;
-
+    $(document).on('click', '.planner-day-add', function() {
+        const $card = $(this).closest('.worker-card');
+        const workerId = $card.data('worker-id');
         const shiftType = $(this).data('shift');
-        assignSelectedWorkersToShift(shiftType);
-    });
+        const worker = getWorkerFromData(workerId);
+        if (!worker) return;
 
-    $(document).on('click', '.btn-clear-selection', function() {
-        clearSelection();
+        if (!isWorkerAvailableForShift(workerId, shiftType)) {
+            showToast.error('Ten pracownik nie jest dostępny na tę zmianę');
+            return;
+        }
+
+        const $zone = zoneFor(shiftType);
+
+        if ($zone.find(`.assigned-worker[data-worker-id="${workerId}"]`).length > 0) {
+            showToast.warning('Ten pracownik jest już przypisany do tej zmiany');
+            return;
+        }
+
+        addWorkerToShift(workerId, worker.name, shiftType, $zone);
+        updateEmptyState($zone);
+        updateCounts();
+        refreshPoolCard(workerId);
+
+        showToast.success(`${worker.name} przypisany do zmiany`);
     });
 
     $(document).on('click', '.remove-worker', function(e) {
         e.stopPropagation();
 
         const $worker = $(this).closest('.assigned-worker');
-        const $dropzone = $(this).closest('.shift-dropzone');
+        const $zone = $(this).closest('[data-shift]');
         const workerId = $(this).data('worker-id');
         const shiftId = $worker.data('shift-id');
         const isAbsent = $worker.hasClass('worker-absent');
@@ -449,75 +204,93 @@ $(document).ready(function() {
 
         function removeWorker(alsoRemoveSubstitute) {
             if (alsoRemoveSubstitute && shiftId) {
-                const $subCard = $dropzone.find(`.assigned-worker[data-substituted-for="${shiftId}"]`);
+                const $subCard = $zone.find(`.assigned-worker[data-substituted-for="${shiftId}"]`);
                 if ($subCard.length) {
                     const subWorkerId = $subCard.data('worker-id');
                     $subCard.remove();
-                    $dropzone.find(`.hidden-inputs input[data-worker-id="${subWorkerId}"]`).remove();
-                    restoreWorkerCard(subWorkerId);
+                    $zone.find(`.hidden-inputs input[data-worker-id="${subWorkerId}"]`).remove();
+                    refreshPoolCard(subWorkerId);
                 }
             }
 
             $worker.remove();
-            $dropzone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
-            updatePlaceholder($dropzone);
+            $zone.find(`.hidden-inputs input[data-worker-id="${workerId}"]`).remove();
+            updateEmptyState($zone);
             updateCounts();
-            restoreWorkerCard(workerId);
+            refreshPoolCard(workerId);
         }
 
         if (isAbsent) {
-            const $subCard = shiftId ? $dropzone.find(`.assigned-worker[data-substituted-for="${shiftId}"]`) : $();
+            const $subCard = shiftId ? $zone.find(`.assigned-worker[data-substituted-for="${shiftId}"]`) : $();
             const subName = $subCard.find('.worker-name').text().trim();
 
-            Swal.fire({
+            confirmDialog({
                 title: 'Usunąć nieobecnego?',
                 text: subName
                     ? `Usunięcie tego pracownika usunie również zastępstwo: ${subName}`
                     : 'Pracownik jest oznaczony jako nieobecny. Czy na pewno chcesz go usunąć z grafiku?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#e50914',
-                cancelButtonColor: '#555',
-                confirmButtonText: 'Tak, usuń',
-                cancelButtonText: 'Anuluj',
-                background: '#1f1f1f',
-                color: '#f0f0f0'
-            }).then((result) => {
-                if (result.isConfirmed) removeWorker(true);
+                confirmText: 'Tak, usuń'
+            }).then((confirmed) => {
+                if (confirmed) removeWorker(true);
             });
         } else if (isSubstitute) {
             const workerName = $worker.find('.worker-name').text().trim();
-            Swal.fire({
+            confirmDialog({
                 title: 'Usunąć zastępstwo?',
                 text: `Czy na pewno chcesz usunąć zastępstwo: ${workerName}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#e50914',
-                cancelButtonColor: '#555',
-                confirmButtonText: 'Tak, usuń',
-                cancelButtonText: 'Anuluj',
-                background: '#1f1f1f',
-                color: '#f0f0f0'
-            }).then((result) => {
-                if (result.isConfirmed) removeWorker(false);
+                confirmText: 'Tak, usuń'
+            }).then((confirmed) => {
+                if (confirmed) removeWorker(false);
             });
         } else {
             removeWorker(false);
         }
     });
 
+    $('.planner-day-time').on('click', function(event) {
+        const input = this.querySelector('input');
+        if (!input || event.target === input) return;
+
+        if (typeof input.showPicker === 'function') {
+            try {
+                input.showPicker();
+            } catch (error) {
+                input.focus();
+            }
+        } else {
+            input.focus();
+        }
+    });
+
+    const $availabilityModal = $('#availability-modal');
+    const availabilityTrigger = document.getElementById('change-availability-btn');
+    const closeAvailabilityModal = () => {
+        $availabilityModal.stop(true, true).fadeOut(200, () => {
+            availabilityTrigger?.focus({ preventScroll: true });
+        });
+    };
+
     $('#change-availability-btn').on('click', function() {
-        $('#availability-modal').fadeIn(200);
+        $availabilityModal.stop(true, true).fadeIn(200, () => {
+            document.getElementById('close-modal')?.focus({ preventScroll: true });
+        });
     });
 
     $('#close-modal, #cancel-availability').on('click', function(e) {
         e.preventDefault();
-        $('#availability-modal').fadeOut(200);
+        closeAvailabilityModal();
     });
 
     $('#availability-modal').on('click', function(e) {
         if (e.target === this) {
-            $(this).fadeOut(200);
+            closeAvailabilityModal();
+        }
+    });
+
+    $('#availability-modal').on('keydown', function(e) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeAvailabilityModal();
         }
     });
 
@@ -538,13 +311,11 @@ $(document).ready(function() {
                 if (response.success) {
                     workersData = response.workers;
                     showToast.success(response.message);
-                    $('#availability-modal').fadeOut(200);
+                    closeAvailabilityModal();
                     $('#workers-list').html(response.html);
-                    clearSelection();
-                    initDragAndDrop();
                     removeUnavailableWorkers();
-
-                    initMode();
+                    syncPoolWithBoards();
+                    updatePoolState();
                 }
             },
             error: function(xhr) {
@@ -559,14 +330,6 @@ $(document).ready(function() {
         });
     });
 
-    let resizeTimeout;
-    $(window).on('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
-            initMode();
-        }, 250);
-    });
-
     $('#save-draft').on('click', function(e) {
         e.preventDefault();
         $('#is-draft-input').val('1');
@@ -577,8 +340,6 @@ $(document).ready(function() {
         $('#is-draft-input').val('0');
     });
 
-    initDragAndDrop();
     updateCounts();
-    initMode();
-
+    updatePoolState();
 });

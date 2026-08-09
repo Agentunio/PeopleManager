@@ -13,23 +13,23 @@ class WorkerStoreRequest extends FormRequest
 
     public function rules(): array
     {
-        $dobRules = ['date', 'before:today'];
+        $dobRules = ['nullable', 'date', 'before:today'];
 
         $worker = $this->route('worker');
         if ($worker && $worker->hasAccount()) {
-            array_unshift($dobRules, 'required');
+            $dobRules[0] = 'required';
         }
 
         return [
-            'first_name' => ['required', 'string'],
-            'last_name' => ['required', 'string'],
-            'phone' => 'string',
-            'address' => 'string',
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:255'],
             'date_of_birth' => $dobRules,
-            'is_student' => 'boolean',
-            'is_employed' => 'boolean',
-            'contract_from' => 'date',
-            'contract_to' => ['date', 'after:contract_from'],
+            'is_student' => ['required', 'boolean'],
+            'is_employed' => ['required', 'boolean'],
+            'contract_from' => ['nullable', 'date'],
+            'contract_to' => ['nullable', 'date', 'after:contract_from'],
         ];
     }
 
@@ -37,24 +37,21 @@ class WorkerStoreRequest extends FormRequest
     {
         return [
             'first_name.required' => 'Imię jest wymagane.',
+            'first_name.max' => 'Imię może mieć maksymalnie 255 znaków.',
             'last_name.required' => 'Nazwisko jest wymagane.',
-            'phone.required' => 'Telefon jest wymagany.',
-            'address.required' => 'Adres jest wymagany.',
+            'last_name.max' => 'Nazwisko może mieć maksymalnie 255 znaków.',
+            'phone.max' => 'Telefon może mieć maksymalnie 255 znaków.',
+            'address.max' => 'Adres może mieć maksymalnie 255 znaków.',
             'date_of_birth.required' => 'Data urodzenia jest wymagana.',
+            'date_of_birth.date' => 'Podaj prawidłową datę urodzenia.',
             'date_of_birth.before' => 'Data urodzenia nie może być późniejsza niż dzisiaj.',
-            'is_student.required' => 'Status studenta jest wymagany.',
+            'is_student.required' => 'Status ucznia jest wymagany.',
+            'is_student.boolean' => 'Status ucznia ma nieprawidłową wartość.',
             'is_employed.required' => 'Status zatrudnienia jest wymagany.',
-            'contract_from.required' => 'Data startu umowy jest wymagana.',
-            'contract_to.required' => 'Data końca umowy jest wymagana.',
-            'contract_to.after' => 'Data końca umowy nie może być przed datą początku umowy',
+            'is_employed.boolean' => 'Status zatrudnienia ma nieprawidłową wartość.',
+            'contract_from.date' => 'Podaj prawidłową datę początku umowy.',
+            'contract_to.date' => 'Podaj prawidłową datę końca umowy.',
+            'contract_to.after' => 'Data końca umowy musi być późniejsza niż data początku umowy.',
         ];
-    }
-
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'is_student' => $this->boolean('is_student'),
-            'is_employed' => $this->boolean('is_employed'),
-        ]);
     }
 }
