@@ -45,12 +45,12 @@ class WorkerShift extends Model
 
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('is_draft', false);
+        return $query->where($this->qualifyColumn('is_draft'), false);
     }
 
     public function scopeDraft(Builder $query): Builder
     {
-        return $query->where('is_draft', true);
+        return $query->where($this->qualifyColumn('is_draft'), true);
     }
 
     public function getWorkerFromHourAttribute(): ?int

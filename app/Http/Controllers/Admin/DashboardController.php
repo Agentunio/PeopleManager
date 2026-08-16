@@ -41,7 +41,19 @@ class DashboardController extends Controller
         $page = (int) ($validated['page'] ?? 1);
         $shift = $validated['shift'] ?? self::ALL_SHIFTS;
 
-        $data = $this->getMainData($startDate, $endDate);
+        $hasComparison = isset($validated['compare_start_date']);
+        $compStart = $hasComparison ? Carbon::parse($validated['compare_start_date'])->startOfDay() : null;
+        $compEnd = $hasComparison ? Carbon::parse($validated['compare_end_date'])->endOfDay() : null;
+
+        $ranges = [[$startDate, $endDate]];
+
+        if ($hasComparison) {
+            $ranges[] = [$compStart, $compEnd];
+        }
+
+        $costs = $this->workerStatsService->getCostByShiftForRanges($ranges);
+
+        $data = $this->getMainData($startDate, $endDate, $costs[0]);
         $workers = $this->workerStatsService->getDashboardWorkerPage(
             $startDate,
             $endDate,
@@ -50,10 +62,8 @@ class DashboardController extends Controller
         );
         $response = $this->buildPayload($data, $workers);
 
-        if (isset($validated['compare_start_date'])) {
-            $compStart = Carbon::parse($validated['compare_start_date'])->startOfDay();
-            $compEnd = Carbon::parse($validated['compare_end_date'])->endOfDay();
-            $compData = $this->getMainData($compStart, $compEnd);
+        if ($hasComparison) {
+            $compData = $this->getMainData($compStart, $compEnd, $costs[1]);
 
             $response['comparison'] = $this->buildPayload($compData);
             $response['changes'] = $this->buildAllChanges($data, $compData);
@@ -68,8 +78,13 @@ class DashboardController extends Controller
         $prevEndDate = $startDate->copy()->subDay();
         $prevStartDate = $prevEndDate->copy()->subDays($daysDiff - 1);
 
-        $mainData = $this->getMainData($startDate, $endDate);
-        $prevData = $this->getMainData($prevStartDate, $prevEndDate);
+        $costs = $this->workerStatsService->getCostByShiftForRanges([
+            [$startDate, $endDate],
+            [$prevStartDate, $prevEndDate],
+        ]);
+
+        $mainData = $this->getMainData($startDate, $endDate, $costs[0]);
+        $prevData = $this->getMainData($prevStartDate, $prevEndDate, $costs[1]);
         $workers = $this->workerStatsService->getDashboardWorkerPage(
             $startDate,
             $endDate,
@@ -101,9 +116,11 @@ class DashboardController extends Controller
         return $payload;
     }
 
-    private function getMainData(Carbon $startDate, Carbon $endDate): array
+    /**
+     * @param  array{morning: float, afternoon: float}  $costByShift
+     */
+    private function getMainData(Carbon $startDate, Carbon $endDate, array $costByShift): array
     {
-        $costByShift = $this->workerStatsService->getCostByShift($startDate, $endDate);
         $totalCost = round(array_sum($costByShift), 2);
         $packageStats = $this->packageStatsService->getStatsForPackages($startDate, $endDate);
         $totalRevenue = $packageStats['total']['revenue'];

@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 
 class WorkerStatsService
@@ -18,6 +19,9 @@ class WorkerStatsService
 
     private const WORKER_COST_SQL = "CASE WHEN worker_shifts.status = 'absent' THEN 0 "
         .'ELSE COALESCE(worker_shifts.minutes, 0) * COALESCE(packages.price, 0) / 60.0 END';
+
+    private const WORKER_MINUTES_SQL = "CASE WHEN worker_shifts.status = 'absent' THEN 0 "
+        .'ELSE COALESCE(worker_shifts.minutes, 0) END';
 
     public function calculateStats(Collection $shifts): array
     {
@@ -116,37 +120,151 @@ class WorkerStatsService
         return round((float) $salary, 2);
     }
 
+    /**
+     * Minutes and salary are aggregated in SQL and absences are fetched only for
+     * the shifts that actually are absences - hydrating every shift of every
+     * listed worker just to sum ten table rows was the dashboard's hot spot.
+     */
     public function getStatsForWorkers(
         Collection $workers,
         Carbon $dateFrom,
         Carbon $dateTo,
         ?string $shiftType = null
     ): Collection {
-        $workerIds = $workers->pluck('id');
+        $workerIds = $workers->pluck('id')->all();
 
-        $shifts = WorkerShift::query()
-            ->select([
-                'id',
-                'worker_id',
-                'day',
-                'shift_type',
-                'package_id',
-                'minutes',
-                'status',
-                'substituted_for_shift_id',
-            ])
-            ->with(['package:id,price', 'substitute.worker:id,first_name,last_name'])
+        if ($workerIds === []) {
+            return $workers;
+        }
+
+        $totals = $this->workerShiftTotals($workerIds, $dateFrom, $dateTo, $shiftType);
+        $absences = $this->workerAbsences($workerIds, $dateFrom, $dateTo, $shiftType);
+
+        return $workers->each(function (Worker $worker) use ($totals, $absences): void {
+            $workerTotals = $totals->get($worker->id, collect());
+            $workerAbsences = $absences->get($worker->id, collect());
+            $totalsByShift = $workerTotals->keyBy('shift_type');
+            $absencesByShift = $workerAbsences->groupBy('shift_type');
+
+            $worker->stats = [
+                ...$this->buildAggregatedStats($workerTotals, $workerAbsences),
+                'byShift' => [
+                    'morning' => $this->buildAggregatedStats(
+                        collect(array_filter([$totalsByShift->get('morning')])),
+                        $absencesByShift->get('morning', collect()),
+                    ),
+                    'afternoon' => $this->buildAggregatedStats(
+                        collect(array_filter([$totalsByShift->get('afternoon')])),
+                        $absencesByShift->get('afternoon', collect()),
+                    ),
+                ],
+            ];
+        });
+    }
+
+    /**
+     * Worked minutes and salary per worker and shift type, keyed by worker id.
+     *
+     * @param  array<int, int>  $workerIds
+     * @return Collection<array-key, Collection<int, \stdClass>>
+     */
+    private function workerShiftTotals(
+        array $workerIds,
+        Carbon $dateFrom,
+        Carbon $dateTo,
+        ?string $shiftType
+    ): Collection {
+        return WorkerShift::query()
+            ->leftJoin('packages', 'packages.id', '=', 'worker_shifts.package_id')
             ->published()
-            ->whereIn('worker_id', $workerIds)
-            ->whereBetween('day', [$dateFrom->toDateString(), $dateTo->toDateString()])
-            ->when($shiftType !== null, fn (Builder $query) => $query->where('shift_type', $shiftType))
+            ->whereIn('worker_shifts.worker_id', $workerIds)
+            ->whereBetween('worker_shifts.day', [$dateFrom->toDateString(), $dateTo->toDateString()])
+            ->when(
+                $shiftType !== null,
+                fn (Builder $query) => $query->where('worker_shifts.shift_type', $shiftType)
+            )
+            ->groupBy('worker_shifts.worker_id', 'worker_shifts.shift_type')
+            ->selectRaw('worker_shifts.worker_id AS worker_id')
+            ->selectRaw('worker_shifts.shift_type AS shift_type')
+            ->selectRaw('SUM('.self::WORKER_MINUTES_SQL.') AS total_minutes')
+            ->selectRaw('SUM('.self::WORKER_COST_SQL.') AS salary')
+            ->toBase()
             ->get()
             ->groupBy('worker_id');
+    }
 
-        return $workers->each(function ($worker) use ($shifts) {
-            $workerShifts = $shifts->get($worker->id, collect());
-            $worker->stats = $this->calculateStats($workerShifts);
-        });
+    /**
+     * Absent shifts with the substitute that covered them, keyed by worker id
+     * and ordered by day, so the first row of a day wins - exactly what the
+     * hydrated substitute() relation used to return.
+     *
+     * @param  array<int, int>  $workerIds
+     * @return Collection<array-key, Collection<int, \stdClass>>
+     */
+    private function workerAbsences(
+        array $workerIds,
+        Carbon $dateFrom,
+        Carbon $dateTo,
+        ?string $shiftType
+    ): Collection {
+        return WorkerShift::query()
+            ->leftJoin(
+                'worker_shifts as substitute_shifts',
+                'substitute_shifts.substituted_for_shift_id',
+                '=',
+                'worker_shifts.id'
+            )
+            ->leftJoin('workers as substitute_workers', 'substitute_workers.id', '=', 'substitute_shifts.worker_id')
+            ->published()
+            ->where('worker_shifts.status', 'absent')
+            ->whereIn('worker_shifts.worker_id', $workerIds)
+            ->whereBetween('worker_shifts.day', [$dateFrom->toDateString(), $dateTo->toDateString()])
+            ->when(
+                $shiftType !== null,
+                fn (Builder $query) => $query->where('worker_shifts.shift_type', $shiftType)
+            )
+            ->orderBy('worker_shifts.day')
+            ->orderBy('worker_shifts.id')
+            ->orderBy('substitute_shifts.id')
+            ->selectRaw('worker_shifts.id AS shift_id')
+            ->selectRaw('worker_shifts.worker_id AS worker_id')
+            ->selectRaw('worker_shifts.day AS day')
+            ->selectRaw('worker_shifts.shift_type AS shift_type')
+            ->selectRaw('substitute_workers.first_name AS substitute_first_name')
+            ->selectRaw('substitute_workers.last_name AS substitute_last_name')
+            ->toBase()
+            ->get()
+            ->unique('shift_id')
+            ->groupBy('worker_id');
+    }
+
+    /**
+     * @param  Collection<int, \stdClass>  $totals  aggregated rows of one scope
+     * @param  Collection<int, \stdClass>  $absences  absent shifts of the same scope
+     */
+    private function buildAggregatedStats(Collection $totals, Collection $absences): array
+    {
+        $totalMinutes = (int) $totals->sum(fn (\stdClass $row): int => (int) $row->total_minutes);
+        $salary = (float) $totals->sum(fn (\stdClass $row): float => (float) $row->salary);
+
+        $absentDays = $absences
+            ->unique('day')
+            ->map(fn (\stdClass $row): array => [
+                'day' => $row->day,
+                'substitute' => $row->substitute_first_name !== null
+                    ? $row->substitute_first_name.' '.$row->substitute_last_name
+                    : null,
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'hours' => $this->formatHours($totalMinutes),
+            'salary' => round($salary, 2),
+            'totalMinutes' => $totalMinutes,
+            'absences' => count($absentDays),
+            'absentDays' => $absentDays,
+        ];
     }
 
     /**
@@ -165,10 +283,7 @@ class WorkerStatsService
                 $dateTo->toDateString(),
             ])
             ->groupBy('workers.id', 'workers.first_name', 'workers.last_name')
-            ->selectRaw(
-                "SUM(CASE WHEN worker_shifts.status = 'absent' THEN 0 "
-                .'ELSE COALESCE(worker_shifts.minutes, 0) END) AS export_total_minutes'
-            )
+            ->selectRaw('SUM('.self::WORKER_MINUTES_SQL.') AS export_total_minutes')
             ->selectRaw('SUM('.self::WORKER_COST_SQL.') AS export_salary')
             ->orderBy('workers.id')
             ->get()
@@ -183,20 +298,55 @@ class WorkerStatsService
             });
     }
 
+    /**
+     * @return array{morning: float, afternoon: float}
+     */
     public function getCostByShift(Carbon $dateFrom, Carbon $dateTo): array
     {
-        $costs = WorkerShift::query()
+        return $this->getCostByShiftForRanges([[$dateFrom, $dateTo]])[0];
+    }
+
+    /**
+     * Cost per shift type for several periods in a single pass - the dashboard
+     * always needs the compared period too, and scanning the shift index twice
+     * for it was the most expensive statement of the whole request.
+     *
+     * @param  array<int, array{0: Carbon, 1: Carbon}>  $ranges
+     * @return array<int, array{morning: float, afternoon: float}>
+     */
+    public function getCostByShiftForRanges(array $ranges): array
+    {
+        $query = WorkerShift::query()
             ->leftJoin('packages', 'packages.id', '=', 'worker_shifts.package_id')
             ->published()
-            ->whereBetween('worker_shifts.day', [$dateFrom->toDateString(), $dateTo->toDateString()])
-            ->selectRaw('worker_shifts.shift_type, SUM('.self::WORKER_COST_SQL.') AS cost')
+            ->where(function (Builder $dayFilter) use ($ranges): void {
+                foreach ($ranges as [$dateFrom, $dateTo]) {
+                    $dayFilter->orWhereBetween('worker_shifts.day', [
+                        $dateFrom->toDateString(),
+                        $dateTo->toDateString(),
+                    ]);
+                }
+            })
             ->groupBy('worker_shifts.shift_type')
-            ->pluck('cost', 'shift_type');
+            ->selectRaw('worker_shifts.shift_type AS shift_type');
 
-        return [
-            'morning' => round((float) $costs->get('morning', 0), 2),
-            'afternoon' => round((float) $costs->get('afternoon', 0), 2),
-        ];
+        foreach ($ranges as $index => [$dateFrom, $dateTo]) {
+            $query->selectRaw(
+                'SUM(CASE WHEN worker_shifts.day BETWEEN ? AND ? THEN '
+                .self::WORKER_COST_SQL.' ELSE 0 END) AS cost_'.$index,
+                [$dateFrom->toDateString(), $dateTo->toDateString()]
+            );
+        }
+
+        $costs = $query->toBase()->get()->keyBy('shift_type');
+
+        return array_map(
+            fn (int $index): array => [
+                'morning' => round((float) ($costs->get('morning')->{'cost_'.$index} ?? 0), 2),
+                'afternoon' => round((float) ($costs->get('afternoon')->{'cost_'.$index} ?? 0), 2),
+            ],
+            array_keys($ranges)
+        );
     }
 
     public function getDashboardWorkerPage(
@@ -205,21 +355,23 @@ class WorkerStatsService
         int $page,
         string $shift
     ): LengthAwarePaginator {
-        $paginator = $this->dashboardWorkerQuery($dateFrom, $dateTo, $shift)->paginate(
-            self::DASHBOARD_WORKERS_PER_PAGE,
-            ['*'],
-            'page',
-            $page
-        );
+        // Counting distinct workers costs a fraction of what re-running the
+        // grouped salary aggregate through the paginator's count query does.
+        $total = $this->countDashboardWorkers($dateFrom, $dateTo, $shift);
+        $perPage = self::DASHBOARD_WORKERS_PER_PAGE;
+        $lastPage = max((int) ceil($total / $perPage), 1);
+        $currentPage = $total > 0 ? min($page, $lastPage) : $page;
 
-        if ($paginator->isEmpty() && $paginator->total() > 0 && $page > $paginator->lastPage()) {
-            $paginator = $this->dashboardWorkerQuery($dateFrom, $dateTo, $shift)->paginate(
-                self::DASHBOARD_WORKERS_PER_PAGE,
-                ['*'],
-                'page',
-                $paginator->lastPage()
-            );
-        }
+        $workers = $total > 0
+            ? $this->dashboardWorkerQuery($dateFrom, $dateTo, $shift)
+                ->forPage($currentPage, $perPage)
+                ->get()
+            : new Collection;
+
+        $paginator = new LengthAwarePaginator($workers, $total, $perPage, $currentPage, [
+            'path' => Paginator::resolveCurrentPath(),
+            'pageName' => 'page',
+        ]);
 
         return $paginator->setCollection(
             $this->getStatsForWorkers(
@@ -229,6 +381,19 @@ class WorkerStatsService
                 $shift === 'total' ? null : $shift
             )
         );
+    }
+
+    private function countDashboardWorkers(Carbon $dateFrom, Carbon $dateTo, string $shift): int
+    {
+        return WorkerShift::query()
+            ->published()
+            ->whereBetween('day', [$dateFrom->toDateString(), $dateTo->toDateString()])
+            ->when(
+                $shift !== 'total',
+                fn (Builder $query) => $query->where('shift_type', $shift)
+            )
+            ->distinct()
+            ->count('worker_id');
     }
 
     private function dashboardWorkerQuery(Carbon $dateFrom, Carbon $dateTo, string $shift): Builder
@@ -291,10 +456,7 @@ class WorkerStatsService
             ->whereBetween('worker_shifts.day', [$dateFrom->toDateString(), $dateTo->toDateString()])
             ->groupBy('worker_shifts.worker_id')
             ->selectRaw('worker_shifts.worker_id AS worker_id')
-            ->selectRaw(
-                "SUM(CASE WHEN worker_shifts.status = 'absent' THEN 0 "
-                .'ELSE COALESCE(worker_shifts.minutes, 0) END) AS total_minutes'
-            )
+            ->selectRaw('SUM('.self::WORKER_MINUTES_SQL.') AS total_minutes')
             ->selectRaw('SUM('.self::WORKER_COST_SQL.') AS salary')
             ->get()
             ->keyBy('worker_id');
