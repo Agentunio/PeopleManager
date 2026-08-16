@@ -6,13 +6,30 @@ echo "[entrypoint] Starting PeopleManager (APP_ENV=${APP_ENV:-local}, ROLE=${ROL
 
 RUN_AS=(gosu www-data:www-data)
 
-chown -R www-data:www-data storage bootstrap/cache
-"${RUN_AS[@]}" mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views \
-                          storage/logs storage/app/public bootstrap/cache
+WRITABLE_DIRS=(
+    storage
+    storage/app
+    storage/app/public
+    storage/framework
+    storage/framework/cache
+    storage/framework/cache/data
+    storage/framework/sessions
+    storage/framework/views
+    storage/logs
+    bootstrap/cache
+)
+
+for directory in "${WRITABLE_DIRS[@]}"; do
+    if [ -d "$directory" ]; then
+        chown www-data:www-data "$directory"
+    fi
+done
+
+"${RUN_AS[@]}" mkdir -p "${WRITABLE_DIRS[@]}"
 
 if [ "$ROLE" = "app" ] && [ "${APP_ENV:-local}" = "production" ] && [ -d /opt/app-public ]; then
     echo "[entrypoint] Syncing public/ from image snapshot into shared volume..."
-    chown -R www-data:www-data /var/www/html/public
+    chown www-data:www-data /var/www/html/public
     "${RUN_AS[@]}" find /var/www/html/public -mindepth 1 -delete
     "${RUN_AS[@]}" cp -a /opt/app-public/. /var/www/html/public/
 fi
